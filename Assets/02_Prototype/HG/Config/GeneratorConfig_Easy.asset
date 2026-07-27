@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a1c4f2e9b8d40c1a3f65e2d8c9b0a11, type: 3}
+  m_Name: GeneratorConfig_Easy
+  m_EditorClassIdentifier:
+  _repairDuration: 30
+  _decayGraceDuration: 3
+  _decayRatePerSecond: 0.04
+  _repairNoiseInterval: 2
+  _minQteCount: 3
+  _minQteInterval: 4
+  _maxQteInterval: 8
+  _qteSweepDuration: 1.6
+  _qteSuccessZoneSize01: 0.18
+  _qteZoneMinStart01: 0.35
+  _qteFailurePenalty01: 0.1
+  _qteFailureStunDuration: 1
