@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -29,6 +30,23 @@ namespace HideSeek.AI
         }
     }
 
+    public readonly struct ChaseAIAudioObservation
+    {
+        public NoiseData NoiseData { get; }
+        public float Distance { get; }
+        public float PerceivedIntensity { get; }
+
+        public ChaseAIAudioObservation(
+            NoiseData noiseData ,
+            float distance ,
+            float perceivedIntensity)
+        {
+            NoiseData = noiseData;
+            Distance = distance;
+            PerceivedIntensity = perceivedIntensity;
+        }
+    }
+
     public sealed class ChaseAIPerception : MonoBehaviour
     {
         [Header("References")]
@@ -38,6 +56,11 @@ namespace HideSeek.AI
 
         [Header("Collision")]
         [SerializeField] private LayerMask _obstacleMask;
+
+        [Header("Hearing")]
+        [SerializeField] private Transform _hearingTransform;
+
+        public event Action<ChaseAIAudioObservation> NoiseDetected;
 
         private float _detectionRatio;
 
@@ -62,6 +85,22 @@ namespace HideSeek.AI
                     "[ChaseAIPerception] Eye Transform이 할당되지 않았습니다." ,
                     this);
             }
+
+            if ( _hearingTransform == null )
+            {
+                _hearingTransform = transform;
+            }
+        }
+
+        private void OnEnable()
+        {
+            NoiseProvider.NoiseEmitted -= OnNoiseEmitted;
+            NoiseProvider.NoiseEmitted += OnNoiseEmitted;
+        }
+
+        private void OnDisable()
+        {
+            NoiseProvider.NoiseEmitted -= OnNoiseEmitted;
         }
 
         public void SetTarget(Transform targetTransform)
@@ -98,14 +137,11 @@ namespace HideSeek.AI
                 0f);
         }
 
-        private bool TryGetVisiblePosition(
-            out Vector3 visiblePosition)
+        private bool TryGetVisiblePosition(out Vector3 visiblePosition)
         {
             visiblePosition = Vector3.zero;
 
-            if ( _config == null ||
-                _eyeTransform == null ||
-                _targetTransform == null )
+            if ( _config == null || _eyeTransform == null || _targetTransform == null )
             {
                 return false;
             }
@@ -126,12 +162,9 @@ namespace HideSeek.AI
                 return true;
             }
 
-            Vector3 normalizedDirection =
-                directionToTarget / distanceToTarget;
+            Vector3 normalizedDirection = directionToTarget / distanceToTarget;
 
-            Vector3 localDirection =
-                _eyeTransform.InverseTransformDirection(
-                    normalizedDirection);
+            Vector3 localDirection = _eyeTransform.InverseTransformDirection(normalizedDirection);
 
             if ( localDirection.z <= 0f )
             {
@@ -209,6 +242,36 @@ namespace HideSeek.AI
             return CHASE_AI_VISUAL_STATE.SUSPICIOUS;
         }
 
+        private void OnNoiseEmitted(NoiseData noiseData)
+        {
+            if ( _hearingTransform == null )
+            {
+                return;
+            }
+
+            Vector3 directionToNoise = noiseData.Position - _hearingTransform.position;
+
+            float squaredDistance = directionToNoise.sqrMagnitude;
+            float squaredRadius = noiseData.Radius * noiseData.Radius;
+
+            if ( squaredDistance > squaredRadius )
+            {
+                return;
+            }
+
+            float distance = Mathf.Sqrt(squaredDistance);
+
+            float distanceRatio = Mathf.Clamp01(distance / noiseData.Radius);
+
+            float attenuation = 1f - distanceRatio;
+
+            float perceivedIntensity = noiseData.Intensity * attenuation;
+
+            ChaseAIAudioObservation observation = new ChaseAIAudioObservation(noiseData, distance, perceivedIntensity);
+
+            NoiseDetected?.Invoke(observation);
+        }
+
         private void OnDrawGizmosSelected()
         {
             if ( _config == null || _eyeTransform == null )
@@ -242,9 +305,7 @@ namespace HideSeek.AI
 
         private void DrawSightRay(float verticalAngle , float horizontalAngle)
         {
-            Quaternion directionRotation =
-                _eyeTransform.rotation *
-                Quaternion.Euler(verticalAngle, horizontalAngle, 0f);
+            Quaternion directionRotation = _eyeTransform.rotation * Quaternion.Euler(verticalAngle, horizontalAngle, 0f);
 
             Vector3 direction = directionRotation * Vector3.forward;
 
