@@ -20,6 +20,7 @@ namespace HideSeek.AI
         private readonly ChaseAIConfig _config;
         private readonly ChaseAIMovement _movement;
         private readonly ChaseAIMemory _memory;
+        private readonly ChaseAISearch _search;
         private readonly IReadOnlyList<Transform> _patrolPoints;
 
         private int _currentPatrolPointIndex;
@@ -34,6 +35,12 @@ namespace HideSeek.AI
         private float _audioSearchDuration;
         private float _currentAudioIntensity;
 
+        private Vector3 _searchCenterPosition;
+        private float _currentSearchRadius;
+        private float _currentSearchDuration;
+        private float _searchWaitDurationPerPoint;
+        private bool _isMovingToSearchCenter;
+
         private bool _hasActiveAudioInvestigation;
 
         public CHASE_AI_STATE CurrentState
@@ -42,15 +49,12 @@ namespace HideSeek.AI
             private set;
         } = CHASE_AI_STATE.DORMANT;
 
-        public ChaseAIStateMachine(
-            ChaseAIConfig config ,
-            ChaseAIMovement movement ,
-            ChaseAIMemory memory ,
-            IReadOnlyList<Transform> patrolPoints)
+        public ChaseAIStateMachine(ChaseAIConfig config , ChaseAIMovement movement , ChaseAIMemory memory , ChaseAISearch search , IReadOnlyList<Transform> patrolPoints)
         {
             _config = config;
             _movement = movement;
             _memory = memory;
+            _search = search;
             _patrolPoints = patrolPoints;
         }
 
@@ -150,6 +154,8 @@ namespace HideSeek.AI
         public void Stop()
         {
             _movement.Stop();
+            ClearSearch();
+
             ClearAudioInvestigation();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
@@ -254,7 +260,7 @@ namespace HideSeek.AI
             {
                 if ( !UpdateWaiting(deltaTime) )
                 {
-                    ChangeState(CHASE_AI_STATE.PATROL, "Search completed");
+                    AdvanceSearchPoint();
                 }
 
                 return;
@@ -265,13 +271,39 @@ namespace HideSeek.AI
             switch ( moveStatus )
             {
                 case CHASE_AI_MOVE_STATUS.IDLE:
+                    if ( _isMovingToSearchCenter )
+                    {
+                        BeginAreaSearch();
+                    }
+                    else
+                    {
+                        RequestCurrentSearchPointOrComplete();
+                    }
+                    break;
+
                 case CHASE_AI_MOVE_STATUS.ARRIVED:
-                    StartWaiting(_config.SearchWaitTime);
+                    if ( _isMovingToSearchCenter )
+                    {
+                        BeginAreaSearch();
+                    }
+                    else
+                    {
+                        StartWaiting(_searchWaitDurationPerPoint);
+                    }
                     break;
 
                 case CHASE_AI_MOVE_STATUS.PATH_FAILED:
                 case CHASE_AI_MOVE_STATUS.STUCK:
-                    ChangeState(CHASE_AI_STATE.PATROL, $"Search movement failed: {moveStatus}");
+                    Debug.LogWarning($"[ChaseAIStateMachine] 수색 이동 실패: {moveStatus}");
+
+                    if ( _isMovingToSearchCenter )
+                    {
+                        BeginAreaSearch();
+                    }
+                    else
+                    {
+                        AdvanceSearchPoint();
+                    }
                     break;
             }
         }
@@ -318,6 +350,7 @@ namespace HideSeek.AI
 
         private void EnterPatrol()
         {
+            ClearSearch();
             ClearAudioInvestigation();
 
             _movement.SetSpeed(_config.WalkSpeed);
@@ -326,6 +359,7 @@ namespace HideSeek.AI
 
         private void EnterInvestigate()
         {
+            ClearSearch();
             _movement.SetSpeed(_config.WalkSpeed);
 
             if ( !RequestAudioEvidenceDestination() )
@@ -336,6 +370,7 @@ namespace HideSeek.AI
 
         private void EnterChase()
         {
+            ClearSearch();
             ClearAudioInvestigation();
 
             _movement.SetSpeed(_config.ChaseSpeed);
@@ -344,39 +379,104 @@ namespace HideSeek.AI
 
         private void EnterSearch()
         {
+            ClearSearch();
             _movement.SetSpeed(_config.WalkSpeed);
 
-            // INVESTIGATE를 마치고 들어온 청각 수색
             if ( _hasActiveAudioInvestigation )
             {
-                Debug.Log(
-                    $"[ChaseAIStateMachine] 청각 수색 시작: " +
-                    $"Position={_audioSearchPosition}, " +
-                    $"Radius={_audioSearchRadius:F1}, " +
-                    $"Duration={_audioSearchDuration:F1}");
+                Debug.Log($"[ChaseAIStateMachine] 청각 수색 시작: Position={_audioSearchPosition}, Radius={_audioSearchRadius:F1}, Duration={_audioSearchDuration:F1}");
 
-                StartWaiting(_audioSearchDuration);
+                PrepareSearch(_audioSearchPosition , _audioSearchRadius , _audioSearchDuration , false , "Audio search center");
+
                 return;
             }
 
             float currentTime = Time.time;
 
-            // CHASE에서 시야를 놓친 경우
             if ( _memory.HasValidVisualEvidence(currentTime) )
             {
-                RequestDestination(_memory.VisualEvidence.Position, "Last seen position");
-
+                PrepareSearch(_memory.VisualEvidence.Position , _config.VisualSearchRadius , _config.SearchWaitTime , true , "Last seen position");
                 return;
             }
 
             if ( _memory.HasValidAudioEvidence(currentTime) )
             {
-                RequestDestination(_memory.AudioEvidence.Position, "Last heard position");
+                float intensity = Mathf.Clamp01(_memory.AudioEvidence.Strength);
+                float searchRadius = Mathf.Lerp(_config.MaxAudioSearchRadius, _config.MinAudioSearchRadius, intensity);
+                float searchDuration = Mathf.Lerp(_config.MinAudioSearchDuration, _config.MaxAudioSearchDuration, intensity);
 
+                PrepareSearch(_memory.AudioEvidence.Position , searchRadius , searchDuration , true , "Last heard position");
                 return;
             }
 
-            StartWaiting(_config.SearchWaitTime);
+            ChangeState(CHASE_AI_STATE.PATROL , "No valid evidence for search");
+        }
+
+        private void PrepareSearch(Vector3 centerPosition , float searchRadius , float searchDuration , bool shouldMoveToCenter , string context)
+        {
+            _searchCenterPosition = centerPosition;
+            _currentSearchRadius = Mathf.Max(0f , searchRadius);
+            _currentSearchDuration = Mathf.Max(0f , searchDuration);
+            _isMovingToSearchCenter = shouldMoveToCenter;
+
+            if ( shouldMoveToCenter && RequestDestination(centerPosition , context) )
+            {
+                return;
+            }
+
+            BeginAreaSearch();
+        }
+
+        private void BeginAreaSearch()
+        {
+            _isMovingToSearchCenter = false;
+
+            bool hasSearchPoints = _search.BuildSearchPoints(_movement.Position, _searchCenterPosition, _currentSearchRadius, _config.SearchPointCount, _config.MinimumSearchPointDistance, _config.SampleRadius, _movement.AreaMask, _config.SearchPointGenerationAttemptCountPerPoint);
+
+            if ( !hasSearchPoints )
+            {
+                ChangeState(CHASE_AI_STATE.PATROL , "Search point generation failed");
+                return;
+            }
+
+            _searchWaitDurationPerPoint = _currentSearchDuration / _search.PointCount;
+
+            Debug.Log($"[ChaseAIStateMachine] 수색 지점 생성 완료: Count={_search.PointCount}, Center={_searchCenterPosition}, Radius={_currentSearchRadius:F1}, WaitPerPoint={_searchWaitDurationPerPoint:F1}");
+
+            RequestCurrentSearchPointOrComplete();
+        }
+
+        private void RequestCurrentSearchPointOrComplete()
+        {
+            while ( _search.TryGetCurrentPoint(out Vector3 searchPoint) )
+            {
+                string context = $"Search point {_search.CurrentPointIndex + 1}/{_search.PointCount}";
+
+                if ( RequestDestination(searchPoint , context) )
+                {
+                    return;
+                }
+
+                _search.AdvanceToNextPoint();
+            }
+
+            ChangeState(CHASE_AI_STATE.PATROL , "All search points completed");
+        }
+
+        private void AdvanceSearchPoint()
+        {
+            _search.AdvanceToNextPoint();
+            RequestCurrentSearchPointOrComplete();
+        }
+
+        private void ClearSearch()
+        {
+            _search.Clear();
+            _searchCenterPosition = Vector3.zero;
+            _currentSearchRadius = 0f;
+            _currentSearchDuration = 0f;
+            _searchWaitDurationPerPoint = 0f;
+            _isMovingToSearchCenter = false;
         }
 
         private bool RequestAudioEvidenceDestination()
@@ -474,5 +574,7 @@ namespace HideSeek.AI
             _currentAudioIntensity = 0f;
             _hasActiveAudioInvestigation = false;
         }
+
+
     }
 }

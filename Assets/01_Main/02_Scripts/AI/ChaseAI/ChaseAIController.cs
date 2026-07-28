@@ -14,6 +14,7 @@ namespace HideSeek.AI
         [SerializeField] private List<Transform> _patrolPoints = new();
 
         private ChaseAIMemory _memory;
+        private ChaseAISearch _search;
         private ChaseAIStateMachine _stateMachine;
 
         private bool _isInitialized;
@@ -23,6 +24,7 @@ namespace HideSeek.AI
         private void Awake()
         {
             _memory = new ChaseAIMemory();
+            _search = new ChaseAISearch();
         }
 
         private void OnEnable()
@@ -43,11 +45,7 @@ namespace HideSeek.AI
                 return;
             }
 
-            _stateMachine = new ChaseAIStateMachine(
-                _config ,
-                _movement ,
-                _memory ,
-                _patrolPoints);
+            _stateMachine = new ChaseAIStateMachine(_config , _movement , _memory , _search , _patrolPoints);
 
             _stateMachine.Initialize();
             _isInitialized = true;
