@@ -140,7 +140,7 @@ namespace HideSeek.AI
             RequestCurrentPoint();
         }
 
-        private void OnDrawGizmosSelected()
+        private void OnDrawGizmos()
         {
             if ( _patrolPoints == null || _patrolPoints.Count == 0 )
             {

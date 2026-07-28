@@ -272,7 +272,7 @@ namespace HideSeek.AI
             NoiseDetected?.Invoke(observation);
         }
 
-        private void OnDrawGizmosSelected()
+        private void OnDrawGizmos()
         {
             if ( _config == null || _eyeTransform == null )
             {
