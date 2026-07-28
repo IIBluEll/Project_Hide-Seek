@@ -1,9 +1,15 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace HideSeek.Generators
 {
+    public enum GENERATOR_STATE
+    {
+        INACTIVE,
+        INTERACTING,
+        COMPLETED
+    }
+
     /// <summary>
     /// 발전기 1기의 수리 진행도와 QTE를 관리한다.
     /// GAME_DESIGN_DOCUMENT.md 7장을 기준으로 구현했으며, MVP 패턴은 UI에만 적용하므로 이 클래스는 게임플레이 로직만 가진다.
@@ -12,38 +18,33 @@ namespace HideSeek.Generators
     /// - 상호작용(진우): <see cref="TryBeginRepair"/>, <see cref="CancelRepair"/>를 호출한다.
     /// - 소음(현민): <see cref="RepairNoiseOccurred"/>, <see cref="QteFailureNoiseOccurred"/>를 구독해 소음 이벤트로 변환한다.
     /// - Anger(현민): <see cref="Completed"/>를 구독해 발전기 완료 수에 맞는 Anger 하한선을 적용한다.
-    /// - UI: <see cref="IGeneratorQteModel"/>을 구현해 표시용 데이터만 읽기 전용으로 제공한다.
+    /// - UI: 읽기 전용 인터페이스 두 개를 구현해 표시용 값만 넘긴다. 공개 이벤트에는 UI 타입을 쓰지 않는다.
+    ///
+    /// 설정 데이터는 인스펙터에 두지 않는다. 난이도 하나가 모든 발전기에 같은 값을 주므로
+    /// 발전기를 등록하는 쪽이 <see cref="SetConfig"/>로 넣어준다.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class Generator : MonoBehaviour , IGeneratorQteModel
+    public sealed class Generator : MonoBehaviour , IGeneratorProgressModel , IGeneratorQteModel
     {
-        [SerializeField] private GeneratorConfig _config;
-
-        [Header("임시 입력 설정")]
-        [Tooltip("플레이어 입력 담당자의 InputActions가 확정되면 SetQteInputSource로 교체한다.")]
-        [SerializeField] private Key _qteKey = Key.Space;
-        [SerializeField] private string _qteKeyLabel = "SPACE";
-
         // 수리 관련 이벤트
-        public event Action<IGeneratorQteModel> RepairStarted; // 수리를 시작했다. 인자는 이 발전기
-        public event Action<IGeneratorQteModel> RepairStopped; // 수리가 중단되거나 완료됐다. 인자는 이 발전기
-        public event Action<float> ProgressChanged; // 수리 진행도(0~1)가 변경됐다.
-        public event Action Completed; // 수리가 완료됐다.
+        public event Action<Generator> RepairStarted; // 인자는 이 발전기
+        public event Action<Generator> RepairStopped; // 중단과 완료 모두 발생. 인자는 이 발전기
+        public event Action<float> ProgressChanged; // 인자는 진행도(0~1)
+        public event Action Completed;
 
-        // QTE 입력 관련 이벤트
-        public event Action<QteChallenge> QteStarted; // QTE가 시작됐다.
-        public event Action<float> QteIndicatorChanged; // QTE 인디케이터 위치(0~1)가 갱신됐다.
-        public event Action<QTE_RESULT> QteFinished; // QTE 판정이 끝났다.
-        public event Action<Vector3> RepairNoiseOccurred; // 수리 중 주기적으로 발생하는 발전기 소음. 인자는 발생 위치
-        public event Action<Vector3> QteFailureNoiseOccurred; // QTE 실패 소음. 인자는 발생 위치
+        // QTE 관련 이벤트
+        public event Action<QteChallenge> QteStarted;
+        public event Action<float> QteIndicatorChanged; // 인자는 인디케이터 위치(0~1)
+        public event Action<QTE_RESULT> QteFinished;
+        public event Action<Vector3> RepairNoiseOccurred; // 수리 중 주기적으로 발생. 인자는 발생 위치
+        public event Action<Vector3> QteFailureNoiseOccurred; // 인자는 발생 위치
 
         public GENERATOR_STATE State { get; private set; } = GENERATOR_STATE.INACTIVE;
+        public float Progress01 { get; private set; } // 0~1
 
-        /// <summary>현재 수리 진행도. 0에서 1 사이다.</summary>
-        public float Progress01 { get; private set; }
-
+        private GeneratorConfig _config;
+        private IInputSource _qteInputSource;
         private QteRunner _qteRunner;
-        private IQteInputSource _qteInputSource;
         private float _stopElapsed;
         private float _nextQteDelay;
         private float _failureStunRemain;
@@ -53,14 +54,6 @@ namespace HideSeek.Generators
         {
             _qteRunner = new QteRunner();
             _qteRunner.Finished += OnQteFinishedActioned;
-
-            _qteInputSource = new KeyboardQteInputSource(_qteKey , _qteKeyLabel);
-
-            if (_config == null)
-            {
-                Debug.LogError($"[{nameof(Generator)}] GeneratorConfig가 비어 있어 비활성화합니다." , this);
-                enabled = false;
-            }
         }
 
         private void OnDestroy()
@@ -71,6 +64,11 @@ namespace HideSeek.Generators
 
         private void Update()
         {
+            if (_config == null)
+            {
+                return;
+            }
+
             float tDeltaTime = Time.deltaTime;
 
             switch (State)
@@ -86,9 +84,15 @@ namespace HideSeek.Generators
         }
 
         /// <summary>
-        /// QTE 입력 경로를 교체한다. 플레이어 입력 구조가 확정되면 이 메서드로 주입한다.
+        /// 발전기를 등록하는 쪽이 호출한다. 난이도가 정한 값 하나를 모든 발전기가 공유한다.
         /// </summary>
-        public void SetQteInputSource(IQteInputSource qteInputSource)
+        public void SetConfig(GeneratorConfig config)
+        {
+            _config = config;
+        }
+
+        // 플레이어 입력 구조가 확정되면 구현만 바꿔서 여기로 넣는다.
+        public void SetQteInputSource(IInputSource qteInputSource)
         {
             if (qteInputSource == null)
             {
@@ -99,13 +103,18 @@ namespace HideSeek.Generators
         }
 
         /// <summary>
-        /// 수리를 시작한다. 이미 작업 중이거나 완료된 발전기면 false를 반환한다.
-        /// 상호작용 시스템이 호출한다.
+        /// 상호작용 시스템이 호출한다. 이미 작업 중이거나 완료된 발전기면 false를 반환한다.
         /// </summary>
         public bool TryBeginRepair()
         {
             if (State != GENERATOR_STATE.INACTIVE)
             {
+                return false;
+            }
+
+            if (_config == null || _qteInputSource == null)
+            {
+                Debug.LogError($"[{nameof(Generator)}] Config 또는 입력 소스가 없어 수리를 시작할 수 없습니다. 등록할 때 SetConfig와 SetQteInputSource를 모두 호출해야 합니다." , this);
                 return false;
             }
 
@@ -119,9 +128,7 @@ namespace HideSeek.Generators
             return true;
         }
 
-        /// <summary>
-        /// 수리를 중단한다. 남은 진행도는 유예 시간 뒤부터 감소한다. GDD 7.3.6, 7.3.7
-        /// </summary>
+        // 남은 진행도는 유예 시간 뒤부터 감소한다. GDD 7.3.6, 7.3.7
         public void CancelRepair()
         {
             if (State != GENERATOR_STATE.INTERACTING)

@@ -3,8 +3,7 @@ using UnityEngine;
 namespace HideSeek.Generators
 {
     /// <summary>
-    /// 발전기 수리와 QTE 수치를 보관하는 설정 데이터.
-    /// GAME_DESIGN_DOCUMENT.md 16.1에 따라 수치를 코드에 고정하지 않는다.
+    /// GDD 16.1에 따라 수치를 코드에 고정하지 않고 여기로 분리한다.
     /// </summary>
     [CreateAssetMenu(fileName = "GeneratorConfig" , menuName = "HideSeek/Generator Config")]
     public sealed class GeneratorConfig : ScriptableObject

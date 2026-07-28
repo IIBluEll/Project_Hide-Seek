@@ -1,60 +1,84 @@
 using System.Collections.Generic;
 using HM.CodeBase;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace HideSeek.Generators
 {
     /// <summary>
-    /// QTE UI 1개를 모든 발전기가 돌려쓰도록 중개하는 프로토타입 검증용 싱글톤.
+    /// UI 1벌을 모든 발전기가 돌려쓰도록 중개하는 프로토타입 검증용 싱글톤.
+    /// 수리를 시작한 발전기에게만 UI 소유권을 넘기고, 대상이 바뀌면 이전 Presenter를 Dispose해 구독을 정리한다.
     ///
-    /// 수리를 시작한 발전기에게만 View 소유권을 넘기고, 대상이 바뀌면 이전 Presenter를
-    /// 반드시 Dispose해 이벤트 구독을 정리한다. 발전기가 여러 기여도 표시가 섞이지 않는다.
+    /// Presenter끼리는 서로를 참조하지 않는다. 열고 닫는 조율은 이 클래스만 한다. AGENTS.md 3.3
+    ///
+    /// Config와 QTE 입력을 등록된 모든 발전기에 똑같이 넣어준다. 발전기별 오버라이드는 아직 없다.
     ///
     /// TODO: 현민 담당 UI Manager가 확정되면 이 클래스를 제거하고 해당 매니저가 같은 역할을 맡는다.
     ///       옮겨야 할 책임은 View 보유, Presenter 수명 관리, 발전기 등록 세 가지다.
+    /// TODO: Config 배포는 UI 책임이 아니다. 후보 지점 중 일부를 활성화하는 시스템(GDD 7.1)이 생기면
+    ///       그쪽으로 옮긴다. UI Manager로 따라가면 안 된다.
+    /// TODO: QTE 키는 진우 담당 InputActions가 확정되면 KeyboardInputSource 대신 그 구현을 주입한다.
+    ///       키 값 자체는 현민 담당 키 설정 시스템으로 옮긴다. GDD 13.2
     /// TODO: 발전기 이벤트를 EventProvider로 발행할지는 추후 회의에서 결정한다. 전환 지점은 이 클래스다.
     ///
     /// 사용 예시
     /// <code>
-    /// // 발전기를 런타임에 활성화하는 시스템에서
     /// GeneratorQteProvider.Instance.Register(generator);
-    ///
-    /// // 발전기를 비활성화하거나 파괴하기 전에
     /// GeneratorQteProvider.Instance.Unregister(generator);
     /// </code>
-    ///
-    /// 프로토타입 씬에서는 <see cref="_arr_startupGenerator"/>에 발전기를 넣어두면 Start에서 자동 등록한다.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class GeneratorQteProvider : ASingletone<GeneratorQteProvider>
     {
-        [Tooltip("모든 발전기가 공유하는 QTE UI. 씬에 배치한 오브젝트에 직접 할당한다.")]
+        [Tooltip("등록된 모든 발전기가 이 설정을 공유한다. 난이도 선택이 생기면 그쪽에서 지정한다.")]
+        [SerializeField] private GeneratorConfig _generatorConfig;
+
+        [Header("QTE 입력")]
+        [Tooltip("모든 발전기가 같은 키를 쓴다.")]
+        [SerializeField] private Key _qteKey = Key.Space;
+        [SerializeField] private string _qteKeyLabel = "SPACE";
+
+        [Tooltip("모든 발전기가 공유한다. 씬에 배치한 오브젝트에 직접 할당한다.")]
+        [SerializeField] private GeneratorProgress_view _generatorProgressView;
         [SerializeField] private GeneratorQte_view _generatorQteView;
 
         [Header("프로토타입 전용")]
-        [Tooltip("여기에 넣은 발전기는 Start에서 자동으로 등록된다. 정식 구조에서는 Register를 직접 호출한다.")]
+        [Tooltip("여기에 넣은 발전기는 Start에서 자동 등록된다. 정식 구조에서는 Register를 직접 호출한다.")]
         [SerializeField] private Generator[] _arr_startupGenerator;
 
-        private readonly List<IGeneratorQteModel> LIST_MODEL = new();
+        private readonly List<Generator> LIST_GENERATOR = new();
 
-        private GeneratorQte_presenter _presenter;
-        private IGeneratorQteModel _currentModel;
+        private IInputSource _qteInputSource; // 상태가 없어 모든 발전기가 하나를 공유해도 된다
 
-        /// <summary>현재 UI를 점유 중인 발전기. 아무도 수리 중이 아니면 null이다.</summary>
-        public IGeneratorQteModel CurrentModel => _currentModel;
+        private GeneratorProgress_presenter _progressPresenter;
+        private GeneratorQte_presenter _qtePresenter;
+        private Generator _currentGenerator;
+
+        public Generator CurrentGenerator => _currentGenerator; // 아무도 수리 중이 아니면 null
 
         public override void Awake()
         {
             base.Awake();
 
-            if (_generatorQteView == null)
+            if (_generatorProgressView == null || _generatorQteView == null)
             {
                 Debug.LogError($"[{nameof(GeneratorQteProvider)}] View 참조가 비어 있습니다. 씬에 배치한 오브젝트에 직접 할당해야 합니다." , this);
+            }
+
+            if (_generatorConfig == null)
+            {
+                Debug.LogError($"[{nameof(GeneratorQteProvider)}] GeneratorConfig가 비어 있어 발전기가 동작하지 않습니다." , this);
             }
         }
 
         private void Start()
         {
+            if (_generatorProgressView != null)
+            {
+                _generatorProgressView.Clear();
+                _generatorProgressView.Close();
+            }
+
             if (_generatorQteView != null)
             {
                 _generatorQteView.Clear();
@@ -74,87 +98,98 @@ namespace HideSeek.Generators
 
         private void OnDestroy()
         {
-            for (int i = LIST_MODEL.Count - 1; i >= 0; i--)
+            for (int i = LIST_GENERATOR.Count - 1; i >= 0; i--)
             {
-                Unregister(LIST_MODEL[i]);
+                Unregister(LIST_GENERATOR[i]);
             }
 
-            ReleasePresenter();
+            ReleasePresenters();
         }
 
-        /// <summary>
-        /// 발전기를 UI 중개 대상으로 등록한다. 같은 발전기를 여러 번 등록해도 한 번만 반영된다.
-        /// </summary>
-        public void Register(IGeneratorQteModel generatorQteModel)
+        public void Register(Generator generator)
         {
-            if (generatorQteModel == null || LIST_MODEL.Contains(generatorQteModel))
+            if (generator == null || LIST_GENERATOR.Contains(generator))
             {
                 return;
             }
 
-            LIST_MODEL.Add(generatorQteModel);
-            generatorQteModel.RepairStarted += OnRepairStartedActioned;
-            generatorQteModel.RepairStopped += OnRepairStoppedActioned;
+            // Awake 순서가 보장되지 않아 다른 오브젝트가 먼저 Register를 부를 수 있다.
+            _qteInputSource ??= new KeyboardInputSource(_qteKey , _qteKeyLabel);
+
+            LIST_GENERATOR.Add(generator);
+            generator.SetConfig(_generatorConfig);
+            generator.SetQteInputSource(_qteInputSource);
+            generator.RepairStarted += OnRepairStartedActioned;
+            generator.RepairStopped += OnRepairStoppedActioned;
         }
 
         /// <summary>
         /// 등록을 해제한다. 해당 발전기가 UI를 점유 중이었다면 UI도 함께 닫는다.
         /// 발전기를 파괴하기 전에 반드시 호출한다.
         /// </summary>
-        public void Unregister(IGeneratorQteModel generatorQteModel)
+        public void Unregister(Generator generator)
         {
-            if (generatorQteModel == null || LIST_MODEL.Remove(generatorQteModel) == false)
+            if (generator == null || LIST_GENERATOR.Remove(generator) == false)
             {
                 return;
             }
 
-            generatorQteModel.RepairStarted -= OnRepairStartedActioned;
-            generatorQteModel.RepairStopped -= OnRepairStoppedActioned;
+            generator.RepairStarted -= OnRepairStartedActioned;
+            generator.RepairStopped -= OnRepairStoppedActioned;
 
-            if (ReferenceEquals(_currentModel , generatorQteModel))
+            if (ReferenceEquals(_currentGenerator , generator))
             {
-                ReleasePresenter();
+                ReleasePresenters();
             }
         }
 
-        private void OnRepairStartedActioned(IGeneratorQteModel generatorQteModel)
+        private void OnRepairStartedActioned(Generator generator)
         {
-            if (_generatorQteView == null)
+            if (_generatorProgressView == null || _generatorQteView == null)
             {
                 return;
             }
 
             // 이전 대상이 남아 있으면 여기서 구독까지 정리된다.
-            ReleasePresenter();
+            ReleasePresenters();
 
-            _currentModel = generatorQteModel;
-            _presenter = new GeneratorQte_presenter(generatorQteModel , _generatorQteView);
-            _presenter.Open();
+            _currentGenerator = generator;
+
+            _progressPresenter = new GeneratorProgress_presenter(generator , _generatorProgressView);
+            _qtePresenter = new GeneratorQte_presenter(generator , _generatorQteView);
+
+            _progressPresenter.Open();
+            _qtePresenter.Open();
         }
 
-        private void OnRepairStoppedActioned(IGeneratorQteModel generatorQteModel)
+        private void OnRepairStoppedActioned(Generator generator)
         {
             // 다른 발전기가 이미 UI를 넘겨받았다면 뒤늦게 도착한 종료 신호는 무시한다.
-            if (ReferenceEquals(_currentModel , generatorQteModel) == false)
+            if (ReferenceEquals(_currentGenerator , generator) == false)
             {
                 return;
             }
 
-            ReleasePresenter();
+            ReleasePresenters();
         }
 
-        private void ReleasePresenter()
+        private void ReleasePresenters()
         {
-            _currentModel = null;
+            _currentGenerator = null;
 
-            if (_presenter == null)
+            if (_progressPresenter != null)
             {
-                return;
+                _progressPresenter.Close();
+                _progressPresenter.Dispose();
+                _progressPresenter = null;
             }
 
-            _presenter.Close();
-            _presenter.Dispose();
-            _presenter = null;
+            if (_qtePresenter != null)
+            {
+                _qtePresenter.Close();
+                _qtePresenter.Dispose();
+                _qtePresenter = null;
+            }
         }
     }
 }
