@@ -134,6 +134,12 @@ namespace HideSeek.AI
 
         private void OnDrawGizmos()
         {
+            DrawEvidenceGizmos();
+            DrawSearchGizmos();
+        }
+
+        private void DrawEvidenceGizmos()
+        {
             if ( _memory == null )
             {
                 return;
@@ -142,25 +148,40 @@ namespace HideSeek.AI
             if ( _memory.HasValidVisualEvidence(Time.time) )
             {
                 Gizmos.color = Color.blue;
-                Gizmos.DrawWireSphere(
-                    _memory.VisualEvidence.Position ,
-                    0.4f);
-
-                Gizmos.DrawRay(
-                    _memory.VisualEvidence.Position ,
-                    _memory.LastSeenMovementDirection * 2f);
+                Gizmos.DrawWireSphere(_memory.VisualEvidence.Position , 0.4f);
+                Gizmos.DrawRay(_memory.VisualEvidence.Position , _memory.LastSeenMovementDirection * 2f);
             }
 
             if ( _memory.HasValidAudioEvidence(Time.time) )
             {
-                Gizmos.color = new Color(
-                    1f ,
-                    0.5f ,
-                    0f);
+                Gizmos.color = new Color(1f , 0.5f , 0f);
+                Gizmos.DrawWireSphere(_memory.AudioEvidence.Position , 0.5f);
+            }
+        }
 
-                Gizmos.DrawWireSphere(
-                    _memory.AudioEvidence.Position ,
-                    0.5f);
+        private void DrawSearchGizmos()
+        {
+            if ( _search == null || _stateMachine == null || _stateMachine.CurrentState != CHASE_AI_STATE.SEARCH )
+            {
+                return;
+            }
+
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(_stateMachine.SearchCenterPosition , _stateMachine.CurrentSearchRadius);
+
+            Vector3 previousPosition = _stateMachine.SearchCenterPosition;
+
+            for ( int pointIndex = 0; pointIndex < _search.SearchPoints.Count; pointIndex++ )
+            {
+                Vector3 searchPoint = _search.SearchPoints[pointIndex];
+
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(previousPosition , searchPoint);
+
+                Gizmos.color = pointIndex == _search.CurrentPointIndex ? Color.red : Color.yellow;
+                Gizmos.DrawSphere(searchPoint , 0.2f);
+
+                previousPosition = searchPoint;
             }
         }
     }
