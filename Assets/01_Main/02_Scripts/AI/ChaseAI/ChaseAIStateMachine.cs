@@ -43,6 +43,9 @@ namespace HideSeek.AI
 
         private bool _hasActiveAudioInvestigation;
 
+        public Vector3 SearchCenterPosition => _searchCenterPosition;
+        public float CurrentSearchRadius => _currentSearchRadius;
+
         public CHASE_AI_STATE CurrentState
         {
             get;
@@ -574,7 +577,5 @@ namespace HideSeek.AI
             _currentAudioIntensity = 0f;
             _hasActiveAudioInvestigation = false;
         }
-
-
     }
 }
