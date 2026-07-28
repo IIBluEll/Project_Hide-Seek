@@ -2106,7 +2106,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b63d4867a00f3be4886e624797a9e7ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIMovement
-  _config: {fileID: 11400000, guid: a84d3f340b443b546867f508b4c1bb8f, type: 2}
+  _config: {fileID: 11400000, guid: f8ed512f2c4b53d4abc82448c7d7abbb, type: 2}
 --- !u!195 &1526055474
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -2237,7 +2237,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1c1f2bb79acfe74eb440f3e2bbc6a49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIPerception
-  _config: {fileID: 11400000, guid: a84d3f340b443b546867f508b4c1bb8f, type: 2}
+  _config: {fileID: 11400000, guid: f8ed512f2c4b53d4abc82448c7d7abbb, type: 2}
   _eyeTransform: {fileID: 1305212776}
   _targetTransform: {fileID: 8509481}
   _obstacleMask:
@@ -2256,7 +2256,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f75bc5a65deb0642a97e07e73227cf7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIController
-  _config: {fileID: 11400000, guid: a84d3f340b443b546867f508b4c1bb8f, type: 2}
+  _config: {fileID: 11400000, guid: f8ed512f2c4b53d4abc82448c7d7abbb, type: 2}
   _movement: {fileID: 1526055473}
   _perception: {fileID: 1526055480}
   _patrolPoints:

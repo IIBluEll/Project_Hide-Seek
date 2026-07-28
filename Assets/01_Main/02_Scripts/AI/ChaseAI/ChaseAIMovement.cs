@@ -34,7 +34,10 @@ namespace HideSeek.AI
         private bool _hasDestination;
 
         public Vector3 CurrentDestination => _currentDestination;
+        public Vector3 Position => transform.position;
+
         public bool HasDestination => _hasDestination;
+        public int AreaMask => _agent != null ? _agent.areaMask : NavMesh.AllAreas;
 
         private void Awake()
         {

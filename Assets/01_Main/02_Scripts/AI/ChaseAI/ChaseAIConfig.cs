@@ -39,6 +39,12 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _minAudioSearchDuration = 2f;
         [SerializeField, Min(0f)] private float _maxAudioSearchDuration = 8f;
 
+        [Header("Search")]
+        [SerializeField, Min(0f)] private float _visualSearchRadius = 5f;
+        [SerializeField, Min(1)] private int _searchPointCount = 3;
+        [SerializeField, Min(0f)] private float _minimumSearchPointDistance = 1.5f;
+        [SerializeField, Min(1)] private int _searchPointGenerationAttemptCountPerPoint = 10;
+
         [Header("State Machine")]
         [SerializeField, Min(0f)] private float _chaseSpeed = 5.5f;
         [SerializeField, Min(0f)] private float _patrolWaitTime = 1f;
@@ -74,6 +80,11 @@ namespace HideSeek.AI
         public float MaxAudioSearchRadius => _maxAudioSearchRadius;
         public float MinAudioSearchDuration => _minAudioSearchDuration;
         public float MaxAudioSearchDuration => _maxAudioSearchDuration;
+
+        public float VisualSearchRadius => _visualSearchRadius;
+        public int SearchPointCount => _searchPointCount;
+        public float MinimumSearchPointDistance => _minimumSearchPointDistance;
+        public int SearchPointGenerationAttemptCountPerPoint => _searchPointGenerationAttemptCountPerPoint;
 
         public float ChaseSpeed => _chaseSpeed;
         public float PatrolWaitTime => _patrolWaitTime;
