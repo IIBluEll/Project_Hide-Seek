@@ -98,6 +98,16 @@ namespace HideSeek.AI
             return CHASE_AI_MOVE_REQUEST_RESULT.ACCEPTED;
         }
 
+        public void SetSpeed(float speed)
+        {
+            if ( _agent == null )
+            {
+                return;
+            }
+
+            _agent.speed = Mathf.Max(0f , speed);
+        }
+
         public CHASE_AI_MOVE_STATUS UpdateMovement(float deltaTime)
         {
             if ( !_hasDestination )
