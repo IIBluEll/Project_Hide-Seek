@@ -33,6 +33,20 @@ namespace HideSeek.AI
         [SerializeField, Min(0.1f)] private float _strongNoiseEvidenceDuration = 8f;
         [SerializeField, Min(0f)] private float _strongNoiseThreshold = 0.5f;
 
+        [Header("Audio Search")]
+        [SerializeField, Min(0f)] private float _minAudioSearchRadius = 2f;
+        [SerializeField, Min(0f)] private float _maxAudioSearchRadius = 8f;
+        [SerializeField, Min(0f)] private float _minAudioSearchDuration = 2f;
+        [SerializeField, Min(0f)] private float _maxAudioSearchDuration = 8f;
+
+        [Header("State Machine")]
+        [SerializeField, Min(0f)] private float _chaseSpeed = 5.5f;
+        [SerializeField, Min(0f)] private float _patrolWaitTime = 1f;
+        [SerializeField, Min(0f)] private float _investigateWaitTime = 2f;
+        [SerializeField, Min(0f)] private float _searchWaitTime = 3f;
+        [SerializeField, Min(0.02f)] private float _chaseRepathInterval = 0.2f;
+        [SerializeField, Min(0f)] private float _chaseDestinationUpdateDistance = 0.5f;
+
         public float WalkSpeed => _walkSpeed;
         public float Acceleration => _acceleration;
         public float AngularSpeed => _angularSpeed;
@@ -55,5 +69,18 @@ namespace HideSeek.AI
         public float WeakNoiseEvidenceDuration => _weakNoiseEvidenceDuration;
         public float StrongNoiseEvidenceDuration => _strongNoiseEvidenceDuration;
         public float StrongNoiseThreshold => _strongNoiseThreshold;
+
+        public float MinAudioSearchRadius => _minAudioSearchRadius;
+        public float MaxAudioSearchRadius => _maxAudioSearchRadius;
+        public float MinAudioSearchDuration => _minAudioSearchDuration;
+        public float MaxAudioSearchDuration => _maxAudioSearchDuration;
+
+        public float ChaseSpeed => _chaseSpeed;
+        public float PatrolWaitTime => _patrolWaitTime;
+        public float InvestigateWaitTime => _investigateWaitTime;
+        public float SearchWaitTime => _searchWaitTime;
+        public float ChaseRepathInterval => _chaseRepathInterval;
+
+        public float ChaseDestinationUpdateDistance => _chaseDestinationUpdateDistance;
     }
 }

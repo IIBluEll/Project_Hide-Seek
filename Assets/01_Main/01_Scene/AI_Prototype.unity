@@ -2085,7 +2085,6 @@ GameObject:
   - component: {fileID: 1526055475}
   - component: {fileID: 1526055474}
   - component: {fileID: 1526055473}
-  - component: {fileID: 1526055472}
   - component: {fileID: 1526055480}
   - component: {fileID: 1526055481}
   m_Layer: 0
@@ -2095,26 +2094,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1526055472
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1526055471}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a6a9af00b05f0eb45b6fe40a68061cd4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIMovementTester
-  _chaseAIMovement: {fileID: 1526055473}
-  _patrolPoints:
-  - {fileID: 366883987}
-  - {fileID: 116641023}
-  - {fileID: 361628857}
-  - {fileID: 912787938}
-  - {fileID: 2014144117}
-  _waitTime: 1
 --- !u!114 &1526055473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2274,11 +2253,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 1526055471}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 376c520d00c650c46b98e732a23a8f72, type: 3}
+  m_Script: {fileID: 11500000, guid: 9f75bc5a65deb0642a97e07e73227cf7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIMemoryTester
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIController
   _config: {fileID: 11400000, guid: a84d3f340b443b546867f508b4c1bb8f, type: 2}
+  _movement: {fileID: 1526055473}
   _perception: {fileID: 1526055480}
+  _patrolPoints:
+  - {fileID: 366883987}
+  - {fileID: 116641023}
+  - {fileID: 361628857}
+  - {fileID: 912787938}
+  - {fileID: 2014144117}
 --- !u!1 &1558573760
 GameObject:
   m_ObjectHideFlags: 0
@@ -2638,7 +2624,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.NoiseEmitter
   _noiseType: 2
-  _radius: 10
+  _radius: 50
   _intensity: 1
 --- !u!4 &1955149790
 Transform:
@@ -2649,7 +2635,7 @@ Transform:
   m_GameObject: {fileID: 1955149788}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6.36318, y: 0, z: -49.08}
+  m_LocalPosition: {x: -33.1, y: 0, z: 2.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
