@@ -217,7 +217,7 @@ namespace HideSeek.AI
             return failureStatus;
         }
 
-        private void OnDrawGizmosSelected()
+        private void OnDrawGizmos()
         {
             if ( !_hasDestination )
             {

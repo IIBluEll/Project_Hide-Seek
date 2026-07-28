@@ -227,7 +227,7 @@ Transform:
   m_GameObject: {fileID: 8509477}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -13.09, y: 1, z: -8.12}
+  m_LocalPosition: {x: -52.1, y: 1, z: -40.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2087,7 +2087,7 @@ GameObject:
   - component: {fileID: 1526055473}
   - component: {fileID: 1526055472}
   - component: {fileID: 1526055480}
-  - component: {fileID: 1526055479}
+  - component: {fileID: 1526055481}
   m_Layer: 0
   m_Name: ChaseAI
   m_TagString: Untagged
@@ -2246,19 +2246,6 @@ Transform:
   - {fileID: 1305212776}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1526055479
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1526055471}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa6ff9be24515284f984f4c640e42587, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIPerceptionTester
-  _perception: {fileID: 1526055480}
 --- !u!114 &1526055480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2278,6 +2265,20 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _hearingTransform: {fileID: 1305212776}
+--- !u!114 &1526055481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1526055471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 376c520d00c650c46b98e732a23a8f72, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIMemoryTester
+  _config: {fileID: 11400000, guid: a84d3f340b443b546867f508b4c1bb8f, type: 2}
+  _perception: {fileID: 1526055480}
 --- !u!1 &1558573760
 GameObject:
   m_ObjectHideFlags: 0

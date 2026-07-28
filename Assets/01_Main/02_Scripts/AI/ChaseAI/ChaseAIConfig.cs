@@ -27,6 +27,12 @@ namespace HideSeek.AI
         [SerializeField, Min(0.01f)] private float _visualConfirmTime = 0.8f;
         [SerializeField, Min(0.01f)] private float _visualLoseTime = 0.3f;
 
+        [Header("Memory")]
+        [SerializeField, Min(0.1f)] private float _visualEvidenceDuration = 10f;
+        [SerializeField, Min(0.1f)] private float _weakNoiseEvidenceDuration = 4f;
+        [SerializeField, Min(0.1f)] private float _strongNoiseEvidenceDuration = 8f;
+        [SerializeField, Min(0f)] private float _strongNoiseThreshold = 0.5f;
+
         public float WalkSpeed => _walkSpeed;
         public float Acceleration => _acceleration;
         public float AngularSpeed => _angularSpeed;
@@ -44,5 +50,10 @@ namespace HideSeek.AI
         public float VerticalSightAngle => _verticalSightAngle;
         public float VisualConfirmTime => _visualConfirmTime;
         public float VisualLoseTime => _visualLoseTime;
+
+        public float VisualEvidenceDuration => _visualEvidenceDuration;
+        public float WeakNoiseEvidenceDuration => _weakNoiseEvidenceDuration;
+        public float StrongNoiseEvidenceDuration => _strongNoiseEvidenceDuration;
+        public float StrongNoiseThreshold => _strongNoiseThreshold;
     }
 }
