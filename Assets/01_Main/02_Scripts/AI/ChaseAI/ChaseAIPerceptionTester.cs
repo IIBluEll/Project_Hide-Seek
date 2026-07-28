@@ -30,5 +30,41 @@ namespace HideSeek.AI
 
             _previousState = observation.State;
         }
+
+        private void OnEnable()
+        {
+            if ( _perception == null )
+            {
+                return;
+            }
+
+            _perception.NoiseDetected -= OnNoiseDetected;
+            _perception.NoiseDetected += OnNoiseDetected;
+        }
+
+        private void OnDisable()
+        {
+            if ( _perception == null )
+            {
+                return;
+            }
+
+            _perception.NoiseDetected -= OnNoiseDetected;
+        }
+
+        private void OnNoiseDetected(ChaseAIAudioObservation observation)
+        {
+            NoiseData noiseData = observation.NoiseData;
+
+            string sourceName = noiseData.SourceObj != null ? noiseData.SourceObj.name : "Unknown";
+
+            Debug.Log(
+                $"[PerceptionTester] 소음 감지: " +
+                $"Type={noiseData.NoiseType}, " +
+                $"Source={sourceName}, " +
+                $"Distance={observation.Distance:F1}, " +
+                $"Intensity={observation.PerceivedIntensity:F2}" ,
+                this);
+        }
     }
 }
