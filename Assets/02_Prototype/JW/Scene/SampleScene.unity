@@ -131,8 +131,6 @@ GameObject:
   - component: {fileID: 258058087}
   - component: {fileID: 258058086}
   - component: {fileID: 258058089}
-  - component: {fileID: 258058090}
-  - component: {fileID: 258058091}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -258,61 +256,6 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!114 &258058090
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258058085}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 422564f4449ae484b9886c7f888ee5d0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RotationController
-  _owner: {fileID: 258058088}
-  _horizontal:
-    CurrentRotation: {x: 0, y: 0, z: 0}
-    Torque: 0
-    MinAngle: 0
-    MaxAngle: 0
-  _vertical:
-    CurrentRotation: {x: 0, y: 0, z: 0}
-    Torque: 2
-    MinAngle: -50
-    MaxAngle: 60
-  _isHorizontalOn: 0
-  _isVerticalOn: 1
---- !u!114 &258058091
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258058085}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
-  m_Actions: {fileID: -944628639613478452, guid: baf33c2c6320601488fa6e982f10c1e9, type: 3}
-  m_NotificationBehavior: 0
-  m_UIInputModule: {fileID: 0}
-  m_DeviceLostEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_DeviceRegainedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ControlsChangedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ActionEvents: []
-  m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: Keyboard&Mouse
-  m_DefaultActionMap: Player
-  m_SplitScreenIndex: -1
-  m_Camera: {fileID: 0}
 --- !u!1001 &960835771
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -331,7 +274,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1163860009477386, guid: f784e1949da3ada41a6d04f0fcc6e70c, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1169032615415646, guid: f784e1949da3ada41a6d04f0fcc6e70c, type: 3}
       propertyPath: m_IsActive
@@ -377,6 +320,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 95279650404758946, guid: f784e1949da3ada41a6d04f0fcc6e70c, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 82f0f3f3bad080b47ab13a66fdf2a631, type: 2}
+    - target: {fileID: 95279650404758946, guid: f784e1949da3ada41a6d04f0fcc6e70c, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -395,10 +346,10 @@ PrefabInstance:
       addedObject: {fileID: 960835777}
     - targetCorrespondingSourceObject: {fileID: 1004905332525254, guid: f784e1949da3ada41a6d04f0fcc6e70c, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 960835778}
+      addedObject: {fileID: 960835779}
     - targetCorrespondingSourceObject: {fileID: 1004905332525254, guid: f784e1949da3ada41a6d04f0fcc6e70c, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 960835779}
+      addedObject: {fileID: 960835778}
   m_SourcePrefab: {fileID: 100100000, guid: f784e1949da3ada41a6d04f0fcc6e70c, type: 3}
 --- !u!1 &960835772 stripped
 GameObject:
@@ -469,8 +420,8 @@ MonoBehaviour:
     WalkSpeed: 2
     RunSpeed: 3
   _controller: {fileID: 960835778}
+  _animator: {fileID: 960835780}
   _jumpHeight: 1.5
-  CurrentMoveSpeed: 0
 --- !u!143 &960835778
 CharacterController:
   m_ObjectHideFlags: 0
@@ -489,7 +440,7 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 1.8
+  m_Height: 1.6
   m_Radius: 0.3
   m_SlopeLimit: 45
   m_StepOffset: 0.3
@@ -508,19 +459,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 422564f4449ae484b9886c7f888ee5d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RotationController
-  _owner: {fileID: 960835776}
-  _horizontal:
-    CurrentRotation: {x: 0, y: 0, z: 0}
-    Torque: 5
-    MinAngle: 0
-    MaxAngle: 0
-  _vertical:
-    CurrentRotation: {x: 0, y: 0, z: 0}
-    Torque: 0
-    MinAngle: 0
-    MaxAngle: 0
-  _isHorizontalOn: 1
-  _isVerticalOn: 0
+  _playerBody: {fileID: 960835776}
+  _cameraTrans: {fileID: 2071398216}
+  _mouseSensitive: 0.01
+  _minPitch: -50
+  _maxPitch: 60
+--- !u!95 &960835780 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 95279650404758946, guid: f784e1949da3ada41a6d04f0fcc6e70c, type: 3}
+  m_PrefabInstance: {fileID: 960835771}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1181784995
 GameObject:
   m_ObjectHideFlags: 0
@@ -644,7 +592,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2071398216}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

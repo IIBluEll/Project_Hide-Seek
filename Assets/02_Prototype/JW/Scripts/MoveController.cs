@@ -10,26 +10,18 @@ public struct MoveSpeed
     public float RunSpeed;
 }
 
-public enum MOVETYPE_ENUM
-{
-    None,
-    Crouch,
-    Walk,
-    Run
-}
-
 public enum POSTURE_STATE_ENUM
 {
-    Standing,
-    Crouch
+    STANDING,
+    CROUCH
 }
 
 public enum LOCOMOTION_STATE_ENUM
 {
-    Idle,
-    Walk,
-    Run,
-    Airborne
+    IDLE,
+    WALK,
+    RUN,
+    AIR
 }
 
 //상태 패턴
@@ -47,12 +39,12 @@ public class MoveController : MonoBehaviour
 {
     [SerializeField] private MoveSpeed _moveSpeed;
     [SerializeField] private CharacterController _controller;
+    [SerializeField] private Animator _animator;
     [SerializeField] private float _jumpHeight = 1.5f;
     private readonly float _gravity = -9.81f;
 
-
-    private POSTURE_STATE_ENUM _posture = POSTURE_STATE_ENUM.Standing;
-    private LOCOMOTION_STATE_ENUM _locomotion = LOCOMOTION_STATE_ENUM.Idle;
+    private POSTURE_STATE_ENUM _posture = POSTURE_STATE_ENUM.STANDING;
+    private LOCOMOTION_STATE_ENUM _locomotion = LOCOMOTION_STATE_ENUM.IDLE;
 
     private Vector3 _moveDir;
     private float _jumpVelocity;
@@ -66,23 +58,28 @@ public class MoveController : MonoBehaviour
             _controller = this.GetComponent<CharacterController>();
     }
 
-    public float CurrentMoveSpeed;
-
     private void Update()
     {
         SetPostureLocomotion();
 
         UpdateVerticalVelocity();
 
-        CurrentMoveSpeed = GetMoveSpeed();
-
         _moveDir.y = _jumpVelocity;
-        _controller.Move(_moveDir * Time.deltaTime * GetMoveSpeed());
+
+        _animator.SetFloat("XMove", _moveDir.x);
+        _animator.SetFloat("ZMove", _moveDir.z);
+
+        Vector3 moveDir = transform.right * _moveDir.x + transform.forward * _moveDir.z;
+        moveDir = Vector3.ClampMagnitude(moveDir, 1f);
+
+        Vector3 velocity = moveDir * GetMoveSpeed();
+        velocity.y = _jumpVelocity;
+
+        _controller.Move(velocity * Time.deltaTime);
     }
 
     private void UpdateVerticalVelocity()
     {
-        // 바닥에 붙어 있도록 작은 하강 속도를 유지
         if (_controller.isGrounded && _jumpVelocity < 0f)
         {
             _jumpVelocity = -2f;
@@ -95,7 +92,6 @@ public class MoveController : MonoBehaviour
                 _jumpVelocity = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
             }
 
-            // 입력 요청은 성공 여부와 관계없이 한 번만 처리
             _jumpRequest = false;
         }
 
@@ -106,37 +102,37 @@ public class MoveController : MonoBehaviour
     {
         if (_moveDir == Vector3.zero)
         {
-            _locomotion = LOCOMOTION_STATE_ENUM.Idle;
+            _locomotion = LOCOMOTION_STATE_ENUM.IDLE;
         }
         else
         {
             if (_isRun)
-                _locomotion = LOCOMOTION_STATE_ENUM.Run;
+                _locomotion = LOCOMOTION_STATE_ENUM.RUN;
             else
-                _locomotion = LOCOMOTION_STATE_ENUM.Walk;
+                _locomotion = LOCOMOTION_STATE_ENUM.WALK;
         }
 
         if (_jumpRequest)
-            _locomotion = LOCOMOTION_STATE_ENUM.Airborne;
+            _locomotion = LOCOMOTION_STATE_ENUM.AIR;
 
         if (_isCrouch)
-            _posture = POSTURE_STATE_ENUM.Crouch;
+            _posture = POSTURE_STATE_ENUM.CROUCH;
         else
-            _posture = POSTURE_STATE_ENUM.Standing;
+            _posture = POSTURE_STATE_ENUM.STANDING;
     }
     private float GetMoveSpeed()
     {
-        if (_locomotion == LOCOMOTION_STATE_ENUM.Idle)
+        if (_locomotion == LOCOMOTION_STATE_ENUM.IDLE)
             return 0f;
 
-        if (_posture == POSTURE_STATE_ENUM.Crouch)
+        if (_posture == POSTURE_STATE_ENUM.CROUCH)
             return _moveSpeed.CrouchSpeed;
 
         return _locomotion switch
         {
-            LOCOMOTION_STATE_ENUM.Walk => _moveSpeed.WalkSpeed,
-            LOCOMOTION_STATE_ENUM.Run => _moveSpeed.RunSpeed,
-            LOCOMOTION_STATE_ENUM.Airborne => _moveSpeed.WalkSpeed,
+            LOCOMOTION_STATE_ENUM.WALK => _moveSpeed.WalkSpeed,
+            LOCOMOTION_STATE_ENUM.RUN => _moveSpeed.RunSpeed,
+            LOCOMOTION_STATE_ENUM.AIR => _moveSpeed.WalkSpeed,
             _ => 0f
         };
     }
@@ -152,7 +148,17 @@ public class MoveController : MonoBehaviour
     void OnCrouch(InputValue value)
     {
         Debug.Log(value.isPressed);
-        _isCrouch = value.isPressed;
+
+        if (!value.isPressed)
+            return;
+
+        _isCrouch = !_isCrouch;
+
+        if (_isCrouch)
+            _isRun = false;
+
+        _animator.SetBool("IsCrouch", _isCrouch);
+        _animator.SetBool("IsRun", _isRun);
     }
     void OnJump(InputValue value)
     {
@@ -167,6 +173,12 @@ public class MoveController : MonoBehaviour
     {
         Debug.Log($"Run : {value.isPressed}");
         _isRun = value.isPressed;
+
+        if (_isRun)
+            _isCrouch = false;
+
+        _animator.SetBool("IsRun", _isRun);
+        _animator.SetBool("IsCrouch", _isCrouch);
     }
 
 }
