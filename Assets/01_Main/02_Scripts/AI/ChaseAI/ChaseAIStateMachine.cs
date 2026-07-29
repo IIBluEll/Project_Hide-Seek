@@ -23,6 +23,9 @@ namespace HideSeek.AI
         private readonly ChaseAISearch _search;
         private readonly IReadOnlyList<Transform> _patrolPoints;
 
+        private MasterAIHint _activeDirectorHint;
+        private bool _hasActiveDirectorInvestigation;
+
         private int _currentPatrolPointIndex;
 
         private float _stateTimer;
@@ -72,6 +75,7 @@ namespace HideSeek.AI
             _movement.Stop();
             ClearSearch();
             ClearAudioInvestigation();
+            ClearDirectorInvestigation();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
             _retreatPosition = Vector3.zero;
@@ -184,6 +188,31 @@ namespace HideSeek.AI
             }
         }
 
+        public bool TryReceiveDirectorHint(MasterAIHint hint , float currentTime)
+        {
+            if ( CurrentState != CHASE_AI_STATE.PATROL )
+            {
+                return false;
+            }
+
+            if ( !hint.IsValid(currentTime) )
+            {
+                return false;
+            }
+
+            if ( _hasActiveAudioInvestigation || _memory.HasValidVisualEvidence(currentTime) || _memory.HasValidAudioEvidence(currentTime) )
+            {
+                return false;
+            }
+
+            _activeDirectorHint = hint;
+            _hasActiveDirectorInvestigation = true;
+
+            ChangeState(CHASE_AI_STATE.INVESTIGATE , "Director hint accepted");
+
+            return CurrentState == CHASE_AI_STATE.INVESTIGATE;
+        }
+
         public bool TryReceiveAudioEvidence(ChaseAIAudioObservation observation)
         {
             if ( CurrentState == CHASE_AI_STATE.CHASE || CurrentState == CHASE_AI_STATE.DORMANT || CurrentState == CHASE_AI_STATE.RETREAT )
@@ -204,6 +233,8 @@ namespace HideSeek.AI
 
                 return false;
             }
+
+            ClearDirectorInvestigation();
 
             _audioSearchPosition = observation.NoiseData.Position;
 
@@ -248,6 +279,7 @@ namespace HideSeek.AI
             _movement.Stop();
             ClearSearch();
             ClearAudioInvestigation();
+            ClearDirectorInvestigation();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
             _isWaiting = false;
@@ -256,6 +288,12 @@ namespace HideSeek.AI
             _hasRetreatFailed = false;
 
             _stateTimer = 0f;
+        }
+
+        private void ClearDirectorInvestigation()
+        {
+            _activeDirectorHint = default;
+            _hasActiveDirectorInvestigation = false;
         }
 
         private void UpdatePatrol(float deltaTime)
@@ -296,7 +334,9 @@ namespace HideSeek.AI
             {
                 if ( !UpdateWaiting(deltaTime) )
                 {
-                    ChangeState(CHASE_AI_STATE.SEARCH , "Audio position investigation completed");
+                    string completedEvidence = _hasActiveAudioInvestigation ? "Audio evidence" : "Director hint";
+
+                    ChangeState(CHASE_AI_STATE.SEARCH , $"{completedEvidence} investigation completed");
                 }
 
                 return;
@@ -490,6 +530,7 @@ namespace HideSeek.AI
         {
             ClearSearch();
             ClearAudioInvestigation();
+            ClearDirectorInvestigation();
 
             _retreatPosition = Vector3.zero;
             _isRetreatPending = false;
@@ -500,6 +541,7 @@ namespace HideSeek.AI
         {
             ClearSearch();
             ClearAudioInvestigation();
+            ClearDirectorInvestigation();
 
             _movement.SetSpeed(_config.WalkSpeed);
 
@@ -513,6 +555,7 @@ namespace HideSeek.AI
         {
             ClearSearch();
             ClearAudioInvestigation();
+            ClearDirectorInvestigation();
 
             _movement.SetSpeed(_config.WalkSpeed);
             RequestCurrentPatrolPoint();
@@ -523,16 +566,44 @@ namespace HideSeek.AI
             ClearSearch();
             _movement.SetSpeed(_config.WalkSpeed);
 
-            if ( !RequestAudioEvidenceDestination() )
+            if ( _hasActiveAudioInvestigation )
             {
-                ChangeState(CHASE_AI_STATE.PATROL , "Audio evidence destination invalid");
+                if ( !RequestAudioEvidenceDestination() )
+                {
+                    ChangeState(CHASE_AI_STATE.PATROL , "Audio evidence destination invalid");
+                }
+
+                return;
             }
+
+            if ( _hasActiveDirectorInvestigation )
+            {
+                if ( !RequestDirectorHintDestination() )
+                {
+                    ChangeState(CHASE_AI_STATE.PATROL , "Director hint destination invalid");
+                }
+
+                return;
+            }
+
+            ChangeState(CHASE_AI_STATE.PATROL , "No investigation evidence");
+        }
+
+        private bool RequestDirectorHintDestination()
+        {
+            if ( !_hasActiveDirectorInvestigation )
+            {
+                return false;
+            }
+
+            return RequestDestination(_activeDirectorHint.SearchAnchorPosition , "Director hint");
         }
 
         private void EnterChase()
         {
             ClearSearch();
             ClearAudioInvestigation();
+            ClearDirectorInvestigation();
 
             _movement.SetSpeed(_config.ChaseSpeed);
             _chaseRepathTimer = 0f;
@@ -547,7 +618,12 @@ namespace HideSeek.AI
             {
                 Debug.Log($"[ChaseAIStateMachine] 청각 수색 시작: Position={_audioSearchPosition}, Radius={_audioSearchRadius:F1}, Duration={_audioSearchDuration:F1}");
 
-                PrepareSearch(_audioSearchPosition , _audioSearchRadius , _audioSearchDuration , false , "Audio search center");
+                PrepareSearch(
+                    _audioSearchPosition ,
+                    _audioSearchRadius ,
+                    _audioSearchDuration ,
+                    false ,
+                    "Audio search center");
 
                 return;
             }
@@ -556,17 +632,43 @@ namespace HideSeek.AI
 
             if ( _memory.HasValidVisualEvidence(currentTime) )
             {
-                PrepareSearch(_memory.VisualEvidence.Position , _config.VisualSearchRadius , _config.SearchWaitTime , true , "Last seen position");
+                PrepareSearch(
+                    _memory.VisualEvidence.Position ,
+                    _config.VisualSearchRadius ,
+                    _config.SearchWaitTime ,
+                    true ,
+                    "Last seen position");
+
                 return;
             }
 
             if ( _memory.HasValidAudioEvidence(currentTime) )
             {
                 float intensity = Mathf.Clamp01(_memory.AudioEvidence.Strength);
-                float searchRadius = Mathf.Lerp(_config.MaxAudioSearchRadius, _config.MinAudioSearchRadius, intensity);
-                float searchDuration = Mathf.Lerp(_config.MinAudioSearchDuration, _config.MaxAudioSearchDuration, intensity);
+                float searchRadius = Mathf.Lerp(_config.MaxAudioSearchRadius , _config.MinAudioSearchRadius , intensity);
+                float searchDuration = Mathf.Lerp(_config.MinAudioSearchDuration , _config.MaxAudioSearchDuration , intensity);
 
-                PrepareSearch(_memory.AudioEvidence.Position , searchRadius , searchDuration , true , "Last heard position");
+                PrepareSearch(
+                    _memory.AudioEvidence.Position ,
+                    searchRadius ,
+                    searchDuration ,
+                    true ,
+                    "Last heard position");
+
+                return;
+            }
+
+            if ( _hasActiveDirectorInvestigation )
+            {
+                Debug.Log($"[ChaseAIStateMachine] Director Hint 수색 시작: Zone={_activeDirectorHint.TargetZoneId}, Position={_activeDirectorHint.SearchAnchorPosition}, Radius={_activeDirectorHint.SearchRadius:F1}, Urgency={_activeDirectorHint.Urgency:F2}");
+
+                PrepareSearch(
+                    _activeDirectorHint.SearchAnchorPosition ,
+                    _activeDirectorHint.SearchRadius ,
+                    _config.SearchWaitTime ,
+                    false ,
+                    "Director hint search center");
+
                 return;
             }
 
