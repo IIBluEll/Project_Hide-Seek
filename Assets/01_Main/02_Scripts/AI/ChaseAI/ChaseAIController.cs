@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -19,7 +20,11 @@ namespace HideSeek.AI
 
         private bool _isInitialized;
 
+        public event Action RetreatFailed;
+
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
+
+        public bool IsRetreatPending => _stateMachine != null && _stateMachine.IsRetreatPending;
 
         private void Awake()
         {
@@ -53,7 +58,7 @@ namespace HideSeek.AI
 
         private void Update()
         {
-            if ( !_isInitialized )
+            if ( !_isInitialized || _stateMachine.CurrentState == CHASE_AI_STATE.DORMANT )
             {
                 return;
             }
@@ -68,6 +73,35 @@ namespace HideSeek.AI
             _memory.UpdateMemory(Time.time);
 
             _stateMachine.Tick(Time.deltaTime, visualObservation);
+            ReportRetreatFailure();
+        }
+
+        public bool RequestActivation()
+        {
+            if ( !_isInitialized || _stateMachine == null )
+            {
+                Debug.LogWarning("[ChaseAIController] 초기화 전에 출현을 요청할 수 없습니다." , this);
+
+                return false;
+            }
+
+            return _stateMachine.RequestActivation();
+        }
+
+        public bool RequestRetreat(Vector3 retreatPosition)
+        {
+            if ( !_isInitialized || _stateMachine == null )
+            {
+                Debug.LogWarning("[ChaseAIController] 초기화 전에 이탈을 요청할 수 없습니다." , this);
+
+                return false;
+            }
+
+            bool wasAccepted = _stateMachine.RequestRetreat(retreatPosition);
+
+            ReportRetreatFailure();
+
+            return wasAccepted;
         }
 
         private void OnDisable()
@@ -78,6 +112,16 @@ namespace HideSeek.AI
             }
 
             _stateMachine?.Stop();
+        }
+
+        private void ReportRetreatFailure()
+        {
+            if ( _stateMachine == null || !_stateMachine.ConsumeRetreatFailure() )
+            {
+                return;
+            }
+
+            RetreatFailed?.Invoke();
         }
 
         private void OnNoiseDetected(ChaseAIAudioObservation observation)
@@ -97,6 +141,18 @@ namespace HideSeek.AI
             float duration = observation.PerceivedIntensity >= _config.StrongNoiseThreshold ? _config.StrongNoiseEvidenceDuration : _config.WeakNoiseEvidenceDuration;
 
             _memory.RecordAudioEvidence(observation, duration);
+        }
+
+        public bool TryReceiveDirectorHint(MasterAIHint hint)
+        {
+            if ( !_isInitialized || _stateMachine == null )
+            {
+                Debug.LogWarning("[ChaseAIController] 초기화 전에 Director Hint를 전달할 수 없습니다." , this);
+
+                return false;
+            }
+
+            return _stateMachine.TryReceiveDirectorHint(hint , Time.time);
         }
 
         private bool ValidateReferences()
