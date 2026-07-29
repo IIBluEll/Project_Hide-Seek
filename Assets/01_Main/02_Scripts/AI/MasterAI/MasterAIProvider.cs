@@ -147,7 +147,21 @@ namespace HideSeek.AI
                 case MASTER_AI_COMMAND.RETREAT:
                     ProcessRetreatCommand();
                     break;
+
+                case MASTER_AI_COMMAND.DIRECTOR_HINT:
+                    ProcessDirectorHintCommand();
+                    break;
             }
+        }
+
+        private void ProcessDirectorHintCommand()
+        {
+            if ( !TrySelectTargetZone() )
+            {
+                return;
+            }
+
+            GenerateDirectorHint();
         }
 
         private bool TrySelectTargetZone()
@@ -268,6 +282,17 @@ namespace HideSeek.AI
 
             _currentHint = createdHint;
             _hasCurrentHint = true;
+
+            bool wasAccepted = _chaseAIController.TryReceiveDirectorHint(_currentHint);
+
+            if ( wasAccepted )
+            {
+                Debug.Log("[MasterAIProvider] Director Hint 전달 성공" , this);
+            }
+            else
+            {
+                Debug.LogWarning($"[MasterAIProvider] Director Hint 전달 거부: ChaseState={_chaseAIController.CurrentState}" , this);
+            }
 
             Debug.Log($"[MasterAIProvider] Director Hint 생성: Zone={_currentHint.TargetZoneId}, Anchor={_currentHint.SearchAnchorPosition}, Radius={_currentHint.SearchRadius:F1}, Urgency={_currentHint.Urgency:F2}, Duration={_currentHint.ExpireTime - Time.time:F1}" , this);
         }

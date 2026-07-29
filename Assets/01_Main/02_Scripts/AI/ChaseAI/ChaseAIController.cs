@@ -143,6 +143,18 @@ namespace HideSeek.AI
             _memory.RecordAudioEvidence(observation, duration);
         }
 
+        public bool TryReceiveDirectorHint(MasterAIHint hint)
+        {
+            if ( !_isInitialized || _stateMachine == null )
+            {
+                Debug.LogWarning("[ChaseAIController] 초기화 전에 Director Hint를 전달할 수 없습니다." , this);
+
+                return false;
+            }
+
+            return _stateMachine.TryReceiveDirectorHint(hint , Time.time);
+        }
+
         private bool ValidateReferences()
         {
             if ( _config == null )

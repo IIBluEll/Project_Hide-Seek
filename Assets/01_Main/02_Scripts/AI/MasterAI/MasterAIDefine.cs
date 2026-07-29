@@ -10,6 +10,7 @@ namespace HideSeek.AI
     {
         NONE,
         ACTIVATE,
+        DIRECTOR_HINT,
         RETREAT
     }
 

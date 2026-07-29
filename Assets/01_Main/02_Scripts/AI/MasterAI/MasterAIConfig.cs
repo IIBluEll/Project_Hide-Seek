@@ -36,6 +36,8 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _hintDuration = 5f;
         [SerializeField, Min(0.1f)] private float _hintNavMeshSampleRadius = 2f;
         [SerializeField, Min(1)] private int _hintPositionAttemptCount = 10;
+        [SerializeField, Min(0f)] private float _minimumHintInterval = 8f;
+        [SerializeField, Min(0f)] private float _maximumHintInterval = 14f;
 
         public float MaximumGlobalStress => _maximumGlobalStress;
         public float ChaseStressIncreaseRate => _chaseStressIncreaseRate;
@@ -63,6 +65,8 @@ namespace HideSeek.AI
         public float HintDuration => _hintDuration;
         public float HintNavMeshSampleRadius => _hintNavMeshSampleRadius;
         public int HintPositionAttemptCount => _hintPositionAttemptCount;
+        public float MinimumHintInterval => _minimumHintInterval;
+        public float MaximumHintInterval => _maximumHintInterval;
 
         private void OnValidate()
         {
@@ -70,6 +74,7 @@ namespace HideSeek.AI
             _maximumHintRadius = Mathf.Max(_minimumHintRadius , _maximumHintRadius);
             _maximumHintUrgency = Mathf.Max(_minimumHintUrgency , _maximumHintUrgency);
             _hintPositionAttemptCount = Mathf.Max(1 , _hintPositionAttemptCount);
+            _maximumHintInterval = Mathf.Max(_minimumHintInterval , _maximumHintInterval);
         }
     }
 }
