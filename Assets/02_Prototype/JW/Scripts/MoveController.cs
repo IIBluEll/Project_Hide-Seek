@@ -180,5 +180,4 @@ public class MoveController : MonoBehaviour
         _animator.SetBool("IsRun", _isRun);
         _animator.SetBool("IsCrouch", _isCrouch);
     }
-
 }
