@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -18,6 +19,8 @@ namespace HideSeek.AI
         private ChaseAIStateMachine _stateMachine;
 
         private bool _isInitialized;
+
+        public event Action RetreatFailed;
 
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
 
@@ -70,6 +73,7 @@ namespace HideSeek.AI
             _memory.UpdateMemory(Time.time);
 
             _stateMachine.Tick(Time.deltaTime, visualObservation);
+            ReportRetreatFailure();
         }
 
         public bool RequestActivation()
@@ -93,7 +97,11 @@ namespace HideSeek.AI
                 return false;
             }
 
-            return _stateMachine.RequestRetreat(retreatPosition);
+            bool wasAccepted = _stateMachine.RequestRetreat(retreatPosition);
+
+            ReportRetreatFailure();
+
+            return wasAccepted;
         }
 
         private void OnDisable()
@@ -104,6 +112,16 @@ namespace HideSeek.AI
             }
 
             _stateMachine?.Stop();
+        }
+
+        private void ReportRetreatFailure()
+        {
+            if ( _stateMachine == null || !_stateMachine.ConsumeRetreatFailure() )
+            {
+                return;
+            }
+
+            RetreatFailed?.Invoke();
         }
 
         private void OnNoiseDetected(ChaseAIAudioObservation observation)
