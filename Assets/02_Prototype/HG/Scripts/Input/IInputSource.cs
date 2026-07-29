@@ -19,12 +19,10 @@ namespace HideSeek.Generators
     public sealed class KeyboardInputSource : IInputSource
     {
         private readonly Key INPUT_KEY;
-        private readonly string KEY_LABEL;
 
-        public KeyboardInputSource(Key inputKey , string keyLabel)
+        public KeyboardInputSource(Key inputKey)
         {
             INPUT_KEY = inputKey;
-            KEY_LABEL = keyLabel;
         }
 
         public bool IsQteKeyDown()
@@ -38,7 +36,7 @@ namespace HideSeek.Generators
 
         public string GetQteKeyLabel()
         {
-            return KEY_LABEL ?? string.Empty;
+            return INPUT_KEY.ToString();
         }
     }
 }

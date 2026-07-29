@@ -71,10 +71,7 @@ namespace HideSeek.Generators
         private void OnQteStartedActioned(QteChallenge challenge)
         {
             GENERATOR_QTE_VIEW.Open();
-            GENERATOR_QTE_VIEW.ShowQte(
-                challenge.ZONE_START_01 ,
-                challenge.ZONE_END_01 ,
-                challenge.KEY_LABEL);
+            GENERATOR_QTE_VIEW.ShowQte(challenge.ZONE_START_01, challenge.ZONE_END_01);
         }
 
         private void OnQteIndicatorChangedActioned(float indicator01)
