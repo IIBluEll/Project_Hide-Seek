@@ -19,18 +19,24 @@ namespace HideSeek.AI
 
         private MasterAIDirector _director;
         private MasterAIZoneSelector _zoneSelector;
+        private MasterAIHintGenerator _hintGenerator;
         private AIWorldZone _currentPlayerZone;
+        private AIWorldZone _targetZone;
+        private MasterAIHint _currentHint;
 
         private CHASE_AI_STATE _previousChaseAIState;
 
         private float _debugLogTimer;
         private bool _isInitialized;
+        private bool _hasCurrentHint;
 
         public MASTER_AI_STATE CurrentState => _director != null ? _director.CurrentState : MASTER_AI_STATE.DORMANT;
         public AIWorldZone CurrentPlayerZone => _currentPlayerZone;
+        public AIWorldZone TargetZone => _targetZone;
 
         public float GlobalStress => _director != null ? _director.GlobalStress : 0f;
         public float GlobalStressRatio => _director != null ? _director.GlobalStressRatio : 0f;
+        public bool HasCurrentHint => _hasCurrentHint && _currentHint.IsValid(Time.time);
 
         private void Start()
         {
@@ -41,7 +47,7 @@ namespace HideSeek.AI
 
             try
             {
-                _zoneSelector = new MasterAIZoneSelector(_zones);
+                _zoneSelector = new MasterAIZoneSelector(_zones , _config);
             }
             catch ( ArgumentException exception )
             {
@@ -51,6 +57,7 @@ namespace HideSeek.AI
             }
 
             _director = new MasterAIDirector(_config);
+            _hintGenerator = new MasterAIHintGenerator(_config);
             _previousChaseAIState = _chaseAIController.CurrentState;
             _isInitialized = true;
 
@@ -67,6 +74,7 @@ namespace HideSeek.AI
             }
 
             UpdatePlayerZone();
+            UpdateDirectorHint();
 
             float distanceToPlayer = Vector3.Distance(_chaseAIController.transform.position , _playerTrans.position);
             MASTER_AI_COMMAND command = _director.Tick(Time.deltaTime , _chaseAIController.CurrentState , distanceToPlayer);
@@ -142,6 +150,26 @@ namespace HideSeek.AI
             }
         }
 
+        private bool TrySelectTargetZone()
+        {
+            _targetZone = null;
+
+            bool wasSelected = _zoneSelector.TrySelectTargetZone(_currentPlayerZone , _director.GlobalStressRatio , out AIWorldZone selectedZone , out MASTER_AI_ZONE_RELATION relation);
+
+            if ( !wasSelected )
+            {
+                Debug.LogWarning("[MasterAIProvider] 목표 Zone을 선택할 수 없습니다." , this);
+
+                return false;
+            }
+
+            _targetZone = selectedZone;
+
+            Debug.Log($"[MasterAIProvider] Target Zone 선택: ID={_targetZone.ZoneId}, Name={_targetZone.DisplayName}, Relation={relation}, Stress={_director.GlobalStressRatio:F2}" , this);
+
+            return true;
+        }
+
         private void ProcessActivationCommand()
         {
             bool wasActivated = _chaseAIController.RequestActivation();
@@ -156,6 +184,11 @@ namespace HideSeek.AI
             }
 
             Debug.Log("[MasterAIProvider] Chase AI 출현 요청 성공" , this);
+
+            if ( TrySelectTargetZone() )
+            {
+                GenerateDirectorHint();
+            }
         }
 
         private void ProcessRetreatCommand()
@@ -180,6 +213,9 @@ namespace HideSeek.AI
             {
                 _director.NotifyChaseAIDormant();
 
+                ClearDirectorHint();
+                _targetZone = null;
+
                 Debug.Log("[MasterAIProvider] Chase AI 이탈 완료: Director=DORMANT" , this);
             }
 
@@ -203,8 +239,55 @@ namespace HideSeek.AI
             _debugLogTimer = _debugLogInterval;
 
             string currentZoneName = _currentPlayerZone != null ? _currentPlayerZone.DisplayName : "NONE";
+            string targetZoneName = _targetZone != null ? _targetZone.DisplayName : "NONE";
 
-            Debug.Log($"[MasterAIProvider] Director={_director.CurrentState}, GlobalStress={_director.GlobalStress:F1}/{_config.MaximumGlobalStress:F1}, Chase={_chaseAIController.CurrentState}, RetreatPending={_chaseAIController.IsRetreatPending}, PlayerZone={currentZoneName}, Distance={distanceToPlayer:F1}" , this);
+            Debug.Log($"[MasterAIProvider] Director={_director.CurrentState}, GlobalStress={_director.GlobalStress:F1}/{_config.MaximumGlobalStress:F1}, Chase={_chaseAIController.CurrentState}, RetreatPending={_chaseAIController.IsRetreatPending}, PlayerZone={currentZoneName}, TargetZone={targetZoneName}, Distance={distanceToPlayer:F1}" , this);
+        }
+
+        private void GenerateDirectorHint()
+        {
+            if ( _targetZone == null || _hintGenerator == null )
+            {
+                return;
+            }
+
+            bool wasCreated = _hintGenerator.TryCreateHint(
+                _targetZone ,
+                _director.GlobalStressRatio ,
+                Time.time ,
+                out MasterAIHint createdHint);
+
+            if ( !wasCreated )
+            {
+                ClearDirectorHint();
+
+                Debug.LogWarning($"[MasterAIProvider] Director Hint 생성 실패: Zone={_targetZone.DisplayName} 내부에서 NavMesh 위치를 찾지 못했습니다." , this);
+
+                return;
+            }
+
+            _currentHint = createdHint;
+            _hasCurrentHint = true;
+
+            Debug.Log($"[MasterAIProvider] Director Hint 생성: Zone={_currentHint.TargetZoneId}, Anchor={_currentHint.SearchAnchorPosition}, Radius={_currentHint.SearchRadius:F1}, Urgency={_currentHint.Urgency:F2}, Duration={_currentHint.ExpireTime - Time.time:F1}" , this);
+        }
+
+        private void UpdateDirectorHint()
+        {
+            if ( !_hasCurrentHint || _currentHint.IsValid(Time.time) )
+            {
+                return;
+            }
+
+            Debug.Log($"[MasterAIProvider] Director Hint 만료: Zone={_currentHint.TargetZoneId}" , this);
+
+            ClearDirectorHint();
+        }
+
+        private void ClearDirectorHint()
+        {
+            _currentHint = default;
+            _hasCurrentHint = false;
         }
 
         private bool ValidateReferences()
