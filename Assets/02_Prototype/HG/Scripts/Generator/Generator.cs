@@ -56,6 +56,19 @@ namespace HideSeek.Generators
             _qteRunner.Finished += OnQteFinishedActioned;
         }
 
+        private void OnEnable()
+        {
+            GeneratorQteProvider.RegisterGenerator(this);
+        }
+
+        private void OnDisable()
+        {
+            // 수리 중에 꺼지면 State가 INTERACTING으로 굳어 다시 켜도 시작할 수 없다.
+            CancelRepair();
+
+            GeneratorQteProvider.UnregisterGenerator(this);
+        }
+
         private void OnDestroy()
         {
             if (_qteRunner != null)
@@ -209,23 +222,15 @@ namespace HideSeek.Generators
 
         private void BeginQte()
         {
-            _qteRunner.Begin(
-                _config.QteSweepDuration ,
-                _config.QteSuccessZoneSize01 ,
-                _config.QteZoneMinStart01);
-
-            QteStarted?.Invoke(new QteChallenge(
-                _qteRunner.ZoneStart01 ,
-                _qteRunner.ZoneEnd01 ,
-                _qteInputSource.GetQteKeyLabel()));
-
+            _qteRunner.Begin(_config.QteSweepDuration, _config.QteSuccessZoneSize01, _config.QteZoneMinStart01);
+            QteStarted?.Invoke(new QteChallenge(_qteRunner.ZoneStart01, _qteRunner.ZoneEnd01));
             QteIndicatorChanged?.Invoke(_qteRunner.Indicator01);
         }
 
         private void ScheduleNextQte()
         {
             _nextQteDelay = UnityEngine.Random.Range(
-                _config.MinQteInterval ,
+                _config.MinQteInterval,
                 _config.GetEffectiveMaxQteInterval());
         }
 

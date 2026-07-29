@@ -20,7 +20,6 @@ namespace HideSeek.Generators
         [SerializeField] private Image _qteRingImg;
         [SerializeField] private Image _qteZoneImg;
         [SerializeField] private RectTransform _qteIndicatorRectTrans;
-        [SerializeField] private TMP_Text _qteKeyTxt;
 
         [Header("결과 피드백")]
         [SerializeField] private Color _ringDefaultColor = new Color(0.8f , 0.8f , 0.8f , 1f);
@@ -39,7 +38,7 @@ namespace HideSeek.Generators
             SetIndicator(0f);
         }
 
-        public void ShowQte(float zoneStart01 , float zoneEnd01 , string keyLabel)
+        public void ShowQte(float zoneStart01, float zoneEnd01)
         {
             _resultFeedbackRemain = 0f;
             ApplyRingColor(_ringDefaultColor);
@@ -48,11 +47,6 @@ namespace HideSeek.Generators
             {
                 _qteZoneImg.fillAmount = Mathf.Clamp01(zoneEnd01 - zoneStart01);
                 _qteZoneImg.rectTransform.localRotation = Quaternion.Euler(0f , 0f , -zoneStart01 * 360f);
-            }
-
-            if (_qteKeyTxt != null)
-            {
-                _qteKeyTxt.text = keyLabel ?? string.Empty;
             }
 
             SetIndicator(0f);

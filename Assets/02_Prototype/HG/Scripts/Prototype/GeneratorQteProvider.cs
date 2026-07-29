@@ -21,30 +21,30 @@ namespace HideSeek.Generators
     ///       키 값 자체는 현민 담당 키 설정 시스템으로 옮긴다. GDD 13.2
     /// TODO: 발전기 이벤트를 EventProvider로 발행할지는 추후 회의에서 결정한다. 전환 지점은 이 클래스다.
     ///
-    /// 사용 예시
+    /// 등록은 반드시 아래 정적 메서드로 한다. <see cref="ASingletone{T}.Instance"/>는 인스턴스가 없으면
+    /// GameObject를 새로 만들기 때문에, 종료 중에 호출하면 파괴된 Provider가 되살아난다.
     /// <code>
-    /// GeneratorQteProvider.Instance.Register(generator);
-    /// GeneratorQteProvider.Instance.Unregister(generator);
+    /// GeneratorQteProvider.RegisterGenerator(generator);
+    /// GeneratorQteProvider.UnregisterGenerator(generator);
     /// </code>
     /// </summary>
-    [DisallowMultipleComponent]
+    [DisallowMultipleComponent, DefaultExecutionOrder(-1)]
     public sealed class GeneratorQteProvider : ASingletone<GeneratorQteProvider>
     {
         [Tooltip("등록된 모든 발전기가 이 설정을 공유한다. 난이도 선택이 생기면 그쪽에서 지정한다.")]
         [SerializeField] private GeneratorConfig _generatorConfig;
 
-        [Header("QTE 입력")]
-        [Tooltip("모든 발전기가 같은 키를 쓴다.")]
-        [SerializeField] private Key _qteKey = Key.Space;
-        [SerializeField] private string _qteKeyLabel = "SPACE";
-
+        [Header("View")]
         [Tooltip("모든 발전기가 공유한다. 씬에 배치한 오브젝트에 직접 할당한다.")]
         [SerializeField] private GeneratorProgress_view _generatorProgressView;
         [SerializeField] private GeneratorQte_view _generatorQteView;
 
-        [Header("프로토타입 전용")]
-        [Tooltip("여기에 넣은 발전기는 Start에서 자동 등록된다. 정식 구조에서는 Register를 직접 호출한다.")]
-        [SerializeField] private Generator[] _arr_startupGenerator;
+        [Header("QTE 입력")]
+        [Tooltip("모든 발전기가 같은 키를 쓴다.")]
+        [SerializeField] private Key _qteKey = Key.Space;
+
+        // Instance를 거치지 않고 등록을 처리하기 위한 자체 참조. 파괴 시 스스로 비운다.
+        private static GeneratorQteProvider s_provider;
 
         private readonly List<Generator> LIST_GENERATOR = new();
 
@@ -59,6 +59,8 @@ namespace HideSeek.Generators
         public override void Awake()
         {
             base.Awake();
+
+            s_provider = this;
 
             if (_generatorProgressView == null || _generatorQteView == null)
             {
@@ -84,20 +86,16 @@ namespace HideSeek.Generators
                 _generatorQteView.Clear();
                 _generatorQteView.Close();
             }
-
-            if (_arr_startupGenerator == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < _arr_startupGenerator.Length; i++)
-            {
-                Register(_arr_startupGenerator[i]);
-            }
         }
 
         private void OnDestroy()
         {
+            // 먼저 비워야 남은 발전기의 OnDisable이 이 인스턴스를 다시 건드리지 않는다.
+            if (ReferenceEquals(s_provider , this))
+            {
+                s_provider = null;
+            }
+
             for (int i = LIST_GENERATOR.Count - 1; i >= 0; i--)
             {
                 Unregister(LIST_GENERATOR[i]);
@@ -106,7 +104,34 @@ namespace HideSeek.Generators
             ReleasePresenters();
         }
 
-        public void Register(Generator generator)
+        /// <summary>
+        /// 발전기가 활성화될 때 호출한다. Provider가 없으면 경고만 남기고 넘어간다.
+        /// </summary>
+        public static void RegisterGenerator(Generator generator)
+        {
+            if (s_provider == null)
+            {
+                Debug.LogWarning($"[{nameof(GeneratorQteProvider)}] 씬에 Provider가 없어 발전기를 등록하지 못했습니다." , generator);
+                return;
+            }
+
+            s_provider.Register(generator);
+        }
+
+        /// <summary>
+        /// 발전기가 비활성화될 때 호출한다. 종료 중이라 Provider가 이미 사라졌으면 조용히 넘어간다.
+        /// </summary>
+        public static void UnregisterGenerator(Generator generator)
+        {
+            if (s_provider == null)
+            {
+                return;
+            }
+
+            s_provider.Unregister(generator);
+        }
+
+        private void Register(Generator generator)
         {
             if (generator == null || LIST_GENERATOR.Contains(generator))
             {
@@ -114,7 +139,7 @@ namespace HideSeek.Generators
             }
 
             // Awake 순서가 보장되지 않아 다른 오브젝트가 먼저 Register를 부를 수 있다.
-            _qteInputSource ??= new KeyboardInputSource(_qteKey , _qteKeyLabel);
+            _qteInputSource ??= new KeyboardInputSource(_qteKey);
 
             LIST_GENERATOR.Add(generator);
             generator.SetConfig(_generatorConfig);
@@ -123,11 +148,8 @@ namespace HideSeek.Generators
             generator.RepairStopped += OnRepairStoppedActioned;
         }
 
-        /// <summary>
-        /// 등록을 해제한다. 해당 발전기가 UI를 점유 중이었다면 UI도 함께 닫는다.
-        /// 발전기를 파괴하기 전에 반드시 호출한다.
-        /// </summary>
-        public void Unregister(Generator generator)
+        // 해당 발전기가 UI를 점유 중이었다면 UI도 함께 닫는다.
+        private void Unregister(Generator generator)
         {
             if (generator == null || LIST_GENERATOR.Remove(generator) == false)
             {

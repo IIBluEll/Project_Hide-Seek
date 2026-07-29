@@ -3,6 +3,12 @@ using UnityEngine;
 
 namespace HideSeek.Generators
 {
+    public enum QTE_RESULT
+    {
+        SUCCESS,
+        FAILURE // 구간 밖에서 입력했거나, 끝까지 입력하지 않았다
+    }
+
     /// <summary>
     /// Unity 컴포넌트와 입력에 직접 의존하지 않으므로 단독으로 검증할 수 있다.
     /// </summary>
