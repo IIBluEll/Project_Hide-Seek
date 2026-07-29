@@ -16,6 +16,8 @@ namespace HideSeek.AI
         public float GlobalStressRatio => MASTER_AI_GAUGE.GlobalStressRatio;
         public bool IsRetreatRequested => _isRetreatRequested;
 
+        private float _retreatRetryTimer;
+
         public MasterAIDirector(MasterAIConfig masterAIConfig)
         {
             MASTER_AI_CONFIG = masterAIConfig != null ? masterAIConfig : throw new ArgumentNullException(nameof(masterAIConfig));
@@ -49,6 +51,17 @@ namespace HideSeek.AI
             EnterDormant();
         }
 
+        public void NotifyRetreatFailed()
+        {
+            if ( CurrentState != MASTER_AI_STATE.ACTIVE )
+            {
+                return;
+            }
+
+            _isRetreatRequested = false;
+            _retreatRetryTimer = MASTER_AI_CONFIG.RetreatRetryDelay;
+        }
+
         public void Reset()
         {
             MASTER_AI_GAUGE.Reset();
@@ -72,6 +85,7 @@ namespace HideSeek.AI
 
             CurrentState = MASTER_AI_STATE.ACTIVE;
             _isRetreatRequested = false;
+            _retreatRetryTimer = 0f;
 
             return MASTER_AI_COMMAND.ACTIVATE;
         }
@@ -80,7 +94,9 @@ namespace HideSeek.AI
         {
             UpdateActiveGlobalStress(deltaTime , chaseAIState , distanceToPlayer);
 
-            if ( _isRetreatRequested || !MASTER_AI_GAUGE.IsRetreatThresholdReached )
+            _retreatRetryTimer = Mathf.Max(0f , _retreatRetryTimer - deltaTime);
+
+            if ( _retreatRetryTimer > 0f || _isRetreatRequested || !MASTER_AI_GAUGE.IsRetreatThresholdReached )
             {
                 return MASTER_AI_COMMAND.NONE;
             }
@@ -117,6 +133,7 @@ namespace HideSeek.AI
         {
             CurrentState = MASTER_AI_STATE.DORMANT;
             _dormantTimer = 0f;
+            _retreatRetryTimer = 0f;
             _isRetreatRequested = false;
         }
     }

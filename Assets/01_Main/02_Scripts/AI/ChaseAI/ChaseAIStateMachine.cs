@@ -45,6 +45,7 @@ namespace HideSeek.AI
 
         private Vector3 _retreatPosition;
         private bool _isRetreatPending;
+        private bool _hasRetreatFailed;
 
         public Vector3 SearchCenterPosition => _searchCenterPosition;
         public float CurrentSearchRadius => _currentSearchRadius;
@@ -76,6 +77,7 @@ namespace HideSeek.AI
             _retreatPosition = Vector3.zero;
             _isWaiting = false;
             _isRetreatPending = false;
+            _hasRetreatFailed = false;
             _stateTimer = 0f;
 
             Debug.Log("[ChaseAIStateMachine] DORMANT 상태로 초기화되었습니다.");
@@ -90,6 +92,7 @@ namespace HideSeek.AI
 
             _retreatPosition = Vector3.zero;
             _isRetreatPending = false;
+            _hasRetreatFailed = false;
 
             ChangeState(CHASE_AI_STATE.PATROL , "Director activation requested");
 
@@ -129,6 +132,18 @@ namespace HideSeek.AI
             ChangeState(CHASE_AI_STATE.RETREAT , $"Director retreat requested from {CurrentState}");
 
             return CurrentState == CHASE_AI_STATE.RETREAT;
+        }
+
+        public bool ConsumeRetreatFailure()
+        {
+            if ( !_hasRetreatFailed )
+            {
+                return false;
+            }
+
+            _hasRetreatFailed = false;
+
+            return true;
         }
 
         public void Tick(float deltaTime , ChaseAIVisualObservation visualObservation)
@@ -238,6 +253,8 @@ namespace HideSeek.AI
             _isWaiting = false;
             _retreatPosition = Vector3.zero;
             _isRetreatPending = false;
+            _hasRetreatFailed = false;
+
             _stateTimer = 0f;
         }
 
@@ -406,10 +423,19 @@ namespace HideSeek.AI
 
                 case CHASE_AI_MOVE_STATUS.PATH_FAILED:
                 case CHASE_AI_MOVE_STATUS.STUCK:
-                    _isRetreatPending = false;
-                    ChangeState(CHASE_AI_STATE.PATROL , $"Retreat movement failed: {moveStatus}");
+                    FailRetreat($"Retreat movement failed: {moveStatus}");
                     break;
             }
+        }
+
+        private void FailRetreat(string reason)
+        {
+            _isRetreatPending = false;
+            _hasRetreatFailed = true;
+
+            Debug.LogWarning($"[ChaseAIStateMachine] 이탈 실패: {reason}");
+
+            ChangeState(CHASE_AI_STATE.PATROL , reason);
         }
 
         private void ChangeState(CHASE_AI_STATE newState , string reason)
@@ -467,6 +493,7 @@ namespace HideSeek.AI
 
             _retreatPosition = Vector3.zero;
             _isRetreatPending = false;
+            _hasRetreatFailed = false;
         }
 
         private void EnterRetreat()
@@ -478,8 +505,7 @@ namespace HideSeek.AI
 
             if ( !RequestDestination(_retreatPosition , "Retreat point") )
             {
-                _isRetreatPending = false;
-                ChangeState(CHASE_AI_STATE.PATROL , "Retreat destination invalid");
+                FailRetreat("Retreat destination invalid");
             }
         }
 

@@ -637,6 +637,8 @@ GameObject:
   - component: {fileID: 532123214}
   - component: {fileID: 532123213}
   - component: {fileID: 532123212}
+  - component: {fileID: 532123216}
+  - component: {fileID: 532123215}
   m_Layer: 0
   m_Name: Zone_1
   m_TagString: Untagged
@@ -738,6 +740,45 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 532123210}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &532123215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 532123210}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51019c8935c143408f897cc46a84988, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
+  _zoneId: 1
+  _displayName: Zone_1
+  _boundsCollider: {fileID: 532123216}
+  _adjacentZones:
+  - {fileID: 1194406756}
+  - {fileID: 879698881}
+--- !u!65 &532123216
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 532123210}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 10, y: 5, z: 10}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &620725467
 GameObject:
   m_ObjectHideFlags: 0
@@ -1134,6 +1175,8 @@ GameObject:
   - component: {fileID: 879698880}
   - component: {fileID: 879698879}
   - component: {fileID: 879698878}
+  - component: {fileID: 879698882}
+  - component: {fileID: 879698881}
   m_Layer: 0
   m_Name: Zone_4
   m_TagString: Untagged
@@ -1235,6 +1278,45 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 879698876}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &879698881
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879698876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51019c8935c143408f897cc46a84988, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
+  _zoneId: 4
+  _displayName: Zone_
+  _boundsCollider: {fileID: 879698882}
+  _adjacentZones:
+  - {fileID: 532123215}
+  - {fileID: 1762011933}
+--- !u!65 &879698882
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879698876}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 10, y: 5, z: 10}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &912787937
 GameObject:
   m_ObjectHideFlags: 0
@@ -1278,6 +1360,8 @@ GameObject:
   - component: {fileID: 932427677}
   - component: {fileID: 932427676}
   - component: {fileID: 932427675}
+  - component: {fileID: 932427679}
+  - component: {fileID: 932427678}
   m_Layer: 0
   m_Name: Zone_3
   m_TagString: Untagged
@@ -1379,6 +1463,45 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 932427673}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &932427678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 932427673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51019c8935c143408f897cc46a84988, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
+  _zoneId: 3
+  _displayName: Zone_3
+  _boundsCollider: {fileID: 932427679}
+  _adjacentZones:
+  - {fileID: 1194406756}
+  - {fileID: 2068934761}
+--- !u!65 &932427679
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 932427673}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 10, y: 5, z: 10}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &975197825
 GameObject:
   m_ObjectHideFlags: 0
@@ -1708,6 +1831,8 @@ GameObject:
   - component: {fileID: 1194406755}
   - component: {fileID: 1194406754}
   - component: {fileID: 1194406753}
+  - component: {fileID: 1194406757}
+  - component: {fileID: 1194406756}
   m_Layer: 0
   m_Name: Zone_2
   m_TagString: Untagged
@@ -1809,6 +1934,46 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1194406751}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1194406756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1194406751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51019c8935c143408f897cc46a84988, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
+  _zoneId: 2
+  _displayName: Zone_2
+  _boundsCollider: {fileID: 1194406757}
+  _adjacentZones:
+  - {fileID: 532123215}
+  - {fileID: 932427678}
+  - {fileID: 1762011933}
+--- !u!65 &1194406757
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1194406751}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 10, y: 5, z: 10}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1305212775
 GameObject:
   m_ObjectHideFlags: 0
@@ -2525,6 +2690,8 @@ GameObject:
   - component: {fileID: 1762011932}
   - component: {fileID: 1762011931}
   - component: {fileID: 1762011930}
+  - component: {fileID: 1762011934}
+  - component: {fileID: 1762011933}
   m_Layer: 0
   m_Name: Zone_5
   m_TagString: Untagged
@@ -2626,6 +2793,46 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1762011928}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1762011933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1762011928}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51019c8935c143408f897cc46a84988, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
+  _zoneId: 5
+  _displayName: Zone_5
+  _boundsCollider: {fileID: 1762011934}
+  _adjacentZones:
+  - {fileID: 879698881}
+  - {fileID: 2068934761}
+  - {fileID: 1194406756}
+--- !u!65 &1762011934
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1762011928}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 10, y: 5, z: 10}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1955149788
 GameObject:
   m_ObjectHideFlags: 0
@@ -2961,9 +3168,9 @@ MonoBehaviour:
   _config: {fileID: 11400000, guid: a5de8fbdef683bd438e1b4c4ac21f3b2, type: 2}
   _chaseAIController: {fileID: 1526055481}
   _playerTrans: {fileID: 8509481}
+  _retreatPointTrans: {fileID: 620725468}
   _enableDebugLog: 1
   _debugLogInterval: 1
-  _retreatPointTrans: {fileID: 620725468}
 --- !u!4 &2034960023
 Transform:
   m_ObjectHideFlags: 0
@@ -2991,6 +3198,8 @@ GameObject:
   - component: {fileID: 2068934760}
   - component: {fileID: 2068934759}
   - component: {fileID: 2068934758}
+  - component: {fileID: 2068934762}
+  - component: {fileID: 2068934761}
   m_Layer: 0
   m_Name: Zone_6
   m_TagString: Untagged
@@ -3092,6 +3301,43 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2068934756}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &2068934761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2068934756}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51019c8935c143408f897cc46a84988, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
+  _zoneId: 6
+  _displayName: Zone_6
+  _boundsCollider: {fileID: 2068934762}
+  _adjacentZones: []
+--- !u!65 &2068934762
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2068934756}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 10, y: 5, z: 10}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2139994391
 GameObject:
   m_ObjectHideFlags: 0

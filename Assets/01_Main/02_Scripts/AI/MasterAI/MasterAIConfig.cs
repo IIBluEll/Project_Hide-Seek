@@ -18,6 +18,7 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _minimumDormantDuration = 15f;
         [SerializeField, Range(0f, 1f)] private float _reactivationStressRatio = 0.1f;
         [SerializeField, Range(0f, 1f)] private float _retreatStressRatio = 1f;
+        [SerializeField, Min(0f)] private float _retreatRetryDelay = 3f;
 
         public float MaximumGlobalStress => _maximumGlobalStress;
         public float ChaseStressIncreaseRate => _chaseStressIncreaseRate;
@@ -29,6 +30,7 @@ namespace HideSeek.AI
         public float MinimumDormantDuration => _minimumDormantDuration;
         public float ReactivationStressThreshold => _maximumGlobalStress * _reactivationStressRatio;
         public float RetreatStressThreshold => _maximumGlobalStress * _retreatStressRatio;
+        public float RetreatRetryDelay => _retreatRetryDelay;
 
         private void OnValidate()
         {
