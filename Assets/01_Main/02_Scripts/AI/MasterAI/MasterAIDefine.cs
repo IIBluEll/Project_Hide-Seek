@@ -12,4 +12,11 @@ namespace HideSeek.AI
         ACTIVATE,
         RETREAT
     }
+
+    public enum MASTER_AI_ZONE_RELATION
+    {
+        PLAYER,
+        ADJACENT,
+        OTHER
+    }
 }

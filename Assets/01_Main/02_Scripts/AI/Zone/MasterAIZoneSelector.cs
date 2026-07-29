@@ -6,16 +6,21 @@ namespace HideSeek.AI
 {
     public sealed class MasterAIZoneSelector
     {
+        private readonly MasterAIConfig MASTER_AI_CONFIG;
         private readonly List<AIWorldZone> ZONES = new();
+        private readonly List<AIWorldZone> ADJACENT_CANDIDATES = new();
+        private readonly List<AIWorldZone> OTHER_CANDIDATES = new();
 
         public IReadOnlyList<AIWorldZone> Zones => ZONES;
 
-        public MasterAIZoneSelector(IReadOnlyList<AIWorldZone> zones)
+        public MasterAIZoneSelector(IReadOnlyList<AIWorldZone> zones , MasterAIConfig masterAIConfig)
         {
             if ( zones == null )
             {
                 throw new ArgumentNullException(nameof(zones));
             }
+
+            MASTER_AI_CONFIG = masterAIConfig != null ? masterAIConfig : throw new ArgumentNullException(nameof(masterAIConfig));
 
             HashSet<int> zoneIds = new();
 
@@ -78,6 +83,102 @@ namespace HideSeek.AI
             foundZone = null;
 
             return false;
+        }
+
+        public bool TrySelectTargetZone(AIWorldZone playerZone , float globalStressRatio , out AIWorldZone targetZone , out MASTER_AI_ZONE_RELATION relation)
+        {
+            targetZone = null;
+            relation = MASTER_AI_ZONE_RELATION.PLAYER;
+
+            if ( playerZone == null || !ZONES.Contains(playerZone) )
+            {
+                return false;
+            }
+
+            BuildCandidates(playerZone);
+
+            float stressRatio = Mathf.Clamp01(globalStressRatio);
+
+            float playerZoneWeight = Mathf.Lerp(MASTER_AI_CONFIG.LowStressPlayerZoneWeight , MASTER_AI_CONFIG.HighStressPlayerZoneWeight , stressRatio);
+
+            float adjacentZoneWeight = ADJACENT_CANDIDATES.Count > 0 ? Mathf.Lerp(MASTER_AI_CONFIG.LowStressAdjacentZoneWeight , MASTER_AI_CONFIG.HighStressAdjacentZoneWeight , stressRatio) : 0f;
+
+            float otherZoneWeight = OTHER_CANDIDATES.Count > 0 ? Mathf.Lerp(MASTER_AI_CONFIG.LowStressOtherZoneWeight , MASTER_AI_CONFIG.HighStressOtherZoneWeight , stressRatio) : 0f;
+
+            float totalWeight = playerZoneWeight + adjacentZoneWeight + otherZoneWeight;
+
+            if ( totalWeight <= 0f )
+            {
+                targetZone = playerZone;
+
+                return true;
+            }
+
+            float selectionValue = UnityEngine.Random.value * totalWeight;
+
+            if ( selectionValue < playerZoneWeight )
+            {
+                targetZone = playerZone;
+                relation = MASTER_AI_ZONE_RELATION.PLAYER;
+
+                return true;
+            }
+
+            selectionValue -= playerZoneWeight;
+
+            if ( selectionValue < adjacentZoneWeight && ADJACENT_CANDIDATES.Count > 0 )
+            {
+                targetZone = ADJACENT_CANDIDATES[ UnityEngine.Random.Range(0 , ADJACENT_CANDIDATES.Count) ];
+                relation = MASTER_AI_ZONE_RELATION.ADJACENT;
+
+                return true;
+            }
+
+            if ( OTHER_CANDIDATES.Count > 0 )
+            {
+                targetZone = OTHER_CANDIDATES[ UnityEngine.Random.Range(0 , OTHER_CANDIDATES.Count) ];
+                relation = MASTER_AI_ZONE_RELATION.OTHER;
+
+                return true;
+            }
+
+            if ( ADJACENT_CANDIDATES.Count > 0 )
+            {
+                targetZone = ADJACENT_CANDIDATES[ UnityEngine.Random.Range(0 , ADJACENT_CANDIDATES.Count) ];
+                relation = MASTER_AI_ZONE_RELATION.ADJACENT;
+
+                return true;
+            }
+
+            targetZone = playerZone;
+            relation = MASTER_AI_ZONE_RELATION.PLAYER;
+
+            return true;
+        }
+
+        private void BuildCandidates(AIWorldZone playerZone)
+        {
+            ADJACENT_CANDIDATES.Clear();
+            OTHER_CANDIDATES.Clear();
+
+            for ( int zoneIndex = 0; zoneIndex < ZONES.Count; zoneIndex++ )
+            {
+                AIWorldZone zone = ZONES[zoneIndex];
+
+                if ( zone == playerZone )
+                {
+                    continue;
+                }
+
+                if ( playerZone.IsAdjacentTo(zone) )
+                {
+                    ADJACENT_CANDIDATES.Add(zone);
+                }
+                else
+                {
+                    OTHER_CANDIDATES.Add(zone);
+                }
+            }
         }
     }
 }

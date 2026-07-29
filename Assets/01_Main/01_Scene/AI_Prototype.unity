@@ -227,7 +227,7 @@ Transform:
   m_GameObject: {fileID: 8509477}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.6, y: 1, z: -40.6}
+  m_LocalPosition: {x: -55.2, y: 1, z: -40.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1291,7 +1291,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
   _zoneId: 4
-  _displayName: Zone_
+  _displayName: Zone_4
   _boundsCollider: {fileID: 879698882}
   _adjacentZones:
   - {fileID: 532123215}
@@ -3169,6 +3169,13 @@ MonoBehaviour:
   _chaseAIController: {fileID: 1526055481}
   _playerTrans: {fileID: 8509481}
   _retreatPointTrans: {fileID: 620725468}
+  _zones:
+  - {fileID: 532123215}
+  - {fileID: 1194406756}
+  - {fileID: 932427678}
+  - {fileID: 879698881}
+  - {fileID: 1762011933}
+  - {fileID: 2068934761}
   _enableDebugLog: 1
   _debugLogInterval: 1
 --- !u!4 &2034960023
@@ -3316,7 +3323,9 @@ MonoBehaviour:
   _zoneId: 6
   _displayName: Zone_6
   _boundsCollider: {fileID: 2068934762}
-  _adjacentZones: []
+  _adjacentZones:
+  - {fileID: 1762011933}
+  - {fileID: 932427678}
 --- !u!65 &2068934762
 BoxCollider:
   m_ObjectHideFlags: 0

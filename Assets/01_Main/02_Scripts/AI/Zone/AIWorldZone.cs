@@ -40,6 +40,21 @@ namespace HideSeek.AI
             return otherZone != null && _adjacentZones.Contains(otherZone);
         }
 
+        public Vector3 GetRandomWorldPosition()
+        {
+            if ( _boundsCollider == null )
+            {
+                return transform.position;
+            }
+
+            Vector3 localCenter = _boundsCollider.center;
+            Vector3 halfSize = _boundsCollider.size * 0.5f;
+
+            Vector3 localPosition = new Vector3(Random.Range(localCenter.x - halfSize.x , localCenter.x + halfSize.x) , localCenter.y , Random.Range(localCenter.z - halfSize.z , localCenter.z + halfSize.z));
+
+            return _boundsCollider.transform.TransformPoint(localPosition);
+        }
+
         private void Reset()
         {
             _boundsCollider = GetComponent<BoxCollider>();
