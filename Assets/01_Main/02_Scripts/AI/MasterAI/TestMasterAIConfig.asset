@@ -35,3 +35,5 @@ MonoBehaviour:
   _hintDuration: 5
   _hintNavMeshSampleRadius: 2
   _hintPositionAttemptCount: 10
+  _minimumHintInterval: 10
+  _maximumHintInterval: 20
