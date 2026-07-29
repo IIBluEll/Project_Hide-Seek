@@ -43,8 +43,13 @@ namespace HideSeek.AI
 
         private bool _hasActiveAudioInvestigation;
 
+        private Vector3 _retreatPosition;
+        private bool _isRetreatPending;
+
         public Vector3 SearchCenterPosition => _searchCenterPosition;
         public float CurrentSearchRadius => _currentSearchRadius;
+
+        public bool IsRetreatPending => _isRetreatPending;
 
         public CHASE_AI_STATE CurrentState
         {
@@ -63,14 +68,79 @@ namespace HideSeek.AI
 
         public void Initialize()
         {
-            ChangeState(CHASE_AI_STATE.PATROL, "State machine initialized");
+            _movement.Stop();
+            ClearSearch();
+            ClearAudioInvestigation();
+
+            CurrentState = CHASE_AI_STATE.DORMANT;
+            _retreatPosition = Vector3.zero;
+            _isWaiting = false;
+            _isRetreatPending = false;
+            _stateTimer = 0f;
+
+            Debug.Log("[ChaseAIStateMachine] DORMANT 상태로 초기화되었습니다.");
         }
 
-        public void Tick(float deltaTime, ChaseAIVisualObservation visualObservation)
+        public bool RequestActivation()
         {
+            if ( CurrentState != CHASE_AI_STATE.DORMANT )
+            {
+                return false;
+            }
+
+            _retreatPosition = Vector3.zero;
+            _isRetreatPending = false;
+
+            ChangeState(CHASE_AI_STATE.PATROL , "Director activation requested");
+
+            return CurrentState == CHASE_AI_STATE.PATROL;
+        }
+
+        public bool RequestRetreat(Vector3 retreatPosition)
+        {
+            if ( CurrentState == CHASE_AI_STATE.DORMANT )
+            {
+                return false;
+            }
+
+            _retreatPosition = retreatPosition;
+
+            if ( _isRetreatPending || CurrentState == CHASE_AI_STATE.RETREAT )
+            {
+                return true;
+            }
+
+            _isRetreatPending = true;
+
+            if ( CurrentState == CHASE_AI_STATE.CHASE )
+            {
+                Debug.Log("[ChaseAIStateMachine] 추격 중 이탈 요청 예약: 직접 시야와 수색을 우선합니다.");
+
+                return true;
+            }
+
+            if ( CurrentState == CHASE_AI_STATE.SEARCH )
+            {
+                Debug.Log("[ChaseAIStateMachine] 수색 중 이탈 요청 예약: 현재 수색 완료 후 처리합니다.");
+
+                return true;
+            }
+
+            ChangeState(CHASE_AI_STATE.RETREAT , $"Director retreat requested from {CurrentState}");
+
+            return CurrentState == CHASE_AI_STATE.RETREAT;
+        }
+
+        public void Tick(float deltaTime , ChaseAIVisualObservation visualObservation)
+        {
+            if ( CurrentState == CHASE_AI_STATE.DORMANT )
+            {
+                return;
+            }
+
             if ( visualObservation.State == CHASE_AI_VISUAL_STATE.CONFIRMED && CurrentState != CHASE_AI_STATE.CHASE )
             {
-                ChangeState(CHASE_AI_STATE.CHASE, "Player visually confirmed");
+                ChangeState(CHASE_AI_STATE.CHASE , "Player visually confirmed");
             }
 
             switch ( CurrentState )
@@ -91,6 +161,10 @@ namespace HideSeek.AI
 
                 case CHASE_AI_STATE.SEARCH:
                     UpdateSearch(deltaTime);
+                    break;
+
+                case CHASE_AI_STATE.RETREAT:
+                    UpdateRetreat(deltaTime);
                     break;
             }
         }
@@ -120,9 +194,9 @@ namespace HideSeek.AI
 
             _currentAudioIntensity = newIntensity;
 
-            _audioSearchRadius = Mathf.Lerp(_config.MaxAudioSearchRadius, _config.MinAudioSearchRadius, newIntensity);
+            _audioSearchRadius = Mathf.Lerp(_config.MaxAudioSearchRadius , _config.MinAudioSearchRadius , newIntensity);
 
-            _audioSearchDuration = Mathf.Lerp(_config.MinAudioSearchDuration, _config.MaxAudioSearchDuration, newIntensity);
+            _audioSearchDuration = Mathf.Lerp(_config.MinAudioSearchDuration , _config.MaxAudioSearchDuration , newIntensity);
 
             _hasActiveAudioInvestigation = true;
 
@@ -142,13 +216,13 @@ namespace HideSeek.AI
 
                 if ( !wasDestinationAccepted )
                 {
-                    ChangeState(CHASE_AI_STATE.PATROL, "Updated audio destination invalid");
+                    ChangeState(CHASE_AI_STATE.PATROL , "Updated audio destination invalid");
                 }
 
                 return wasDestinationAccepted;
             }
 
-            ChangeState(CHASE_AI_STATE.INVESTIGATE, "New audio evidence accepted");
+            ChangeState(CHASE_AI_STATE.INVESTIGATE , "New audio evidence accepted");
 
             // EnterInvestigate에서 목적지 설정에 실패하면 PATROL로 다시 변경되므로 false를 반환
             return CurrentState == CHASE_AI_STATE.INVESTIGATE;
@@ -158,11 +232,12 @@ namespace HideSeek.AI
         {
             _movement.Stop();
             ClearSearch();
-
             ClearAudioInvestigation();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
             _isWaiting = false;
+            _retreatPosition = Vector3.zero;
+            _isRetreatPending = false;
             _stateTimer = 0f;
         }
 
@@ -204,7 +279,7 @@ namespace HideSeek.AI
             {
                 if ( !UpdateWaiting(deltaTime) )
                 {
-                    ChangeState(CHASE_AI_STATE.SEARCH, "Audio position investigation completed");
+                    ChangeState(CHASE_AI_STATE.SEARCH , "Audio position investigation completed");
                 }
 
                 return;
@@ -220,12 +295,12 @@ namespace HideSeek.AI
 
                 case CHASE_AI_MOVE_STATUS.PATH_FAILED:
                 case CHASE_AI_MOVE_STATUS.STUCK:
-                    ChangeState(CHASE_AI_STATE.PATROL, $"Investigate movement failed: {moveStatus}");
+                    ChangeState(CHASE_AI_STATE.PATROL , $"Investigate movement failed: {moveStatus}");
                     break;
             }
         }
 
-        private void UpdateChase(float deltaTime, ChaseAIVisualObservation visualObservation)
+        private void UpdateChase(float deltaTime , ChaseAIVisualObservation visualObservation)
         {
             if ( visualObservation.State != CHASE_AI_VISUAL_STATE.CONFIRMED || !visualObservation.HasLineOfSight )
             {
@@ -244,7 +319,7 @@ namespace HideSeek.AI
 
             if ( _chaseRepathTimer <= 0f && hasMovedFromDestination )
             {
-                RequestDestination(visualObservation.VisiblePosition, "Chase target");
+                RequestDestination(visualObservation.VisiblePosition , "Chase target");
 
                 _chaseRepathTimer = _config.ChaseRepathInterval;
             }
@@ -253,7 +328,7 @@ namespace HideSeek.AI
 
             if ( moveStatus == CHASE_AI_MOVE_STATUS.PATH_FAILED || moveStatus == CHASE_AI_MOVE_STATUS.STUCK )
             {
-                ChangeState(CHASE_AI_STATE.SEARCH, $"Chase movement failed: {moveStatus}");
+                ChangeState(CHASE_AI_STATE.SEARCH , $"Chase movement failed: {moveStatus}");
             }
         }
 
@@ -311,7 +386,33 @@ namespace HideSeek.AI
             }
         }
 
-        private void ChangeState(CHASE_AI_STATE newState, string reason)
+        private void UpdateRetreat(float deltaTime)
+        {
+            CHASE_AI_MOVE_STATUS moveStatus = _movement.UpdateMovement(deltaTime);
+
+            switch ( moveStatus )
+            {
+                case CHASE_AI_MOVE_STATUS.IDLE:
+                    if ( !RequestDestination(_retreatPosition , "Retreat point") )
+                    {
+                        _isRetreatPending = false;
+                        ChangeState(CHASE_AI_STATE.PATROL , "Retreat destination invalid");
+                    }
+                    break;
+
+                case CHASE_AI_MOVE_STATUS.ARRIVED:
+                    CompleteRetreat();
+                    break;
+
+                case CHASE_AI_MOVE_STATUS.PATH_FAILED:
+                case CHASE_AI_MOVE_STATUS.STUCK:
+                    _isRetreatPending = false;
+                    ChangeState(CHASE_AI_STATE.PATROL , $"Retreat movement failed: {moveStatus}");
+                    break;
+            }
+        }
+
+        private void ChangeState(CHASE_AI_STATE newState , string reason)
         {
             if ( CurrentState == newState )
             {
@@ -333,6 +434,10 @@ namespace HideSeek.AI
 
             switch ( newState )
             {
+                case CHASE_AI_STATE.DORMANT:
+                    EnterDormant();
+                    break;
+
                 case CHASE_AI_STATE.PATROL:
                     EnterPatrol();
                     break;
@@ -348,6 +453,33 @@ namespace HideSeek.AI
                 case CHASE_AI_STATE.SEARCH:
                     EnterSearch();
                     break;
+
+                case CHASE_AI_STATE.RETREAT:
+                    EnterRetreat();
+                    break;
+            }
+        }
+
+        private void EnterDormant()
+        {
+            ClearSearch();
+            ClearAudioInvestigation();
+
+            _retreatPosition = Vector3.zero;
+            _isRetreatPending = false;
+        }
+
+        private void EnterRetreat()
+        {
+            ClearSearch();
+            ClearAudioInvestigation();
+
+            _movement.SetSpeed(_config.WalkSpeed);
+
+            if ( !RequestDestination(_retreatPosition , "Retreat point") )
+            {
+                _isRetreatPending = false;
+                ChangeState(CHASE_AI_STATE.PATROL , "Retreat destination invalid");
             }
         }
 
@@ -412,7 +544,24 @@ namespace HideSeek.AI
                 return;
             }
 
-            ChangeState(CHASE_AI_STATE.PATROL , "No valid evidence for search");
+            CompleteSearch("No valid evidence for search");
+        }
+
+        private void CompleteSearch(string reason)
+        {
+            if ( _isRetreatPending )
+            {
+                ChangeState(CHASE_AI_STATE.RETREAT , $"{reason}, retreat pending");
+
+                return;
+            }
+
+            ChangeState(CHASE_AI_STATE.PATROL , reason);
+        }
+
+        private void CompleteRetreat()
+        {
+            ChangeState(CHASE_AI_STATE.DORMANT , "Retreat point reached");
         }
 
         private void PrepareSearch(Vector3 centerPosition , float searchRadius , float searchDuration , bool shouldMoveToCenter , string context)
@@ -438,7 +587,7 @@ namespace HideSeek.AI
 
             if ( !hasSearchPoints )
             {
-                ChangeState(CHASE_AI_STATE.PATROL , "Search point generation failed");
+                CompleteSearch("Search point generation failed");
                 return;
             }
 
@@ -463,7 +612,7 @@ namespace HideSeek.AI
                 _search.AdvanceToNextPoint();
             }
 
-            ChangeState(CHASE_AI_STATE.PATROL , "All search points completed");
+            CompleteSearch("All search points completed");
         }
 
         private void AdvanceSearchPoint()
@@ -489,7 +638,7 @@ namespace HideSeek.AI
                 return false;
             }
 
-            return RequestDestination(_audioSearchPosition, "Audio evidence");
+            return RequestDestination(_audioSearchPosition , "Audio evidence");
         }
 
         private void RequestCurrentPatrolPoint()
@@ -519,7 +668,7 @@ namespace HideSeek.AI
             }
         }
 
-        private bool RequestDestination(Vector3 position, string context)
+        private bool RequestDestination(Vector3 position , string context)
         {
             CHASE_AI_MOVE_REQUEST_RESULT result = _movement.TrySetDestination(position, out Vector3 correctedDestination);
 

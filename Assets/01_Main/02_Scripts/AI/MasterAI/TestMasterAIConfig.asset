@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ae6ccf56135fa94da77d957efc4ba1f, type: 3}
+  m_Name: TestMasterAIConfig
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.MasterAIConfig
+  _maximumGlobalStress: 100
+  _chaseStressIncreaseRate: 10
+  _nearStressIncreaseRate: 4
+  _activeStressDecreaseRate: 2
+  _dormantStressDecreaseRate: 5
+  _safeDistance: 20
+  _minimumDormantDuration: 15
+  _reactivationStressRatio: 0.1
+  _retreatStressRatio: 1

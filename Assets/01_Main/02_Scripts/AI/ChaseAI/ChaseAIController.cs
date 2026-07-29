@@ -21,6 +21,8 @@ namespace HideSeek.AI
 
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
 
+        public bool IsRetreatPending => _stateMachine != null && _stateMachine.IsRetreatPending;
+
         private void Awake()
         {
             _memory = new ChaseAIMemory();
@@ -53,7 +55,7 @@ namespace HideSeek.AI
 
         private void Update()
         {
-            if ( !_isInitialized )
+            if ( !_isInitialized || _stateMachine.CurrentState == CHASE_AI_STATE.DORMANT )
             {
                 return;
             }
@@ -68,6 +70,30 @@ namespace HideSeek.AI
             _memory.UpdateMemory(Time.time);
 
             _stateMachine.Tick(Time.deltaTime, visualObservation);
+        }
+
+        public bool RequestActivation()
+        {
+            if ( !_isInitialized || _stateMachine == null )
+            {
+                Debug.LogWarning("[ChaseAIController] 초기화 전에 출현을 요청할 수 없습니다." , this);
+
+                return false;
+            }
+
+            return _stateMachine.RequestActivation();
+        }
+
+        public bool RequestRetreat(Vector3 retreatPosition)
+        {
+            if ( !_isInitialized || _stateMachine == null )
+            {
+                Debug.LogWarning("[ChaseAIController] 초기화 전에 이탈을 요청할 수 없습니다." , this);
+
+                return false;
+            }
+
+            return _stateMachine.RequestRetreat(retreatPosition);
         }
 
         private void OnDisable()
