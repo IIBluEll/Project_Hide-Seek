@@ -24,16 +24,6 @@ public enum LOCOMOTION_STATE_ENUM
     AIR
 }
 
-//상태 패턴
-
-public interface IMoveState
-{
-    void OnMove(Vector3 moveDir);
-    void OnJump();
-    void OnSeat();
-}
-
-
 
 public class MoveController : MonoBehaviour
 {
@@ -41,6 +31,7 @@ public class MoveController : MonoBehaviour
     [SerializeField] private CharacterController _controller;
     [SerializeField] private Animator _animator;
     [SerializeField] private float _jumpHeight = 1.5f;
+    [SerializeField] private float _crouchControllerHeight = 1f;
     private readonly float _gravity = -9.81f;
 
     private POSTURE_STATE_ENUM _posture = POSTURE_STATE_ENUM.STANDING;
@@ -51,15 +42,29 @@ public class MoveController : MonoBehaviour
     private bool _isCrouch;
     private bool _jumpRequest;
     private bool _isRun;
+    private bool _movementEnabled = true;
+    private float _standingControllerHeight;
+    private Vector3 _standingControllerCenter;
+
+    public POSTURE_STATE_ENUM Posture => _posture;
+    public bool MovementEnabled => _movementEnabled;
+
+    public event Action<POSTURE_STATE_ENUM> OnPostureChanged;
 
     private void Awake()
     {
         if (_controller == null)
             _controller = this.GetComponent<CharacterController>();
+
+        _standingControllerHeight = _controller.height;
+        _standingControllerCenter = _controller.center;
     }
 
     private void Update()
     {
+        if (!_movementEnabled)
+            return;
+
         SetPostureLocomotion();
 
         UpdateVerticalVelocity();
@@ -115,10 +120,6 @@ public class MoveController : MonoBehaviour
         if (_jumpRequest)
             _locomotion = LOCOMOTION_STATE_ENUM.AIR;
 
-        if (_isCrouch)
-            _posture = POSTURE_STATE_ENUM.CROUCH;
-        else
-            _posture = POSTURE_STATE_ENUM.STANDING;
     }
     private float GetMoveSpeed()
     {
@@ -138,7 +139,11 @@ public class MoveController : MonoBehaviour
     }
     void OnMove(InputValue value)
     {
-        Debug.Log(value.Get<Vector2>());
+        if (!_movementEnabled)
+        {
+            _moveDir = Vector3.zero;
+            return;
+        }
 
         Vector2 input = value.Get<Vector2>();
 
@@ -147,21 +152,20 @@ public class MoveController : MonoBehaviour
 
     void OnCrouch(InputValue value)
     {
-        Debug.Log(value.isPressed);
-
-        if (!value.isPressed)
+        if (!_movementEnabled || !value.isPressed)
             return;
 
-        _isCrouch = !_isCrouch;
+        POSTURE_STATE_ENUM nextPosture = _posture == POSTURE_STATE_ENUM.CROUCH
+            ? POSTURE_STATE_ENUM.STANDING
+            : POSTURE_STATE_ENUM.CROUCH;
 
-        if (_isCrouch)
-            _isRun = false;
-
-        _animator.SetBool("IsCrouch", _isCrouch);
-        _animator.SetBool("IsRun", _isRun);
+        SetPosture(nextPosture);
     }
     void OnJump(InputValue value)
     {
+        if (!_movementEnabled)
+            return;
+
         if (_controller.isGrounded && !_jumpRequest)
         {
             _jumpRequest = true;
@@ -171,13 +175,106 @@ public class MoveController : MonoBehaviour
     }
     void OnSprint(InputValue value)
     {
-        Debug.Log($"Run : {value.isPressed}");
+        if (!_movementEnabled)
+            return;
+
         _isRun = value.isPressed;
 
         if (_isRun)
-            _isCrouch = false;
+        {
+            SetPosture(POSTURE_STATE_ENUM.STANDING);
+
+            if (_posture == POSTURE_STATE_ENUM.CROUCH)
+                _isRun = false;
+        }
 
         _animator.SetBool("IsRun", _isRun);
         _animator.SetBool("IsCrouch", _isCrouch);
+    }
+
+    public void SetMovementEnabled(bool movementEnabled)
+    {
+        _movementEnabled = movementEnabled;
+
+        if (_movementEnabled)
+            return;
+
+        _moveDir = Vector3.zero;
+        _jumpVelocity = 0f;
+        _jumpRequest = false;
+        _isRun = false;
+        _locomotion = LOCOMOTION_STATE_ENUM.IDLE;
+
+        _animator.SetFloat("XMove", 0f);
+        _animator.SetFloat("ZMove", 0f);
+        _animator.SetBool("IsRun", false);
+    }
+
+    private void SetPosture(POSTURE_STATE_ENUM posture)
+    {
+        if (_posture == posture)
+            return;
+
+        if (posture == POSTURE_STATE_ENUM.STANDING && !CanStand())
+            return;
+
+        _posture = posture;
+        _isCrouch = _posture == POSTURE_STATE_ENUM.CROUCH;
+
+        if (_isCrouch)
+            _isRun = false;
+
+        ApplyControllerHeight();
+
+        _animator.SetBool("IsCrouch", _isCrouch);
+        _animator.SetBool("IsRun", _isRun);
+
+        OnPostureChanged?.Invoke(_posture);
+    }
+
+    private void ApplyControllerHeight()
+    {
+        if (_posture == POSTURE_STATE_ENUM.STANDING)
+        {
+            _controller.height = _standingControllerHeight;
+            _controller.center = _standingControllerCenter;
+            return;
+        }
+
+        float crouchHeight = Mathf.Max(_crouchControllerHeight, _controller.radius * 2f);
+        Vector3 crouchCenter = _standingControllerCenter;
+        crouchCenter.y -= (_standingControllerHeight - crouchHeight) * 0.5f;
+
+        _controller.height = crouchHeight;
+        _controller.center = crouchCenter;
+    }
+
+    private bool CanStand()
+    {
+        float radius = _controller.radius * Mathf.Max(
+            Mathf.Abs(transform.lossyScale.x),
+            Mathf.Abs(transform.lossyScale.z));
+        float height = Mathf.Max(
+            _standingControllerHeight * Mathf.Abs(transform.lossyScale.y),
+            radius * 2f);
+        Vector3 center = transform.TransformPoint(_standingControllerCenter);
+        float halfSegment = Mathf.Max((height * 0.5f) - radius, 0f);
+        Vector3 point1 = center + transform.up * halfSegment;
+        Vector3 point2 = center - transform.up * halfSegment;
+
+        Collider[] overlaps = Physics.OverlapCapsule(
+            point1,
+            point2,
+            radius,
+            Physics.AllLayers,
+            QueryTriggerInteraction.Ignore);
+
+        foreach (Collider overlap in overlaps)
+        {
+            if (!overlap.transform.IsChildOf(transform))
+                return false;
+        }
+
+        return true;
     }
 }

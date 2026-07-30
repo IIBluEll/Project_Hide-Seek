@@ -19,6 +19,8 @@ public class GrapItem : MonoBehaviour, IInteractable
 
     public void Grapped()
     {
+        _rb.linearVelocity = Vector3.zero;
+        _rb.angularVelocity = Vector3.zero;
         _rb.isKinematic = true;
         _rb.useGravity = false;
         _collider.isTrigger = true;
@@ -28,5 +30,11 @@ public class GrapItem : MonoBehaviour, IInteractable
         _rb.isKinematic = false;
         _rb.useGravity = true;
         _collider.isTrigger = false;
+    }
+
+    public void Throw(Vector3 direction, float power)
+    {
+        Release();
+        _rb.AddForce(direction.normalized * power, ForceMode.Impulse);
     }
 }
