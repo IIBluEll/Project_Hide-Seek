@@ -25,6 +25,9 @@ namespace HideSeek.AI
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
 
         public bool IsRetreatPending => _stateMachine != null && _stateMachine.IsRetreatPending;
+        public bool IsInitialized => _isInitialized;
+        public float NavMeshSampleRadius => _config != null ? _config.SampleRadius : 0.1f;
+        public int AreaMask => _movement != null ? _movement.AreaMask : UnityEngine.AI.NavMesh.AllAreas;
 
         private void Awake()
         {
@@ -76,7 +79,7 @@ namespace HideSeek.AI
             ReportRetreatFailure();
         }
 
-        public bool RequestActivation()
+        public bool RequestActivation(Vector3 activationPosition)
         {
             if ( !_isInitialized || _stateMachine == null )
             {
@@ -84,6 +87,15 @@ namespace HideSeek.AI
 
                 return false;
             }
+
+            if ( !_movement.TryWarp(activationPosition , out Vector3 correctedPosition) )
+            {
+                Debug.LogWarning($"[ChaseAIController] Vent 출현 위치로 이동할 수 없습니다: {activationPosition}" , this);
+
+                return false;
+            }
+
+            Debug.Log($"[ChaseAIController] Vent 출현 위치 적용: {correctedPosition}" , this);
 
             return _stateMachine.RequestActivation();
         }

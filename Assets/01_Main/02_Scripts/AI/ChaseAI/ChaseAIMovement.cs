@@ -101,6 +101,40 @@ namespace HideSeek.AI
             return CHASE_AI_MOVE_REQUEST_RESULT.ACCEPTED;
         }
 
+        public bool TryWarp(Vector3 targetPosition , out Vector3 correctedPosition)
+        {
+            correctedPosition = Vector3.zero;
+
+            if ( _config == null || _agent == null || !_agent.isActiveAndEnabled )
+            {
+                return false;
+            }
+
+            bool hasNavMeshPosition = NavMesh.SamplePosition(
+                targetPosition ,
+                out NavMeshHit navMeshHit ,
+                _config.SampleRadius ,
+                _agent.areaMask);
+
+            if ( !hasNavMeshPosition || !_agent.Warp(navMeshHit.position) )
+            {
+                return false;
+            }
+
+            correctedPosition = navMeshHit.position;
+            _currentDestination = correctedPosition;
+            _hasDestination = false;
+            _stuckTimer = 0f;
+
+            if ( _agent.isOnNavMesh )
+            {
+                _agent.isStopped = true;
+                _agent.ResetPath();
+            }
+
+            return true;
+        }
+
         public void SetSpeed(float speed)
         {
             if ( _agent == null )
