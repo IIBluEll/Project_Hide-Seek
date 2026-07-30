@@ -53,6 +53,7 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _visualSearchRadius = 5f;
         [SerializeField, Min(0f)] private float _lastSeenPredictionDistance = 3f;
         [SerializeField, Range(0f, 1f)] private float _directionalSearchPointRatio = 0.65f;
+        [SerializeField, Range(0f, 1f)] private float _zoneCoverageSearchPointRatio = 0.3f;
         [SerializeField, Range(0f, 180f)] private float _directionalSearchAngle = 120f;
         [SerializeField, Min(0f)] private float _minimumSearchPointDistance = 1.5f;
         [SerializeField, Min(1)] private int _searchPointGenerationAttemptCountPerPoint = 10;
@@ -103,6 +104,7 @@ namespace HideSeek.AI
         public float VisualSearchRadius => _visualSearchRadius;
         public float LastSeenPredictionDistance => _lastSeenPredictionDistance;
         public float DirectionalSearchPointRatio => _directionalSearchPointRatio;
+        public float ZoneCoverageSearchPointRatio => _zoneCoverageSearchPointRatio;
         public float DirectionalSearchAngle => _directionalSearchAngle;
         public float MinimumSearchPointDistance => _minimumSearchPointDistance;
         public int SearchPointGenerationAttemptCountPerPoint => _searchPointGenerationAttemptCountPerPoint;
@@ -136,6 +138,7 @@ namespace HideSeek.AI
             _maximumAngerSearchPointCount = Mathf.Max(_minimumAngerSearchPointCount , _maximumAngerSearchPointCount);
             _lastSeenPredictionDistance = Mathf.Max(0f , _lastSeenPredictionDistance);
             _directionalSearchPointRatio = Mathf.Clamp01(_directionalSearchPointRatio);
+            _zoneCoverageSearchPointRatio = Mathf.Clamp01(_zoneCoverageSearchPointRatio);
             _directionalSearchAngle = Mathf.Clamp(_directionalSearchAngle , 0f , 180f);
 
             if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )

@@ -48,6 +48,7 @@ MonoBehaviour:
   _visualSearchRadius: 5
   _lastSeenPredictionDistance: 3
   _directionalSearchPointRatio: 0.65
+  _zoneCoverageSearchPointRatio: 0.3
   _directionalSearchAngle: 120
   _minimumSearchPointDistance: 1.5
   _searchPointGenerationAttemptCountPerPoint: 10

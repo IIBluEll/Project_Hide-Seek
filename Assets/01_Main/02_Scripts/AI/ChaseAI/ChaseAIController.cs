@@ -131,6 +131,16 @@ namespace HideSeek.AI
             return wasAccepted;
         }
 
+        public void ConfigureSearchZones(IReadOnlyList<AIWorldZone> zones)
+        {
+            if ( _search == null )
+            {
+                _search = new ChaseAISearch();
+            }
+
+            _search.ConfigureZones(zones);
+        }
+
         private void OnDisable()
         {
             if ( _perception != null )
@@ -308,14 +318,33 @@ namespace HideSeek.AI
             {
                 Vector3 searchPoint = _search.SearchPoints[pointIndex];
 
-                Gizmos.color = Color.yellow;
+                Gizmos.color = GetSearchPointColor(pointIndex);
                 Gizmos.DrawLine(previousPosition , searchPoint);
 
-                Gizmos.color = pointIndex == _search.CurrentPointIndex ? Color.red : Color.yellow;
+                Gizmos.color = pointIndex == _search.CurrentPointIndex
+                    ? Color.red
+                    : GetSearchPointColor(pointIndex);
+
                 Gizmos.DrawSphere(searchPoint , 0.2f);
 
                 previousPosition = searchPoint;
             }
+        }
+
+        private Color GetSearchPointColor(int pointIndex)
+        {
+            if ( !_search.TryGetSearchPointSource(pointIndex , out CHASE_AI_SEARCH_POINT_SOURCE searchPointSource) )
+            {
+                return Color.yellow;
+            }
+
+            return searchPointSource switch
+            {
+                CHASE_AI_SEARCH_POINT_SOURCE.PREDICTED_DIRECTION => Color.green,
+                CHASE_AI_SEARCH_POINT_SOURCE.DIRECTIONAL => new Color(1f , 0.6f , 0f),
+                CHASE_AI_SEARCH_POINT_SOURCE.ZONE_COVERAGE => Color.cyan,
+                _ => Color.yellow
+            };
         }
     }
 }
