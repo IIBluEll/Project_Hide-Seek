@@ -46,6 +46,9 @@ MonoBehaviour:
   _minAudioSearchDuration: 2
   _maxAudioSearchDuration: 8
   _visualSearchRadius: 5
+  _lastSeenPredictionDistance: 3
+  _directionalSearchPointRatio: 0.65
+  _directionalSearchAngle: 120
   _minimumSearchPointDistance: 1.5
   _searchPointGenerationAttemptCountPerPoint: 10
   _chaseSpeed: 7
