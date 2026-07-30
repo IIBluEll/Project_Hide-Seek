@@ -31,6 +31,7 @@ namespace HideSeek.AI
 
         private float _stateTimer;
         private float _chaseRepathTimer;
+        private float _lostSightTimer;
 
         private bool _isWaiting;
 
@@ -43,6 +44,7 @@ namespace HideSeek.AI
         private float _currentSearchRadius;
         private float _currentSearchDuration;
         private int _currentSearchPointCount;
+        private Vector3 _currentSearchDirection;
         private float _searchWaitDurationPerPoint;
         private bool _isMovingToSearchCenter;
 
@@ -86,6 +88,7 @@ namespace HideSeek.AI
             _isRetreatPending = false;
             _hasRetreatFailed = false;
             _stateTimer = 0f;
+            _lostSightTimer = 0f;
 
             Debug.Log("[ChaseAIStateMachine] DORMANT 상태로 초기화되었습니다.");
         }
@@ -370,26 +373,36 @@ namespace HideSeek.AI
 
         private void UpdateChase(float deltaTime , ChaseAIVisualObservation visualObservation)
         {
-            if ( visualObservation.State != CHASE_AI_VISUAL_STATE.CONFIRMED || !visualObservation.HasLineOfSight )
-            {
-                ChangeState(CHASE_AI_STATE.SEARCH , "Line of sight lost");
-
-                return;
-            }
-
             _chaseRepathTimer -= deltaTime;
 
-            float updateDistance = _config.ChaseDestinationUpdateDistance;
-
-            float squaredUpdateDistance = updateDistance * updateDistance;
-
-            bool hasMovedFromDestination = !_movement.HasDestination || ( visualObservation.VisiblePosition - _movement.CurrentDestination).sqrMagnitude >= squaredUpdateDistance;
-
-            if ( _chaseRepathTimer <= 0f && hasMovedFromDestination )
+            if ( visualObservation.HasLineOfSight )
             {
-                RequestDestination(visualObservation.VisiblePosition , "Chase target");
+                _lostSightTimer = 0f;
 
-                _chaseRepathTimer = _config.ChaseRepathInterval;
+                float updateDistance = _config.ChaseDestinationUpdateDistance;
+                float squaredUpdateDistance = updateDistance * updateDistance;
+
+                bool hasMovedFromDestination =
+                    !_movement.HasDestination ||
+                    ( visualObservation.VisiblePosition - _movement.CurrentDestination).sqrMagnitude >= squaredUpdateDistance;
+
+                if ( _chaseRepathTimer <= 0f && hasMovedFromDestination )
+                {
+                    RequestDestination(visualObservation.VisiblePosition , "Chase target");
+
+                    _chaseRepathTimer = _config.ChaseRepathInterval;
+                }
+            }
+            else
+            {
+                _lostSightTimer += deltaTime;
+
+                if ( _lostSightTimer >= _config.VisualLoseTime )
+                {
+                    ChangeState(CHASE_AI_STATE.SEARCH , "Visual lose time expired");
+
+                    return;
+                }
             }
 
             CHASE_AI_MOVE_STATUS moveStatus = _movement.UpdateMovement(deltaTime);
@@ -618,6 +631,7 @@ namespace HideSeek.AI
 
             _movement.SetSpeed(_config.ChaseSpeed * CHASE_AI_ANGER.ChaseSpeedMultiplier);
             _chaseRepathTimer = 0f;
+            _lostSightTimer = 0f;
         }
 
         private void EnterSearch()
@@ -631,6 +645,7 @@ namespace HideSeek.AI
 
                 PrepareSearch(
                     _audioSearchPosition ,
+                    Vector3.zero ,
                     _audioSearchRadius ,
                     _audioSearchDuration ,
                     false ,
@@ -646,6 +661,7 @@ namespace HideSeek.AI
             {
                 PrepareSearch(
                     _memory.VisualEvidence.Position ,
+                    _memory.LastSeenMovementDirection ,
                     _config.VisualSearchRadius ,
                     _config.SearchWaitTime ,
                     true ,
@@ -663,6 +679,7 @@ namespace HideSeek.AI
 
                 PrepareSearch(
                     _memory.AudioEvidence.Position ,
+                    Vector3.zero ,
                     searchRadius ,
                     searchDuration ,
                     true ,
@@ -678,6 +695,7 @@ namespace HideSeek.AI
 
                 PrepareSearch(
                     _activeDirectorHint.SearchAnchorPosition ,
+                    Vector3.zero ,
                     _activeDirectorHint.SearchRadius ,
                     _config.SearchWaitTime ,
                     false ,
@@ -709,6 +727,7 @@ namespace HideSeek.AI
 
         private void PrepareSearch(
             Vector3 centerPosition ,
+            Vector3 preferredDirection ,
             float searchRadius ,
             float searchDuration ,
             bool shouldMoveToCenter ,
@@ -716,6 +735,19 @@ namespace HideSeek.AI
             string context)
         {
             _searchCenterPosition = centerPosition;
+
+            _currentSearchDirection = preferredDirection;
+            _currentSearchDirection.y = 0f;
+
+            if ( _currentSearchDirection.sqrMagnitude > Mathf.Epsilon )
+            {
+                _currentSearchDirection.Normalize();
+            }
+            else
+            {
+                _currentSearchDirection = Vector3.zero;
+            }
+
             _currentSearchRadius = Mathf.Max(0f , searchRadius * CHASE_AI_ANGER.GetSearchRadiusMultiplier(angerInfluence));
             _currentSearchPointCount = CHASE_AI_ANGER.GetSearchPointCount(angerInfluence);
 
@@ -736,7 +768,19 @@ namespace HideSeek.AI
         {
             _isMovingToSearchCenter = false;
 
-            bool hasSearchPoints = _search.BuildSearchPoints(_movement.Position, _searchCenterPosition, _currentSearchRadius, _currentSearchPointCount, _config.MinimumSearchPointDistance, _config.SampleRadius, _movement.AreaMask, _config.SearchPointGenerationAttemptCountPerPoint);
+            bool hasSearchPoints = _search.BuildSearchPoints(
+                _movement.Position ,
+                _searchCenterPosition ,
+                _currentSearchRadius ,
+                _currentSearchPointCount ,
+                _currentSearchDirection ,
+                _config.LastSeenPredictionDistance ,
+                _config.DirectionalSearchPointRatio ,
+                _config.DirectionalSearchAngle ,
+                _config.MinimumSearchPointDistance ,
+                _config.SampleRadius ,
+                _movement.AreaMask ,
+                _config.SearchPointGenerationAttemptCountPerPoint);
 
             if ( !hasSearchPoints )
             {
@@ -746,7 +790,7 @@ namespace HideSeek.AI
 
             _searchWaitDurationPerPoint = _currentSearchDuration / _search.PointCount;
 
-            Debug.Log($"[ChaseAIStateMachine] 수색 지점 생성 완료: Count={_search.PointCount}, Center={_searchCenterPosition}, Radius={_currentSearchRadius:F1}, WaitPerPoint={_searchWaitDurationPerPoint:F1}");
+            Debug.Log($"[ChaseAIStateMachine] 수색 지점 생성 완료: Count={_search.PointCount}, Center={_searchCenterPosition}, Direction={_currentSearchDirection}, Radius={_currentSearchRadius:F1}, WaitPerPoint={_searchWaitDurationPerPoint:F1}");
 
             RequestCurrentSearchPointOrComplete();
         }
@@ -781,6 +825,7 @@ namespace HideSeek.AI
             _currentSearchRadius = 0f;
             _currentSearchDuration = 0f;
             _currentSearchPointCount = 0;
+            _currentSearchDirection = Vector3.zero;
             _searchWaitDurationPerPoint = 0f;
             _isMovingToSearchCenter = false;
         }

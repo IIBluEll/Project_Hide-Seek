@@ -103,8 +103,9 @@ namespace HideSeek.AI
             }
 
             Vector3 movement = currentSeenPosition - _previousSeenPosition;
+            movement.y = 0f;
 
-            if ( movement.sqrMagnitude >=MOVEMENT_DIRECTION_MIN_SQUARED_DISTANCE )
+            if ( movement.sqrMagnitude >= MOVEMENT_DIRECTION_MIN_SQUARED_DISTANCE )
             {
                 LastSeenMovementDirection = movement.normalized;
             }

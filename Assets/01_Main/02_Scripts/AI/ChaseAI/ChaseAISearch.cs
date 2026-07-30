@@ -4,7 +4,7 @@ using UnityEngine.AI;
 
 namespace HideSeek.AI
 {
-    //NavMesh 위에 도달 가능한 랜덤 수색 지점을 생성하고 순서대로 제공하는 역할
+    //NavMesh 위에 도달 가능한 방향 우선 및 무작위 수색 지점을 생성하고 순서대로 제공하는 역할
     public sealed class ChaseAISearch
     {
         private const int MIN_GENERATION_ATTEMPT_COUNT_PER_POINT = 1;
@@ -25,6 +25,10 @@ namespace HideSeek.AI
             Vector3 centerPosition ,
             float searchRadius ,
             int searchPointCount ,
+            Vector3 preferredDirection ,
+            float predictionDistance ,
+            float directionalPointRatio ,
+            float directionalSearchAngle ,
             float minimumPointDistance ,
             float sampleRadius ,
             int areaMask ,
@@ -54,10 +58,65 @@ namespace HideSeek.AI
             }
 
             int validAttemptCountPerPoint = Mathf.Max(MIN_GENERATION_ATTEMPT_COUNT_PER_POINT, generationAttemptCountPerPoint);
-
             int maximumAttemptCount = targetPointCount * validAttemptCountPerPoint;
-
             Vector3 pathStartPosition = startHit.position;
+
+            Vector3 normalizedPreferredDirection = preferredDirection;
+            normalizedPreferredDirection.y = 0f;
+
+            if ( normalizedPreferredDirection.sqrMagnitude > Mathf.Epsilon )
+            {
+                normalizedPreferredDirection.Normalize();
+            }
+            else
+            {
+                normalizedPreferredDirection = Vector3.zero;
+            }
+
+            int directionalPointCount = normalizedPreferredDirection != Vector3.zero
+                ? Mathf.Clamp(Mathf.CeilToInt(targetPointCount * Mathf.Clamp01(directionalPointRatio)) , 0 , targetPointCount)
+                : 0;
+
+            float validPredictionDistance = Mathf.Clamp(predictionDistance , 0f , validSearchRadius);
+
+            if ( directionalPointCount > 0 && validPredictionDistance > 0f )
+            {
+                Vector3 predictedPosition = centerPosition + normalizedPreferredDirection * validPredictionDistance;
+
+                TryAddSearchPoint(
+                    predictedPosition ,
+                    centerPosition ,
+                    validSearchRadius ,
+                    validMinimumPointDistance ,
+                    validSampleRadius ,
+                    areaMask ,
+                    ref pathStartPosition);
+            }
+
+            float validDirectionalSearchAngle = Mathf.Clamp(directionalSearchAngle , 0f , 180f);
+            float minimumDirectionalDistance = Mathf.Min(validMinimumPointDistance , validSearchRadius);
+
+            for ( int attemptIndex = 0; attemptIndex < maximumAttemptCount; attemptIndex++ )
+            {
+                if ( SEARCH_POINTS.Count >= directionalPointCount )
+                {
+                    break;
+                }
+
+                float directionAngle = Random.Range(-validDirectionalSearchAngle * 0.5f , validDirectionalSearchAngle * 0.5f);
+                Vector3 searchDirection = Quaternion.AngleAxis(directionAngle , Vector3.up) * normalizedPreferredDirection;
+                float searchDistance = Random.Range(minimumDirectionalDistance , validSearchRadius);
+                Vector3 directionalPosition = centerPosition + searchDirection * searchDistance;
+
+                TryAddSearchPoint(
+                    directionalPosition ,
+                    centerPosition ,
+                    validSearchRadius ,
+                    validMinimumPointDistance ,
+                    validSampleRadius ,
+                    areaMask ,
+                    ref pathStartPosition);
+            }
 
             for ( int attemptIndex = 0; attemptIndex < maximumAttemptCount; attemptIndex++ )
             {
@@ -74,36 +133,14 @@ namespace HideSeek.AI
                         0f,
                         randomOffset.y);
 
-                bool hasNavMeshPosition = NavMesh.SamplePosition(
-                    randomPosition,
-                    out NavMeshHit candidateHit,
-                    validSampleRadius,
-                    areaMask);
-
-                if ( !hasNavMeshPosition )
-                {
-                    continue;
-                }
-
-                Vector3 candidatePosition = candidateHit.position;
-
-                if ( !IsInsideSearchRadius(candidatePosition, centerPosition, validSearchRadius))
-                {
-                    continue;
-                }
-
-                if ( IsTooCloseToExistingPoint(candidatePosition, validMinimumPointDistance))
-                {
-                    continue;
-                }
-
-                if ( !HasCompletePath(pathStartPosition, candidatePosition, areaMask) )
-                {
-                    continue;
-                }
-
-                SEARCH_POINTS.Add(candidatePosition);
-                pathStartPosition = candidatePosition;
+                TryAddSearchPoint(
+                    randomPosition ,
+                    centerPosition ,
+                    validSearchRadius ,
+                    validMinimumPointDistance ,
+                    validSampleRadius ,
+                    areaMask ,
+                    ref pathStartPosition);
             }
 
             return SEARCH_POINTS.Count > 0;
@@ -139,6 +176,49 @@ namespace HideSeek.AI
         {
             SEARCH_POINTS.Clear();
             _currentPointIndex = 0;
+        }
+
+        private bool TryAddSearchPoint(
+            Vector3 candidatePosition ,
+            Vector3 centerPosition ,
+            float searchRadius ,
+            float minimumPointDistance ,
+            float sampleRadius ,
+            int areaMask ,
+            ref Vector3 pathStartPosition)
+        {
+            bool hasNavMeshPosition = NavMesh.SamplePosition(
+                candidatePosition ,
+                out NavMeshHit candidateHit ,
+                sampleRadius ,
+                areaMask);
+
+            if ( !hasNavMeshPosition )
+            {
+                return false;
+            }
+
+            Vector3 sampledPosition = candidateHit.position;
+
+            if ( !IsInsideSearchRadius(sampledPosition , centerPosition , searchRadius) )
+            {
+                return false;
+            }
+
+            if ( IsTooCloseToExistingPoint(sampledPosition , minimumPointDistance) )
+            {
+                return false;
+            }
+
+            if ( !HasCompletePath(pathStartPosition , sampledPosition , areaMask) )
+            {
+                return false;
+            }
+
+            SEARCH_POINTS.Add(sampledPosition);
+            pathStartPosition = sampledPosition;
+
+            return true;
         }
 
         private bool IsInsideSearchRadius(Vector3 candidatePosition, Vector3 centerPosition, float searchRadius)
