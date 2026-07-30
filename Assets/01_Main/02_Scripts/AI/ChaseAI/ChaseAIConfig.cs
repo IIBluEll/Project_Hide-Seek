@@ -38,7 +38,10 @@ namespace HideSeek.AI
         [SerializeField, Min(1f)] private float _maximumAnger = 100f;
         [SerializeField] private List<float> _generatorAngerFloors = new() { 0f , 20f , 40f , 60f };
         [SerializeField, Min(1f)] private float _maximumAngerChaseSpeedMultiplier = 1.15f;
-        [SerializeField, Min(1f)] private float _maximumAngerSearchDurationMultiplier = 1.25f;
+        [SerializeField, Min(1f)] private float _maximumAngerSearchRadiusMultiplier = 1.25f;
+        [SerializeField, Min(1)] private int _minimumAngerSearchPointCount = 2;
+        [SerializeField, Min(1)] private int _maximumAngerSearchPointCount = 4;
+        [SerializeField, Range(0f, 1f)] private float _directorHintAngerInfluence = 0.5f;
 
         [Header("Audio Search")]
         [SerializeField, Min(0f)] private float _minAudioSearchRadius = 2f;
@@ -48,7 +51,6 @@ namespace HideSeek.AI
 
         [Header("Search")]
         [SerializeField, Min(0f)] private float _visualSearchRadius = 5f;
-        [SerializeField, Min(1)] private int _searchPointCount = 3;
         [SerializeField, Min(0f)] private float _minimumSearchPointDistance = 1.5f;
         [SerializeField, Min(1)] private int _searchPointGenerationAttemptCountPerPoint = 10;
 
@@ -85,7 +87,10 @@ namespace HideSeek.AI
 
         public float MaximumAnger => _maximumAnger;
         public float MaximumAngerChaseSpeedMultiplier => _maximumAngerChaseSpeedMultiplier;
-        public float MaximumAngerSearchDurationMultiplier => _maximumAngerSearchDurationMultiplier;
+        public float MaximumAngerSearchRadiusMultiplier => _maximumAngerSearchRadiusMultiplier;
+        public int MinimumAngerSearchPointCount => _minimumAngerSearchPointCount;
+        public int MaximumAngerSearchPointCount => _maximumAngerSearchPointCount;
+        public float DirectorHintAngerInfluence => _directorHintAngerInfluence;
 
         public float MinAudioSearchRadius => _minAudioSearchRadius;
         public float MaxAudioSearchRadius => _maxAudioSearchRadius;
@@ -93,7 +98,6 @@ namespace HideSeek.AI
         public float MaxAudioSearchDuration => _maxAudioSearchDuration;
 
         public float VisualSearchRadius => _visualSearchRadius;
-        public int SearchPointCount => _searchPointCount;
         public float MinimumSearchPointDistance => _minimumSearchPointDistance;
         public int SearchPointGenerationAttemptCountPerPoint => _searchPointGenerationAttemptCountPerPoint;
 
@@ -121,7 +125,9 @@ namespace HideSeek.AI
         {
             _maximumAnger = Mathf.Max(1f , _maximumAnger);
             _maximumAngerChaseSpeedMultiplier = Mathf.Max(1f , _maximumAngerChaseSpeedMultiplier);
-            _maximumAngerSearchDurationMultiplier = Mathf.Max(1f , _maximumAngerSearchDurationMultiplier);
+            _maximumAngerSearchRadiusMultiplier = Mathf.Max(1f , _maximumAngerSearchRadiusMultiplier);
+            _minimumAngerSearchPointCount = Mathf.Max(1 , _minimumAngerSearchPointCount);
+            _maximumAngerSearchPointCount = Mathf.Max(_minimumAngerSearchPointCount , _maximumAngerSearchPointCount);
 
             if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )
             {

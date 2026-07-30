@@ -37,13 +37,15 @@ MonoBehaviour:
   - 40
   - 60
   _maximumAngerChaseSpeedMultiplier: 1.15
-  _maximumAngerSearchDurationMultiplier: 1.25
+  _maximumAngerSearchRadiusMultiplier: 1.25
+  _minimumAngerSearchPointCount: 2
+  _maximumAngerSearchPointCount: 4
+  _directorHintAngerInfluence: 0.5
   _minAudioSearchRadius: 2
   _maxAudioSearchRadius: 8
   _minAudioSearchDuration: 2
   _maxAudioSearchDuration: 8
   _visualSearchRadius: 5
-  _searchPointCount: 3
   _minimumSearchPointDistance: 1.5
   _searchPointGenerationAttemptCountPerPoint: 10
   _chaseSpeed: 7

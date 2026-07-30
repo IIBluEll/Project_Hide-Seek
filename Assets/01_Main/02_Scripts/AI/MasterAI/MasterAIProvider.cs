@@ -175,7 +175,7 @@ namespace HideSeek.AI
         {
             _targetZone = null;
 
-            bool wasSelected = _zoneSelector.TrySelectTargetZone(_currentPlayerZone , _director.GlobalStressRatio , out AIWorldZone selectedZone , out MASTER_AI_ZONE_RELATION relation);
+            bool wasSelected = _zoneSelector.TrySelectTargetZone(_currentPlayerZone , out AIWorldZone selectedZone , out MASTER_AI_ZONE_RELATION relation);
 
             if ( !wasSelected )
             {
@@ -186,7 +186,7 @@ namespace HideSeek.AI
 
             _targetZone = selectedZone;
 
-            Debug.Log($"[MasterAIProvider] Target Zone 선택: ID={_targetZone.ZoneId}, Name={_targetZone.DisplayName}, Relation={relation}, Stress={_director.GlobalStressRatio:F2}" , this);
+            Debug.Log($"[MasterAIProvider] Target Zone 선택: ID={_targetZone.ZoneId}, Name={_targetZone.DisplayName}, Relation={relation}" , this);
 
             return true;
         }
@@ -343,7 +343,6 @@ namespace HideSeek.AI
 
             bool wasCreated = _hintGenerator.TryCreateHint(
                 _targetZone ,
-                _director.GlobalStressRatio ,
                 Time.time ,
                 out MasterAIHint createdHint);
 

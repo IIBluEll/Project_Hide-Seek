@@ -22,16 +22,11 @@ MonoBehaviour:
   _reactivationStressRatio: 0.1
   _retreatStressRatio: 1
   _retreatRetryDelay: 3
-  _lowStressPlayerZoneWeight: 0.3
-  _lowStressAdjacentZoneWeight: 0.5
-  _lowStressOtherZoneWeight: 0.2
-  _highStressPlayerZoneWeight: 0.7
-  _highStressAdjacentZoneWeight: 0.3
-  _highStressOtherZoneWeight: 0
-  _minimumHintRadius: 6
-  _maximumHintRadius: 14
-  _minimumHintUrgency: 0.25
-  _maximumHintUrgency: 0.7
+  _playerZoneWeight: 0.3
+  _adjacentZoneWeight: 0.5
+  _otherZoneWeight: 0.2
+  _hintRadius: 10
+  _hintUrgency: 0.5
   _hintDuration: 5
   _hintNavMeshSampleRadius: 2
   _hintPositionAttemptCount: 10

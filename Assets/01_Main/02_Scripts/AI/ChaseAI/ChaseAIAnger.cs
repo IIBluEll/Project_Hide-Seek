@@ -15,7 +15,8 @@ namespace HideSeek.AI
 
         public float AngerRatio => Mathf.Clamp01(CurrentAnger / CHASE_AI_CONFIG.MaximumAnger);
         public float ChaseSpeedMultiplier => Mathf.Lerp(1f , CHASE_AI_CONFIG.MaximumAngerChaseSpeedMultiplier , AngerRatio);
-        public float SearchDurationMultiplier => Mathf.Lerp(1f , CHASE_AI_CONFIG.MaximumAngerSearchDurationMultiplier , AngerRatio);
+        public float SearchRadiusMultiplier => GetSearchRadiusMultiplier(1f);
+        public int SearchPointCount => GetSearchPointCount(1f);
 
         public ChaseAIAnger(ChaseAIConfig chaseAIConfig)
         {
@@ -72,6 +73,24 @@ namespace HideSeek.AI
             {
                 Changed?.Invoke();
             }
+        }
+
+        public float GetSearchRadiusMultiplier(float angerInfluence)
+        {
+            float effectiveAngerRatio = AngerRatio * Mathf.Clamp01(angerInfluence);
+
+            return Mathf.Lerp(1f , CHASE_AI_CONFIG.MaximumAngerSearchRadiusMultiplier , effectiveAngerRatio);
+        }
+
+        public int GetSearchPointCount(float angerInfluence)
+        {
+            float effectiveAngerRatio = AngerRatio * Mathf.Clamp01(angerInfluence);
+            float searchPointCount = Mathf.Lerp(
+                CHASE_AI_CONFIG.MinimumAngerSearchPointCount ,
+                CHASE_AI_CONFIG.MaximumAngerSearchPointCount ,
+                effectiveAngerRatio);
+
+            return Mathf.RoundToInt(searchPointCount);
         }
 
         public void Reset()
