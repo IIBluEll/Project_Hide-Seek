@@ -174,7 +174,9 @@ namespace HideSeek.AI
                     CHASE_AI_CONFIG.SearchWaitTime ,
                     false ,
                     CHASE_AI_CONFIG.DirectorHintAngerInfluence ,
-                    "Director hint search center");
+                    "Director hint search center" ,
+                    directorHint.TargetZoneId ,
+                    true);
 
                 return true;
             }
