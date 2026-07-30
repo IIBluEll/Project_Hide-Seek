@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -32,6 +33,12 @@ namespace HideSeek.AI
         [SerializeField, Min(0.1f)] private float _weakNoiseEvidenceDuration = 4f;
         [SerializeField, Min(0.1f)] private float _strongNoiseEvidenceDuration = 8f;
         [SerializeField, Min(0f)] private float _strongNoiseThreshold = 0.5f;
+
+        [Header("Anger")]
+        [SerializeField, Min(1f)] private float _maximumAnger = 100f;
+        [SerializeField] private List<float> _generatorAngerFloors = new() { 0f , 20f , 40f , 60f };
+        [SerializeField, Min(1f)] private float _maximumAngerChaseSpeedMultiplier = 1.15f;
+        [SerializeField, Min(1f)] private float _maximumAngerSearchDurationMultiplier = 1.25f;
 
         [Header("Audio Search")]
         [SerializeField, Min(0f)] private float _minAudioSearchRadius = 2f;
@@ -76,6 +83,10 @@ namespace HideSeek.AI
         public float StrongNoiseEvidenceDuration => _strongNoiseEvidenceDuration;
         public float StrongNoiseThreshold => _strongNoiseThreshold;
 
+        public float MaximumAnger => _maximumAnger;
+        public float MaximumAngerChaseSpeedMultiplier => _maximumAngerChaseSpeedMultiplier;
+        public float MaximumAngerSearchDurationMultiplier => _maximumAngerSearchDurationMultiplier;
+
         public float MinAudioSearchRadius => _minAudioSearchRadius;
         public float MaxAudioSearchRadius => _maxAudioSearchRadius;
         public float MinAudioSearchDuration => _minAudioSearchDuration;
@@ -93,5 +104,39 @@ namespace HideSeek.AI
         public float ChaseRepathInterval => _chaseRepathInterval;
 
         public float ChaseDestinationUpdateDistance => _chaseDestinationUpdateDistance;
+
+        public float GetGeneratorAngerFloor(int completedGeneratorCount)
+        {
+            if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )
+            {
+                return 0f;
+            }
+
+            int floorIndex = Mathf.Clamp(completedGeneratorCount , 0 , _generatorAngerFloors.Count - 1);
+
+            return _generatorAngerFloors[ floorIndex ];
+        }
+
+        private void OnValidate()
+        {
+            _maximumAnger = Mathf.Max(1f , _maximumAnger);
+            _maximumAngerChaseSpeedMultiplier = Mathf.Max(1f , _maximumAngerChaseSpeedMultiplier);
+            _maximumAngerSearchDurationMultiplier = Mathf.Max(1f , _maximumAngerSearchDurationMultiplier);
+
+            if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )
+            {
+                _generatorAngerFloors = new List<float> { 0f };
+            }
+
+            float previousAngerFloor = 0f;
+
+            for ( int floorIndex = 0; floorIndex < _generatorAngerFloors.Count; floorIndex++ )
+            {
+                float angerFloor = Mathf.Clamp(_generatorAngerFloors[ floorIndex ] , previousAngerFloor , _maximumAnger);
+
+                _generatorAngerFloors[ floorIndex ] = angerFloor;
+                previousAngerFloor = angerFloor;
+            }
+        }
     }
 }

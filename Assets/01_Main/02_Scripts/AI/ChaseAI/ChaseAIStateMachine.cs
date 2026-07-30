@@ -21,6 +21,7 @@ namespace HideSeek.AI
         private readonly ChaseAIMovement _movement;
         private readonly ChaseAIMemory _memory;
         private readonly ChaseAISearch _search;
+        private readonly ChaseAIAnger CHASE_AI_ANGER;
         private readonly IReadOnlyList<Transform> _patrolPoints;
 
         private MasterAIHint _activeDirectorHint;
@@ -61,12 +62,13 @@ namespace HideSeek.AI
             private set;
         } = CHASE_AI_STATE.DORMANT;
 
-        public ChaseAIStateMachine(ChaseAIConfig config , ChaseAIMovement movement , ChaseAIMemory memory , ChaseAISearch search , IReadOnlyList<Transform> patrolPoints)
+        public ChaseAIStateMachine(ChaseAIConfig config , ChaseAIMovement movement , ChaseAIMemory memory , ChaseAISearch search , ChaseAIAnger chaseAIAnger , IReadOnlyList<Transform> patrolPoints)
         {
             _config = config;
             _movement = movement;
             _memory = memory;
             _search = search;
+            CHASE_AI_ANGER = chaseAIAnger;
             _patrolPoints = patrolPoints;
         }
 
@@ -85,6 +87,14 @@ namespace HideSeek.AI
             _stateTimer = 0f;
 
             Debug.Log("[ChaseAIStateMachine] DORMANT 상태로 초기화되었습니다.");
+        }
+
+        public void RefreshAngerEffects()
+        {
+            if ( CurrentState == CHASE_AI_STATE.CHASE )
+            {
+                _movement.SetSpeed(_config.ChaseSpeed * CHASE_AI_ANGER.ChaseSpeedMultiplier);
+            }
         }
 
         public bool RequestActivation()
@@ -605,7 +615,7 @@ namespace HideSeek.AI
             ClearAudioInvestigation();
             ClearDirectorInvestigation();
 
-            _movement.SetSpeed(_config.ChaseSpeed);
+            _movement.SetSpeed(_config.ChaseSpeed * CHASE_AI_ANGER.ChaseSpeedMultiplier);
             _chaseRepathTimer = 0f;
         }
 
@@ -696,7 +706,7 @@ namespace HideSeek.AI
         {
             _searchCenterPosition = centerPosition;
             _currentSearchRadius = Mathf.Max(0f , searchRadius);
-            _currentSearchDuration = Mathf.Max(0f , searchDuration);
+            _currentSearchDuration = Mathf.Max(0f , searchDuration * CHASE_AI_ANGER.SearchDurationMultiplier);
             _isMovingToSearchCenter = shouldMoveToCenter;
 
             if ( shouldMoveToCenter && RequestDestination(centerPosition , context) )

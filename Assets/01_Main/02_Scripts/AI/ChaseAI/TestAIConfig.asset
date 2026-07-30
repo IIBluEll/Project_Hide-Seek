@@ -30,6 +30,14 @@ MonoBehaviour:
   _weakNoiseEvidenceDuration: 4
   _strongNoiseEvidenceDuration: 8
   _strongNoiseThreshold: 0.5
+  _maximumAnger: 100
+  _generatorAngerFloors:
+  - 0
+  - 20
+  - 40
+  - 60
+  _maximumAngerChaseSpeedMultiplier: 1.15
+  _maximumAngerSearchDurationMultiplier: 1.25
   _minAudioSearchRadius: 2
   _maxAudioSearchRadius: 8
   _minAudioSearchDuration: 2

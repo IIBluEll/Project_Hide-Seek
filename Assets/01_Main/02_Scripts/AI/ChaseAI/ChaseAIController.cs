@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using HideSeek.Gameplay;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -10,12 +11,14 @@ namespace HideSeek.AI
         [SerializeField] private ChaseAIConfig _config;
         [SerializeField] private ChaseAIMovement _movement;
         [SerializeField] private ChaseAIPerception _perception;
+        [SerializeField] private GameProgressProvider _gameProgressProvider;
 
         [Header("Patrol")]
         [SerializeField] private List<Transform> _patrolPoints = new();
 
         private ChaseAIMemory _memory;
         private ChaseAISearch _search;
+        private ChaseAIAnger _anger;
         private ChaseAIStateMachine _stateMachine;
 
         private bool _isInitialized;
@@ -28,6 +31,9 @@ namespace HideSeek.AI
         public bool IsInitialized => _isInitialized;
         public float NavMeshSampleRadius => _config != null ? _config.SampleRadius : 0.1f;
         public int AreaMask => _movement != null ? _movement.AreaMask : UnityEngine.AI.NavMesh.AllAreas;
+        public float CurrentAnger => _anger != null ? _anger.CurrentAnger : 0f;
+        public float AngerFloor => _anger != null ? _anger.AngerFloor : 0f;
+        public int CompletedGeneratorCount => _anger != null ? _anger.CompletedGeneratorCount : 0;
 
         private void Awake()
         {
@@ -37,13 +43,19 @@ namespace HideSeek.AI
 
         private void OnEnable()
         {
-            if ( _perception == null )
+            if ( _perception != null )
             {
-                return;
+                _perception.NoiseDetected -= OnNoiseDetected;
+                _perception.NoiseDetected += OnNoiseDetected;
             }
 
-            _perception.NoiseDetected -= OnNoiseDetected;
-            _perception.NoiseDetected += OnNoiseDetected;
+            if ( _gameProgressProvider != null )
+            {
+                _gameProgressProvider.CompletedGeneratorCountChanged -= OnCompletedGeneratorCountChangedActioned;
+                _gameProgressProvider.CompletedGeneratorCountChanged += OnCompletedGeneratorCountChangedActioned;
+
+                SynchronizeGameProgress();
+            }
         }
 
         private void Start()
@@ -53,7 +65,10 @@ namespace HideSeek.AI
                 return;
             }
 
-            _stateMachine = new ChaseAIStateMachine(_config , _movement , _memory , _search , _patrolPoints);
+            _anger = new ChaseAIAnger(_config);
+            SynchronizeGameProgress();
+
+            _stateMachine = new ChaseAIStateMachine(_config , _movement , _memory , _search , _anger , _patrolPoints);
 
             _stateMachine.Initialize();
             _isInitialized = true;
@@ -123,7 +138,51 @@ namespace HideSeek.AI
                 _perception.NoiseDetected -= OnNoiseDetected;
             }
 
+            if ( _gameProgressProvider != null )
+            {
+                _gameProgressProvider.CompletedGeneratorCountChanged -= OnCompletedGeneratorCountChangedActioned;
+            }
+
             _stateMachine?.Stop();
+        }
+
+        private void OnCompletedGeneratorCountChangedActioned(int completedGeneratorCount)
+        {
+            if ( _anger == null )
+            {
+                return;
+            }
+
+            _anger.SetCompletedGeneratorCount(completedGeneratorCount);
+            _stateMachine?.RefreshAngerEffects();
+
+            LogAngerState("발전기 완료 이벤트");
+        }
+
+        private void SynchronizeGameProgress()
+        {
+            if ( _gameProgressProvider == null || _anger == null )
+            {
+                return;
+            }
+
+            _anger.SetCompletedGeneratorCount(_gameProgressProvider.CompletedGeneratorCount);
+            _stateMachine?.RefreshAngerEffects();
+
+            LogAngerState("게임 진행도 동기화");
+        }
+
+        private void LogAngerState(string reason)
+        {
+            Debug.Log(
+                $"[ChaseAIController] Anger 갱신: " +
+                $"Reason={reason}, " +
+                $"Completed={_anger.CompletedGeneratorCount}, " +
+                $"Anger={_anger.CurrentAnger:F1}, " +
+                $"Floor={_anger.AngerFloor:F1}, " +
+                $"ChaseSpeedMultiplier={_anger.ChaseSpeedMultiplier:F2}, " +
+                $"SearchDurationMultiplier={_anger.SearchDurationMultiplier:F2}" ,
+                this);
         }
 
         private void ReportRetreatFailure()
@@ -195,6 +254,11 @@ namespace HideSeek.AI
                 Debug.LogError("[ChaseAIController] 순찰 지점이 없습니다.", this);
 
                 return false;
+            }
+
+            if ( _gameProgressProvider == null )
+            {
+                Debug.LogWarning("[ChaseAIController] GameProgressProvider가 없어 Anger가 발전기 진행도와 연결되지 않습니다." , this);
             }
 
             return true;
