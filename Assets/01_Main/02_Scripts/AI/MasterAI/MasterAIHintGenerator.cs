@@ -13,7 +13,7 @@ namespace HideSeek.AI
             MASTER_AI_CONFIG = masterAIConfig != null ? masterAIConfig : throw new ArgumentNullException(nameof(masterAIConfig));
         }
 
-        public bool TryCreateHint(AIWorldZone targetZone , float stressRatio , float currentTime , out MasterAIHint hint)
+        public bool TryCreateHint(AIWorldZone targetZone , float currentTime , out MasterAIHint hint)
         {
             hint = default;
 
@@ -27,15 +27,11 @@ namespace HideSeek.AI
                 return false;
             }
 
-            float normalizedStress = Mathf.Clamp01(stressRatio);
-            float searchRadius = Mathf.Lerp(MASTER_AI_CONFIG.MaximumHintRadius , MASTER_AI_CONFIG.MinimumHintRadius , normalizedStress);
-            float urgency = Mathf.Lerp(MASTER_AI_CONFIG.MinimumHintUrgency , MASTER_AI_CONFIG.MaximumHintUrgency , normalizedStress);
-
             hint = new MasterAIHint(
                 targetZone.ZoneId ,
                 searchAnchorPosition ,
-                searchRadius ,
-                urgency ,
+                MASTER_AI_CONFIG.HintRadius ,
+                MASTER_AI_CONFIG.HintUrgency ,
                 currentTime + MASTER_AI_CONFIG.HintDuration);
 
             return true;

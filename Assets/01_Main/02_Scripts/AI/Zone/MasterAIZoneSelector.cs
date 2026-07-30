@@ -85,7 +85,7 @@ namespace HideSeek.AI
             return false;
         }
 
-        public bool TrySelectTargetZone(AIWorldZone playerZone , float globalStressRatio , out AIWorldZone targetZone , out MASTER_AI_ZONE_RELATION relation)
+        public bool TrySelectTargetZone(AIWorldZone playerZone , out AIWorldZone targetZone , out MASTER_AI_ZONE_RELATION relation)
         {
             targetZone = null;
             relation = MASTER_AI_ZONE_RELATION.PLAYER;
@@ -97,13 +97,11 @@ namespace HideSeek.AI
 
             BuildCandidates(playerZone);
 
-            float stressRatio = Mathf.Clamp01(globalStressRatio);
+            float playerZoneWeight = MASTER_AI_CONFIG.PlayerZoneWeight;
 
-            float playerZoneWeight = Mathf.Lerp(MASTER_AI_CONFIG.LowStressPlayerZoneWeight , MASTER_AI_CONFIG.HighStressPlayerZoneWeight , stressRatio);
+            float adjacentZoneWeight = ADJACENT_CANDIDATES.Count > 0 ? MASTER_AI_CONFIG.AdjacentZoneWeight : 0f;
 
-            float adjacentZoneWeight = ADJACENT_CANDIDATES.Count > 0 ? Mathf.Lerp(MASTER_AI_CONFIG.LowStressAdjacentZoneWeight , MASTER_AI_CONFIG.HighStressAdjacentZoneWeight , stressRatio) : 0f;
-
-            float otherZoneWeight = OTHER_CANDIDATES.Count > 0 ? Mathf.Lerp(MASTER_AI_CONFIG.LowStressOtherZoneWeight , MASTER_AI_CONFIG.HighStressOtherZoneWeight , stressRatio) : 0f;
+            float otherZoneWeight = OTHER_CANDIDATES.Count > 0 ? MASTER_AI_CONFIG.OtherZoneWeight : 0f;
 
             float totalWeight = playerZoneWeight + adjacentZoneWeight + otherZoneWeight;
 

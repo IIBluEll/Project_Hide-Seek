@@ -42,6 +42,7 @@ namespace HideSeek.AI
         private Vector3 _searchCenterPosition;
         private float _currentSearchRadius;
         private float _currentSearchDuration;
+        private int _currentSearchPointCount;
         private float _searchWaitDurationPerPoint;
         private bool _isMovingToSearchCenter;
 
@@ -633,6 +634,7 @@ namespace HideSeek.AI
                     _audioSearchRadius ,
                     _audioSearchDuration ,
                     false ,
+                    1f ,
                     "Audio search center");
 
                 return;
@@ -647,6 +649,7 @@ namespace HideSeek.AI
                     _config.VisualSearchRadius ,
                     _config.SearchWaitTime ,
                     true ,
+                    1f ,
                     "Last seen position");
 
                 return;
@@ -663,6 +666,7 @@ namespace HideSeek.AI
                     searchRadius ,
                     searchDuration ,
                     true ,
+                    1f ,
                     "Last heard position");
 
                 return;
@@ -677,6 +681,7 @@ namespace HideSeek.AI
                     _activeDirectorHint.SearchRadius ,
                     _config.SearchWaitTime ,
                     false ,
+                    _config.DirectorHintAngerInfluence ,
                     "Director hint search center");
 
                 return;
@@ -702,11 +707,21 @@ namespace HideSeek.AI
             ChangeState(CHASE_AI_STATE.DORMANT , "Retreat point reached");
         }
 
-        private void PrepareSearch(Vector3 centerPosition , float searchRadius , float searchDuration , bool shouldMoveToCenter , string context)
+        private void PrepareSearch(
+            Vector3 centerPosition ,
+            float searchRadius ,
+            float searchDuration ,
+            bool shouldMoveToCenter ,
+            float angerInfluence ,
+            string context)
         {
             _searchCenterPosition = centerPosition;
-            _currentSearchRadius = Mathf.Max(0f , searchRadius);
-            _currentSearchDuration = Mathf.Max(0f , searchDuration * CHASE_AI_ANGER.SearchDurationMultiplier);
+            _currentSearchRadius = Mathf.Max(0f , searchRadius * CHASE_AI_ANGER.GetSearchRadiusMultiplier(angerInfluence));
+            _currentSearchPointCount = CHASE_AI_ANGER.GetSearchPointCount(angerInfluence);
+
+            float pointCountRatio = _currentSearchPointCount / (float)_config.MinimumAngerSearchPointCount;
+
+            _currentSearchDuration = Mathf.Max(0f , searchDuration * pointCountRatio);
             _isMovingToSearchCenter = shouldMoveToCenter;
 
             if ( shouldMoveToCenter && RequestDestination(centerPosition , context) )
@@ -721,7 +736,7 @@ namespace HideSeek.AI
         {
             _isMovingToSearchCenter = false;
 
-            bool hasSearchPoints = _search.BuildSearchPoints(_movement.Position, _searchCenterPosition, _currentSearchRadius, _config.SearchPointCount, _config.MinimumSearchPointDistance, _config.SampleRadius, _movement.AreaMask, _config.SearchPointGenerationAttemptCountPerPoint);
+            bool hasSearchPoints = _search.BuildSearchPoints(_movement.Position, _searchCenterPosition, _currentSearchRadius, _currentSearchPointCount, _config.MinimumSearchPointDistance, _config.SampleRadius, _movement.AreaMask, _config.SearchPointGenerationAttemptCountPerPoint);
 
             if ( !hasSearchPoints )
             {
@@ -765,6 +780,7 @@ namespace HideSeek.AI
             _searchCenterPosition = Vector3.zero;
             _currentSearchRadius = 0f;
             _currentSearchDuration = 0f;
+            _currentSearchPointCount = 0;
             _searchWaitDurationPerPoint = 0f;
             _isMovingToSearchCenter = false;
         }

@@ -21,18 +21,13 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _retreatRetryDelay = 3f;
 
         [Header("Zone Selection")]
-        [SerializeField, Min(0f)] private float _lowStressPlayerZoneWeight = 0.3f;
-        [SerializeField, Min(0f)] private float _lowStressAdjacentZoneWeight = 0.5f;
-        [SerializeField, Min(0f)] private float _lowStressOtherZoneWeight = 0.2f;
-        [SerializeField, Min(0f)] private float _highStressPlayerZoneWeight = 0.7f;
-        [SerializeField, Min(0f)] private float _highStressAdjacentZoneWeight = 0.3f;
-        [SerializeField, Min(0f)] private float _highStressOtherZoneWeight = 0f;
+        [SerializeField, Min(0f)] private float _playerZoneWeight = 0.3f;
+        [SerializeField, Min(0f)] private float _adjacentZoneWeight = 0.5f;
+        [SerializeField, Min(0f)] private float _otherZoneWeight = 0.2f;
 
         [Header("Director Hint")]
-        [SerializeField, Min(0f)] private float _minimumHintRadius = 6f;
-        [SerializeField, Min(0f)] private float _maximumHintRadius = 14f;
-        [SerializeField, Range(0f, 1f)] private float _minimumHintUrgency = 0.25f;
-        [SerializeField, Range(0f, 1f)] private float _maximumHintUrgency = 0.8f;
+        [SerializeField, Min(0f)] private float _hintRadius = 10f;
+        [SerializeField, Range(0f, 1f)] private float _hintUrgency = 0.5f;
         [SerializeField, Min(0f)] private float _hintDuration = 5f;
         [SerializeField, Min(0.1f)] private float _hintNavMeshSampleRadius = 2f;
         [SerializeField, Min(1)] private int _hintPositionAttemptCount = 10;
@@ -51,17 +46,12 @@ namespace HideSeek.AI
         public float RetreatStressThreshold => _maximumGlobalStress * _retreatStressRatio;
         public float RetreatRetryDelay => _retreatRetryDelay;
 
-        public float LowStressPlayerZoneWeight => _lowStressPlayerZoneWeight;
-        public float LowStressAdjacentZoneWeight => _lowStressAdjacentZoneWeight;
-        public float LowStressOtherZoneWeight => _lowStressOtherZoneWeight;
-        public float HighStressPlayerZoneWeight => _highStressPlayerZoneWeight;
-        public float HighStressAdjacentZoneWeight => _highStressAdjacentZoneWeight;
-        public float HighStressOtherZoneWeight => _highStressOtherZoneWeight;
+        public float PlayerZoneWeight => _playerZoneWeight;
+        public float AdjacentZoneWeight => _adjacentZoneWeight;
+        public float OtherZoneWeight => _otherZoneWeight;
 
-        public float MinimumHintRadius => _minimumHintRadius;
-        public float MaximumHintRadius => _maximumHintRadius;
-        public float MinimumHintUrgency => _minimumHintUrgency;
-        public float MaximumHintUrgency => _maximumHintUrgency;
+        public float HintRadius => _hintRadius;
+        public float HintUrgency => _hintUrgency;
         public float HintDuration => _hintDuration;
         public float HintNavMeshSampleRadius => _hintNavMeshSampleRadius;
         public int HintPositionAttemptCount => _hintPositionAttemptCount;
@@ -71,8 +61,6 @@ namespace HideSeek.AI
         private void OnValidate()
         {
             _retreatStressRatio = Mathf.Max(_reactivationStressRatio , _retreatStressRatio);
-            _maximumHintRadius = Mathf.Max(_minimumHintRadius , _maximumHintRadius);
-            _maximumHintUrgency = Mathf.Max(_minimumHintUrgency , _maximumHintUrgency);
             _hintPositionAttemptCount = Mathf.Max(1 , _hintPositionAttemptCount);
             _maximumHintInterval = Mathf.Max(_minimumHintInterval , _maximumHintInterval);
         }

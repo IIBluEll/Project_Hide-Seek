@@ -181,7 +181,8 @@ namespace HideSeek.AI
                 $"Anger={_anger.CurrentAnger:F1}, " +
                 $"Floor={_anger.AngerFloor:F1}, " +
                 $"ChaseSpeedMultiplier={_anger.ChaseSpeedMultiplier:F2}, " +
-                $"SearchDurationMultiplier={_anger.SearchDurationMultiplier:F2}" ,
+                $"SearchRadiusMultiplier={_anger.SearchRadiusMultiplier:F2}, " +
+                $"SearchPointCount={_anger.SearchPointCount}" ,
                 this);
         }
 
