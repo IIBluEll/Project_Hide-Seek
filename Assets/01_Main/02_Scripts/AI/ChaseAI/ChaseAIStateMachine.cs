@@ -9,6 +9,7 @@ namespace HideSeek.AI
         PATROL,
         INVESTIGATE,
         CHASE,
+        ATTACK,
         SEARCH,
         RETREAT
     }
@@ -31,6 +32,7 @@ namespace HideSeek.AI
         private Vector3 _retreatPosition;
         private bool _isRetreatPending;
         private bool _hasRetreatFailed;
+        private bool _hasPlayerCaughtRequest;
 
         public Vector3 SearchCenterPosition => SEARCH_BEHAVIOR.SearchCenterPosition;
         public float CurrentSearchRadius => SEARCH_BEHAVIOR.CurrentSearchRadius;
@@ -72,6 +74,7 @@ namespace HideSeek.AI
             _isWaiting = false;
             _isRetreatPending = false;
             _hasRetreatFailed = false;
+            _hasPlayerCaughtRequest = false;
             _stateTimer = 0f;
 
             Debug.Log("[ChaseAIStateMachine] DORMANT 상태로 초기화되었습니다.");
@@ -95,6 +98,7 @@ namespace HideSeek.AI
             _retreatPosition = Vector3.zero;
             _isRetreatPending = false;
             _hasRetreatFailed = false;
+            _hasPlayerCaughtRequest = false;
 
             ChangeState(CHASE_AI_STATE.PATROL , "Director activation requested");
 
@@ -103,7 +107,7 @@ namespace HideSeek.AI
 
         public bool RequestRetreat(Vector3 retreatPosition)
         {
-            if ( CurrentState == CHASE_AI_STATE.DORMANT )
+            if ( CurrentState == CHASE_AI_STATE.DORMANT || CurrentState == CHASE_AI_STATE.ATTACK )
             {
                 return false;
             }
@@ -148,6 +152,18 @@ namespace HideSeek.AI
             return true;
         }
 
+        public bool ConsumePlayerCaughtRequest()
+        {
+            if ( !_hasPlayerCaughtRequest )
+            {
+                return false;
+            }
+
+            _hasPlayerCaughtRequest = false;
+
+            return true;
+        }
+
         public void Tick(float deltaTime , ChaseAIVisualObservation visualObservation)
         {
             if ( CurrentState == CHASE_AI_STATE.DORMANT )
@@ -155,7 +171,9 @@ namespace HideSeek.AI
                 return;
             }
 
-            if ( visualObservation.State == CHASE_AI_VISUAL_STATE.CONFIRMED && CurrentState != CHASE_AI_STATE.CHASE )
+            if ( visualObservation.State == CHASE_AI_VISUAL_STATE.CONFIRMED &&
+                CurrentState != CHASE_AI_STATE.CHASE &&
+                CurrentState != CHASE_AI_STATE.ATTACK )
             {
                 ChangeState(CHASE_AI_STATE.CHASE , "Player visually confirmed");
             }
@@ -172,6 +190,9 @@ namespace HideSeek.AI
 
                 case CHASE_AI_STATE.CHASE:
                     UpdateChase(deltaTime , visualObservation);
+                    break;
+
+                case CHASE_AI_STATE.ATTACK:
                     break;
 
                 case CHASE_AI_STATE.SEARCH:
@@ -203,7 +224,10 @@ namespace HideSeek.AI
 
         public bool TryReceiveAudioEvidence(ChaseAIAudioObservation observation)
         {
-            if ( CurrentState == CHASE_AI_STATE.CHASE || CurrentState == CHASE_AI_STATE.DORMANT || CurrentState == CHASE_AI_STATE.RETREAT )
+            if ( CurrentState == CHASE_AI_STATE.CHASE ||
+                CurrentState == CHASE_AI_STATE.ATTACK ||
+                CurrentState == CHASE_AI_STATE.DORMANT ||
+                CurrentState == CHASE_AI_STATE.RETREAT )
             {
                 return false;
             }
@@ -245,6 +269,7 @@ namespace HideSeek.AI
             _retreatPosition = Vector3.zero;
             _isRetreatPending = false;
             _hasRetreatFailed = false;
+            _hasPlayerCaughtRequest = false;
             _stateTimer = 0f;
         }
 
@@ -311,6 +336,13 @@ namespace HideSeek.AI
             float deltaTime ,
             ChaseAIVisualObservation visualObservation)
         {
+            if ( IsPlayerWithinAttackRange(visualObservation) )
+            {
+                ChangeState(CHASE_AI_STATE.ATTACK , "Player entered attack range");
+
+                return;
+            }
+
             CHASE_AI_CHASE_RESULT chaseResult = CHASE_BEHAVIOR.Tick(deltaTime , visualObservation);
 
             if ( chaseResult == CHASE_AI_CHASE_RESULT.RUNNING )
@@ -410,6 +442,10 @@ namespace HideSeek.AI
                     EnterChase();
                     break;
 
+                case CHASE_AI_STATE.ATTACK:
+                    EnterAttack();
+                    break;
+
                 case CHASE_AI_STATE.SEARCH:
                     EnterSearch();
                     break;
@@ -429,6 +465,7 @@ namespace HideSeek.AI
             _retreatPosition = Vector3.zero;
             _isRetreatPending = false;
             _hasRetreatFailed = false;
+            _hasPlayerCaughtRequest = false;
         }
 
         private void EnterRetreat()
@@ -483,6 +520,15 @@ namespace HideSeek.AI
             CHASE_BEHAVIOR.Begin();
         }
 
+        private void EnterAttack()
+        {
+            CHASE_BEHAVIOR.Stop();
+            SEARCH_BEHAVIOR.Stop();
+
+            _isRetreatPending = false;
+            _hasPlayerCaughtRequest = true;
+        }
+
         private void EnterSearch()
         {
             CHASE_BEHAVIOR.Stop();
@@ -534,6 +580,11 @@ namespace HideSeek.AI
         private void CompleteRetreat()
         {
             ChangeState(CHASE_AI_STATE.DORMANT , "Retreat point reached");
+        }
+
+        private bool IsPlayerWithinAttackRange(ChaseAIVisualObservation visualObservation)
+        {
+            return visualObservation.CanAttackTarget;
         }
 
         private bool RequestInvestigationDestination()

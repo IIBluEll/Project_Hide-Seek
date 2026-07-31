@@ -94,6 +94,11 @@ namespace HideSeek.AI
 
         private MASTER_AI_COMMAND UpdateActive(float deltaTime , CHASE_AI_STATE chaseAIState , float distanceToPlayer)
         {
+            if ( chaseAIState == CHASE_AI_STATE.ATTACK )
+            {
+                return MASTER_AI_COMMAND.NONE;
+            }
+
             UpdateActiveGlobalStress(deltaTime , chaseAIState , distanceToPlayer);
             UpdateHintTimer(deltaTime , chaseAIState);
 
