@@ -343,6 +343,7 @@ namespace HideSeek.AI
                 CHASE_AI_SEARCH_POINT_SOURCE.PREDICTED_DIRECTION => Color.green,
                 CHASE_AI_SEARCH_POINT_SOURCE.DIRECTIONAL => new Color(1f , 0.6f , 0f),
                 CHASE_AI_SEARCH_POINT_SOURCE.ZONE_COVERAGE => Color.cyan,
+                CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT => new Color(1f , 0.25f , 0.7f),
                 _ => Color.yellow
             };
         }

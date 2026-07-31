@@ -51,6 +51,7 @@ MonoBehaviour:
   _zoneCoverageSearchPointRatio: 0.3
   _directionalSearchAngle: 120
   _minimumSearchPointDistance: 1.5
+  _hidingSpotEvidenceDistance: 2.5
   _searchPointGenerationAttemptCountPerPoint: 10
   _chaseSpeed: 7
   _patrolWaitTime: 0.5

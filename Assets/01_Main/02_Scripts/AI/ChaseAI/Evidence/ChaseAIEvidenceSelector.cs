@@ -119,7 +119,8 @@ namespace HideSeek.AI
                     INVESTIGATION_CONTEXT.AudioSearchDuration ,
                     false ,
                     1f ,
-                    "Audio search center");
+                    "Audio search center" ,
+                    INVESTIGATION_CONTEXT.CurrentAudioIntensity >= CHASE_AI_CONFIG.StrongNoiseThreshold);
 
                 return true;
             }
@@ -133,7 +134,8 @@ namespace HideSeek.AI
                     CHASE_AI_CONFIG.SearchWaitTime ,
                     true ,
                     1f ,
-                    "Last seen position");
+                    "Last seen position" ,
+                    true);
 
                 return true;
             }
@@ -151,7 +153,8 @@ namespace HideSeek.AI
                     searchDuration ,
                     true ,
                     1f ,
-                    "Last heard position");
+                    "Last heard position" ,
+                    intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold);
 
                 return true;
             }
@@ -175,6 +178,7 @@ namespace HideSeek.AI
                     false ,
                     CHASE_AI_CONFIG.DirectorHintAngerInfluence ,
                     "Director hint search center" ,
+                    false ,
                     directorHint.TargetZoneId ,
                     true);
 

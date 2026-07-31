@@ -10,6 +10,7 @@ namespace HideSeek.AI
         PREDICTED_DIRECTION,
         DIRECTIONAL,
         ZONE_COVERAGE,
+        HIDING_SPOT,
         RANDOM
     }
 
@@ -27,12 +28,14 @@ namespace HideSeek.AI
         private AIWorldZone _activeSearchZone;
         private int _currentPointIndex;
         private int _zoneCoveragePointCount;
+        private int _hidingSpotPointCount;
         private bool _isZoneRestricted;
 
         public IReadOnlyList<Vector3> SearchPoints => SEARCH_POINTS;
         public int CurrentPointIndex => _currentPointIndex;
         public int PointCount => SEARCH_POINTS.Count;
         public int ZoneCoveragePointCount => _zoneCoveragePointCount;
+        public int HidingSpotPointCount => _hidingSpotPointCount;
         public bool HasCurrentPoint => _currentPointIndex >= 0 && _currentPointIndex < SEARCH_POINTS.Count;
         public bool IsZoneRestricted => _isZoneRestricted;
         public string ActiveSearchZoneName => _activeSearchZone != null ? _activeSearchZone.DisplayName : "NONE";
@@ -53,10 +56,12 @@ namespace HideSeek.AI
             float zoneCoveragePointRatio ,
             float directionalSearchAngle ,
             float minimumPointDistance ,
+            float hidingSpotEvidenceDistance ,
             float sampleRadius ,
             int areaMask ,
             int generationAttemptCountPerPoint ,
             int requestedZoneId ,
+            bool canInspectHidingSpot ,
             bool shouldRestrictToZone)
         {
             Clear();
@@ -64,6 +69,7 @@ namespace HideSeek.AI
             int targetPointCount = Mathf.Max(0 , searchPointCount);
             float validSearchRadius = Mathf.Max(0f , searchRadius);
             float validMinimumPointDistance = Mathf.Max(0f , minimumPointDistance);
+            float validHidingSpotEvidenceDistance = Mathf.Max(0f , hidingSpotEvidenceDistance);
             float validSampleRadius = Mathf.Max(0.1f , sampleRadius);
 
             if ( targetPointCount == 0 || validSearchRadius <= 0f )
@@ -148,7 +154,14 @@ namespace HideSeek.AI
                     ref pathStartPosition);
             }
 
-            int availablePointCount = targetPointCount - SEARCH_POINTS.Count;
+            AISearchPoint hidingSpotCandidate = canInspectHidingSpot
+                ? FindNearestHidingSpot(centerPosition , validHidingSpotEvidenceDistance)
+                : null;
+
+            int reservedHidingSpotPointCount = hidingSpotCandidate != null ? 1 : 0;
+            int availablePointCount = Mathf.Max(
+                0 ,
+                targetPointCount - SEARCH_POINTS.Count - reservedHidingSpotPointCount);
             int requestedCoveragePointCount = Mathf.Clamp(
                 Mathf.RoundToInt(targetPointCount * Mathf.Clamp01(zoneCoveragePointRatio)) ,
                 0 ,
@@ -162,6 +175,27 @@ namespace HideSeek.AI
                 validSampleRadius ,
                 areaMask ,
                 ref pathStartPosition);
+
+            if ( hidingSpotCandidate != null && SEARCH_POINTS.Count < targetPointCount )
+            {
+                bool wasAdded = TryAddSearchPoint(
+                    hidingSpotCandidate.Position ,
+                    centerPosition ,
+                    validHidingSpotEvidenceDistance ,
+                    validMinimumPointDistance ,
+                    validSampleRadius ,
+                    areaMask ,
+                    CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT ,
+                    ref pathStartPosition);
+
+                if ( wasAdded )
+                {
+                    Debug.Log(
+                        $"[ChaseAISearch] 증거 기반 은신처 조사 지점 추가: " +
+                        $"Position={hidingSpotCandidate.Position}, " +
+                        $"EvidenceDistance={Vector3.Distance(centerPosition , hidingSpotCandidate.Position):F1}");
+                }
+            }
 
             for ( int attemptIndex = 0; attemptIndex < maximumAttemptCount; attemptIndex++ )
             {
@@ -242,7 +276,60 @@ namespace HideSeek.AI
             _activeSearchZone = null;
             _currentPointIndex = 0;
             _zoneCoveragePointCount = 0;
+            _hidingSpotPointCount = 0;
             _isZoneRestricted = false;
+        }
+
+        private AISearchPoint FindNearestHidingSpot(
+            Vector3 evidencePosition ,
+            float evidenceDistance)
+        {
+            if ( evidenceDistance <= 0f )
+            {
+                return null;
+            }
+
+            AISearchPoint nearestHidingSpot = null;
+            float nearestSquaredDistance = evidenceDistance * evidenceDistance;
+
+            for ( int zoneIndex = 0; zoneIndex < _zones.Count; zoneIndex++ )
+            {
+                AIWorldZone zone = _zones[ zoneIndex ];
+
+                if ( zone == null )
+                {
+                    continue;
+                }
+
+                IReadOnlyList<AISearchPoint> searchPoints = zone.SearchPoints;
+
+                for ( int pointIndex = 0; pointIndex < searchPoints.Count; pointIndex++ )
+                {
+                    AISearchPoint searchPoint = searchPoints[ pointIndex ];
+
+                    if ( searchPoint == null ||
+                         searchPoint.PointType != AI_SEARCH_POINT_TYPE.HIDING_SPOT ||
+                         !zone.Contains(searchPoint.Position) )
+                    {
+                        continue;
+                    }
+
+                    Vector3 evidenceOffset = searchPoint.Position - evidencePosition;
+                    evidenceOffset.y = 0f;
+
+                    float squaredDistance = evidenceOffset.sqrMagnitude;
+
+                    if ( squaredDistance > nearestSquaredDistance )
+                    {
+                        continue;
+                    }
+
+                    nearestHidingSpot = searchPoint;
+                    nearestSquaredDistance = squaredDistance;
+                }
+            }
+
+            return nearestHidingSpot;
         }
 
         private void AddZoneCoveragePoints(
@@ -343,6 +430,10 @@ namespace HideSeek.AI
             if ( searchPointSource == CHASE_AI_SEARCH_POINT_SOURCE.ZONE_COVERAGE )
             {
                 _zoneCoveragePointCount++;
+            }
+            else if ( searchPointSource == CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT )
+            {
+                _hidingSpotPointCount++;
             }
 
             return true;

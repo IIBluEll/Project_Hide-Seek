@@ -13,6 +13,7 @@ namespace HideSeek.AI
         public bool ShouldMoveToCenter { get; }
         public float AngerInfluence { get; }
         public string Context { get; }
+        public bool CanInspectHidingSpot { get; }
         public int SearchZoneId { get; }
         public bool ShouldRestrictToZone { get; }
 
@@ -24,6 +25,7 @@ namespace HideSeek.AI
             bool shouldMoveToCenter ,
             float angerInfluence ,
             string context ,
+            bool canInspectHidingSpot ,
             int searchZoneId = NO_ZONE_ID ,
             bool shouldRestrictToZone = false)
         {
@@ -34,6 +36,7 @@ namespace HideSeek.AI
             ShouldMoveToCenter = shouldMoveToCenter;
             AngerInfluence = angerInfluence;
             Context = context;
+            CanInspectHidingSpot = canInspectHidingSpot;
             SearchZoneId = searchZoneId;
             ShouldRestrictToZone = shouldRestrictToZone;
         }
