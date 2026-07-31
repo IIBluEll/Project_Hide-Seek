@@ -1540,6 +1540,7 @@ MonoBehaviour:
   - {fileID: 2068934761}
   _searchPoints:
   - {fileID: 2101000003}
+  - {fileID: 2102000003}
 --- !u!65 &932427679
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2924,6 +2925,7 @@ Transform:
   - {fileID: 361628857}
   - {fileID: 912787938}
   - {fileID: 2014144117}
+  - {fileID: 2102000002}
   m_Father: {fileID: 1661931722}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1762011928
@@ -3767,6 +3769,67 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2139994391}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &2102000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2102000002}
+  - component: {fileID: 2102000003}
+  - component: {fileID: 2102000004}
+  m_Layer: 0
+  m_Name: HidingSpotPoint_Zone3_Test
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2102000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2102000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -103, y: 0, z: 5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1671628178}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2102000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2102000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4ae971e6a894c2da90976a0e9656f80, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AISearchPoint
+  _pointType: 1
+--- !u!114 &2102000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2102000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fb10b72e79232040a8178bc8a3a66a2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.NoiseEmitter
+  _noiseType: 2
+  _radius: 50
+  _intensity: 1
 --- !u!1 &2147000100
 GameObject:
   m_ObjectHideFlags: 0
