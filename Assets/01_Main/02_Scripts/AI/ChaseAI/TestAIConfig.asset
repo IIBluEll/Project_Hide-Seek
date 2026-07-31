@@ -59,3 +59,4 @@ MonoBehaviour:
   _searchWaitTime: 3
   _chaseRepathInterval: 0.2
   _chaseDestinationUpdateDistance: 0.5
+  _attackRange: 1.5

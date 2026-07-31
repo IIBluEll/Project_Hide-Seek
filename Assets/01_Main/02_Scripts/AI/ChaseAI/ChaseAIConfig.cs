@@ -67,6 +67,9 @@ namespace HideSeek.AI
         [SerializeField, Min(0.02f)] private float _chaseRepathInterval = 0.2f;
         [SerializeField, Min(0f)] private float _chaseDestinationUpdateDistance = 0.5f;
 
+        [Header("Attack")]
+        [SerializeField, Min(0f)] private float _attackRange = 1.5f;
+
         public float WalkSpeed => _walkSpeed;
         public float Acceleration => _acceleration;
         public float AngularSpeed => _angularSpeed;
@@ -118,6 +121,7 @@ namespace HideSeek.AI
         public float ChaseRepathInterval => _chaseRepathInterval;
 
         public float ChaseDestinationUpdateDistance => _chaseDestinationUpdateDistance;
+        public float AttackRange => _attackRange;
 
         public float GetGeneratorAngerFloor(int completedGeneratorCount)
         {
@@ -143,6 +147,7 @@ namespace HideSeek.AI
             _zoneCoverageSearchPointRatio = Mathf.Clamp01(_zoneCoverageSearchPointRatio);
             _directionalSearchAngle = Mathf.Clamp(_directionalSearchAngle , 0f , 180f);
             _hidingSpotEvidenceDistance = Mathf.Max(0f , _hidingSpotEvidenceDistance);
+            _attackRange = Mathf.Max(0f , _attackRange);
 
             if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )
             {

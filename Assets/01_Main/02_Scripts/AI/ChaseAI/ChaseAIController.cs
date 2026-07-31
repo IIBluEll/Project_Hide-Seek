@@ -24,6 +24,7 @@ namespace HideSeek.AI
         private bool _isInitialized;
 
         public event Action RetreatFailed;
+        public event Action PlayerCaught;
 
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
 
@@ -91,6 +92,7 @@ namespace HideSeek.AI
             _memory.UpdateMemory(Time.time);
 
             _stateMachine.Tick(Time.deltaTime, visualObservation);
+            ReportPlayerCaught();
             ReportRetreatFailure();
         }
 
@@ -204,6 +206,18 @@ namespace HideSeek.AI
             }
 
             RetreatFailed?.Invoke();
+        }
+
+        private void ReportPlayerCaught()
+        {
+            if ( _stateMachine == null || !_stateMachine.ConsumePlayerCaughtRequest() )
+            {
+                return;
+            }
+
+            Debug.Log("[ChaseAIController] 플레이어 포획 이벤트가 발생했습니다." , this);
+
+            PlayerCaught?.Invoke();
         }
 
         private void OnNoiseDetected(ChaseAIAudioObservation observation)
