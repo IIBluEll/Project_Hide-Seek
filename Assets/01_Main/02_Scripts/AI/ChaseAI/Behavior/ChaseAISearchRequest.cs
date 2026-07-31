@@ -4,6 +4,8 @@ namespace HideSeek.AI
 {
     public readonly struct ChaseAISearchRequest
     {
+        public const int NO_ZONE_ID = -1;
+
         public Vector3 CenterPosition { get; }
         public Vector3 PreferredDirection { get; }
         public float SearchRadius { get; }
@@ -11,6 +13,9 @@ namespace HideSeek.AI
         public bool ShouldMoveToCenter { get; }
         public float AngerInfluence { get; }
         public string Context { get; }
+        public bool CanInspectHidingSpot { get; }
+        public int SearchZoneId { get; }
+        public bool ShouldRestrictToZone { get; }
 
         public ChaseAISearchRequest(
             Vector3 centerPosition ,
@@ -19,7 +24,10 @@ namespace HideSeek.AI
             float searchDuration ,
             bool shouldMoveToCenter ,
             float angerInfluence ,
-            string context)
+            string context ,
+            bool canInspectHidingSpot ,
+            int searchZoneId = NO_ZONE_ID ,
+            bool shouldRestrictToZone = false)
         {
             CenterPosition = centerPosition;
             PreferredDirection = preferredDirection;
@@ -28,6 +36,9 @@ namespace HideSeek.AI
             ShouldMoveToCenter = shouldMoveToCenter;
             AngerInfluence = angerInfluence;
             Context = context;
+            CanInspectHidingSpot = canInspectHidingSpot;
+            SearchZoneId = searchZoneId;
+            ShouldRestrictToZone = shouldRestrictToZone;
         }
     }
 }

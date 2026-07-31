@@ -16,17 +16,20 @@ namespace HideSeek.AI
         public CHASE_AI_VISUAL_STATE State { get; }
         public Vector3 VisiblePosition { get; }
         public float DetectionRatio { get; }
+        public bool CanAttackTarget { get; }
 
         public ChaseAIVisualObservation(
             bool hasLineOfSight ,
             CHASE_AI_VISUAL_STATE state ,
             Vector3 visiblePosition ,
-            float detectionRatio)
+            float detectionRatio ,
+            bool canAttackTarget)
         {
             HasLineOfSight = hasLineOfSight;
             State = state;
             VisiblePosition = visiblePosition;
             DetectionRatio = detectionRatio;
+            CanAttackTarget = canAttackTarget;
         }
     }
 
@@ -116,12 +119,14 @@ namespace HideSeek.AI
             UpdateDetectionRatio(hasLineOfSight , deltaTime);
 
             CHASE_AI_VISUAL_STATE visualState = GetVisualState(hasLineOfSight);
+            bool canAttackTarget = CanAttackTarget();
 
             CurrentObservation = new ChaseAIVisualObservation(
                 hasLineOfSight ,
                 visualState ,
                 hasLineOfSight ? visiblePosition : Vector3.zero ,
-                _detectionRatio);
+                _detectionRatio ,
+                canAttackTarget);
 
             return CurrentObservation;
         }
@@ -134,7 +139,45 @@ namespace HideSeek.AI
                 false ,
                 CHASE_AI_VISUAL_STATE.NONE ,
                 Vector3.zero ,
-                0f);
+                0f ,
+                false);
+        }
+
+        private bool CanAttackTarget()
+        {
+            if ( _config == null ||
+                _eyeTransform == null ||
+                _targetTransform == null )
+            {
+                return false;
+            }
+
+            Vector3 directionToTarget = _targetTransform.position - transform.position;
+            directionToTarget.y = 0f;
+
+            float attackRange = _config.AttackRange;
+
+            if ( directionToTarget.sqrMagnitude > attackRange * attackRange )
+            {
+                return false;
+            }
+
+            Vector3 attackRayDirection = _targetTransform.position - _eyeTransform.position;
+            float attackRayDistance = attackRayDirection.magnitude;
+
+            if ( attackRayDistance <= Mathf.Epsilon )
+            {
+                return true;
+            }
+
+            bool isBlocked = Physics.Raycast(
+                _eyeTransform.position ,
+                attackRayDirection / attackRayDistance ,
+                attackRayDistance ,
+                _obstacleMask ,
+                QueryTriggerInteraction.Ignore);
+
+            return !isBlocked;
         }
 
         private bool TryGetVisiblePosition(out Vector3 visiblePosition)

@@ -53,6 +53,7 @@ namespace HideSeek.AI
             {
                 _zoneSelector = new MasterAIZoneSelector(_zones , _config);
                 _ventSelector = new MasterAIVentSelector(_vents);
+                _chaseAIController.ConfigureSearchZones(_zones);
             }
             catch ( ArgumentException exception )
             {
