@@ -20,6 +20,7 @@ namespace HideSeek.AI
         private ChaseAISearch _search;
         private ChaseAIAnger _anger;
         private ChaseAIStateMachine _stateMachine;
+        private IReadOnlyList<AIWorldZone> _configuredZones = Array.Empty<AIWorldZone>();
 
         private bool _isInitialized;
 
@@ -69,7 +70,14 @@ namespace HideSeek.AI
             _anger = new ChaseAIAnger(_config);
             SynchronizeGameProgress();
 
-            _stateMachine = new ChaseAIStateMachine(_config , _movement , _memory , _search , _anger , _patrolPoints);
+            _stateMachine = new ChaseAIStateMachine(
+                _config ,
+                _movement ,
+                _memory ,
+                _search ,
+                _anger ,
+                _patrolPoints ,
+                _configuredZones);
 
             _stateMachine.Initialize();
             _isInitialized = true;
@@ -87,7 +95,8 @@ namespace HideSeek.AI
             _memory.RecordVisualEvidence(
                 visualObservation ,
                 Time.time ,
-                _config.VisualEvidenceDuration);
+                _config.VisualEvidenceDuration ,
+                _stateMachine.CurrentState == CHASE_AI_STATE.CHASE);
 
             _memory.UpdateMemory(Time.time);
 
@@ -133,14 +142,17 @@ namespace HideSeek.AI
             return wasAccepted;
         }
 
-        public void ConfigureSearchZones(IReadOnlyList<AIWorldZone> zones)
+        public void ConfigureZones(IReadOnlyList<AIWorldZone> zones)
         {
+            _configuredZones = zones ?? Array.Empty<AIWorldZone>();
+
             if ( _search == null )
             {
                 _search = new ChaseAISearch();
             }
 
-            _search.ConfigureZones(zones);
+            _search.ConfigureZones(_configuredZones);
+            _stateMachine?.ConfigurePatrolZones(_configuredZones);
         }
 
         private void OnDisable()
