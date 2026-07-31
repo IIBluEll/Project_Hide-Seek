@@ -18,14 +18,13 @@ namespace HideSeek.AI
     {
         private readonly ChaseAIConfig _config;
         private readonly ChaseAIMovement _movement;
-        private readonly IReadOnlyList<Transform> _patrolPoints;
 
         private readonly ChaseAIInvestigationContext INVESTIGATION_CONTEXT;
         private readonly ChaseAIEvidenceSelector EVIDENCE_SELECTOR;
         private readonly ChaseAIChaseBehavior CHASE_BEHAVIOR;
         private readonly ChaseAISearchBehavior SEARCH_BEHAVIOR;
+        private readonly ChaseAIPatrolRoute PATROL_ROUTE;
 
-        private int _currentPatrolPointIndex;
         private float _stateTimer;
         private bool _isWaiting;
 
@@ -50,16 +49,18 @@ namespace HideSeek.AI
             ChaseAIMemory memory ,
             ChaseAISearch search ,
             ChaseAIAnger chaseAIAnger ,
-            IReadOnlyList<Transform> patrolPoints)
+            IReadOnlyList<Transform> patrolPoints ,
+            IReadOnlyList<AIWorldZone> zones)
         {
             _config = config;
             _movement = movement;
-            _patrolPoints = patrolPoints;
 
             INVESTIGATION_CONTEXT = new ChaseAIInvestigationContext(config);
             EVIDENCE_SELECTOR = new ChaseAIEvidenceSelector(config , memory , INVESTIGATION_CONTEXT);
             CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger);
             SEARCH_BEHAVIOR = new ChaseAISearchBehavior(config , movement , search , chaseAIAnger);
+            PATROL_ROUTE = new ChaseAIPatrolRoute(patrolPoints);
+            PATROL_ROUTE.ConfigureZones(zones);
         }
 
         public void Initialize()
@@ -68,6 +69,7 @@ namespace HideSeek.AI
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
             EVIDENCE_SELECTOR.ClearInvestigations();
+            PATROL_ROUTE.Clear();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
             _retreatPosition = Vector3.zero;
@@ -78,6 +80,20 @@ namespace HideSeek.AI
             _stateTimer = 0f;
 
             Debug.Log("[ChaseAIStateMachine] DORMANT 상태로 초기화되었습니다.");
+        }
+
+        public void ConfigurePatrolZones(IReadOnlyList<AIWorldZone> zones)
+        {
+            PATROL_ROUTE.ConfigureZones(zones);
+
+            if ( CurrentState == CHASE_AI_STATE.PATROL )
+            {
+                _movement.Stop();
+                _isWaiting = false;
+                _stateTimer = 0f;
+                PATROL_ROUTE.Refresh(_movement.Position);
+                RequestCurrentPatrolPoint();
+            }
         }
 
         public void RefreshAngerEffects()
@@ -263,6 +279,7 @@ namespace HideSeek.AI
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
             EVIDENCE_SELECTOR.ClearInvestigations();
+            PATROL_ROUTE.Clear();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
             _isWaiting = false;
@@ -461,6 +478,7 @@ namespace HideSeek.AI
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
             EVIDENCE_SELECTOR.ClearInvestigations();
+            PATROL_ROUTE.Clear();
 
             _retreatPosition = Vector3.zero;
             _isRetreatPending = false;
@@ -489,6 +507,21 @@ namespace HideSeek.AI
             EVIDENCE_SELECTOR.ClearInvestigations();
 
             _movement.SetSpeed(_config.WalkSpeed);
+            PATROL_ROUTE.Refresh(_movement.Position);
+
+            if ( PATROL_ROUTE.IsUsingZoneRoute )
+            {
+                Debug.Log(
+                    $"[ChaseAIStateMachine] Zone 순찰 경로 적용: " +
+                    $"Zone={PATROL_ROUTE.CurrentZone.DisplayName}, " +
+                    $"Count={PATROL_ROUTE.PointCount}");
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[ChaseAIStateMachine] 현재 Zone의 Coverage 지점이 없어 전역 순찰 지점을 사용합니다.");
+            }
+
             RequestCurrentPatrolPoint();
         }
 
@@ -601,17 +634,11 @@ namespace HideSeek.AI
 
         private void RequestCurrentPatrolPoint()
         {
-            if ( _patrolPoints == null || _patrolPoints.Count == 0 )
+            if ( !PATROL_ROUTE.TryGetCurrentPoint(
+                    out Vector3 patrolPosition ,
+                    out string context) )
             {
-                Debug.LogError("[ChaseAIStateMachine] 순찰 지점이 없습니다.");
-
-                return;
-            }
-
-            Transform patrolPoint = _patrolPoints[_currentPatrolPointIndex];
-
-            if ( patrolPoint == null )
-            {
+                Debug.LogError("[ChaseAIStateMachine] 사용할 수 있는 순찰 지점이 없습니다.");
                 AdvancePatrolPoint();
                 StartWaiting(_config.PatrolWaitTime);
 
@@ -619,8 +646,8 @@ namespace HideSeek.AI
             }
 
             bool wasAccepted = RequestDestination(
-                patrolPoint.position ,
-                $"Patrol point {_currentPatrolPointIndex}");
+                patrolPosition ,
+                context);
 
             if ( !wasAccepted )
             {
@@ -647,12 +674,7 @@ namespace HideSeek.AI
 
         private void AdvancePatrolPoint()
         {
-            if ( _patrolPoints == null || _patrolPoints.Count == 0 )
-            {
-                return;
-            }
-
-            _currentPatrolPointIndex = ( _currentPatrolPointIndex + 1 ) % _patrolPoints.Count;
+            PATROL_ROUTE.Advance();
         }
 
         private void StartWaiting(float duration)
