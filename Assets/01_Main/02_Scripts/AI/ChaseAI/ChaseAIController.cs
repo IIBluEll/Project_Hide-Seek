@@ -24,6 +24,7 @@ namespace HideSeek.AI
         private bool _isInitialized;
 
         public event Action RetreatFailed;
+        public event Action PlayerCaught;
 
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
 
@@ -91,6 +92,7 @@ namespace HideSeek.AI
             _memory.UpdateMemory(Time.time);
 
             _stateMachine.Tick(Time.deltaTime, visualObservation);
+            ReportPlayerCaught();
             ReportRetreatFailure();
         }
 
@@ -129,6 +131,16 @@ namespace HideSeek.AI
             ReportRetreatFailure();
 
             return wasAccepted;
+        }
+
+        public void ConfigureSearchZones(IReadOnlyList<AIWorldZone> zones)
+        {
+            if ( _search == null )
+            {
+                _search = new ChaseAISearch();
+            }
+
+            _search.ConfigureZones(zones);
         }
 
         private void OnDisable()
@@ -194,6 +206,18 @@ namespace HideSeek.AI
             }
 
             RetreatFailed?.Invoke();
+        }
+
+        private void ReportPlayerCaught()
+        {
+            if ( _stateMachine == null || !_stateMachine.ConsumePlayerCaughtRequest() )
+            {
+                return;
+            }
+
+            Debug.Log("[ChaseAIController] 플레이어 포획 이벤트가 발생했습니다." , this);
+
+            PlayerCaught?.Invoke();
         }
 
         private void OnNoiseDetected(ChaseAIAudioObservation observation)
@@ -308,14 +332,34 @@ namespace HideSeek.AI
             {
                 Vector3 searchPoint = _search.SearchPoints[pointIndex];
 
-                Gizmos.color = Color.yellow;
+                Gizmos.color = GetSearchPointColor(pointIndex);
                 Gizmos.DrawLine(previousPosition , searchPoint);
 
-                Gizmos.color = pointIndex == _search.CurrentPointIndex ? Color.red : Color.yellow;
+                Gizmos.color = pointIndex == _search.CurrentPointIndex
+                    ? Color.red
+                    : GetSearchPointColor(pointIndex);
+
                 Gizmos.DrawSphere(searchPoint , 0.2f);
 
                 previousPosition = searchPoint;
             }
+        }
+
+        private Color GetSearchPointColor(int pointIndex)
+        {
+            if ( !_search.TryGetSearchPointSource(pointIndex , out CHASE_AI_SEARCH_POINT_SOURCE searchPointSource) )
+            {
+                return Color.yellow;
+            }
+
+            return searchPointSource switch
+            {
+                CHASE_AI_SEARCH_POINT_SOURCE.PREDICTED_DIRECTION => Color.green,
+                CHASE_AI_SEARCH_POINT_SOURCE.DIRECTIONAL => new Color(1f , 0.6f , 0f),
+                CHASE_AI_SEARCH_POINT_SOURCE.ZONE_COVERAGE => Color.cyan,
+                CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT => new Color(1f , 0.25f , 0.7f),
+                _ => Color.yellow
+            };
         }
     }
 }

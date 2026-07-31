@@ -17,8 +17,11 @@ namespace HideSeek.AI
         private Vector3 _currentSearchDirection;
         private float _searchWaitDurationPerPoint;
         private float _waitTimer;
+        private int _searchZoneId = ChaseAISearchRequest.NO_ZONE_ID;
         private bool _isMovingToSearchCenter;
         private bool _isWaiting;
+        private bool _canInspectHidingSpot;
+        private bool _shouldRestrictToZone;
 
         public Vector3 SearchCenterPosition => _searchCenterPosition;
         public float CurrentSearchRadius => _currentSearchRadius;
@@ -52,7 +55,10 @@ namespace HideSeek.AI
             float pointCountRatio = _currentSearchPointCount / (float)CHASE_AI_CONFIG.MinimumAngerSearchPointCount;
 
             _currentSearchDuration = Mathf.Max(0f , searchRequest.SearchDuration * pointCountRatio);
+            _searchZoneId = searchRequest.SearchZoneId;
             _isMovingToSearchCenter = searchRequest.ShouldMoveToCenter;
+            _canInspectHidingSpot = searchRequest.CanInspectHidingSpot;
+            _shouldRestrictToZone = searchRequest.ShouldRestrictToZone;
 
             if ( searchRequest.ShouldMoveToCenter && RequestDestination(searchRequest.CenterPosition , searchRequest.Context) )
             {
@@ -115,8 +121,11 @@ namespace HideSeek.AI
             _currentSearchDirection = Vector3.zero;
             _searchWaitDurationPerPoint = 0f;
             _waitTimer = 0f;
+            _searchZoneId = ChaseAISearchRequest.NO_ZONE_ID;
             _isMovingToSearchCenter = false;
             _isWaiting = false;
+            _canInspectHidingSpot = false;
+            _shouldRestrictToZone = false;
             LastResultReason = string.Empty;
         }
 
@@ -132,11 +141,16 @@ namespace HideSeek.AI
                 _currentSearchDirection ,
                 CHASE_AI_CONFIG.LastSeenPredictionDistance ,
                 CHASE_AI_CONFIG.DirectionalSearchPointRatio ,
+                CHASE_AI_CONFIG.ZoneCoverageSearchPointRatio ,
                 CHASE_AI_CONFIG.DirectionalSearchAngle ,
                 CHASE_AI_CONFIG.MinimumSearchPointDistance ,
+                CHASE_AI_CONFIG.HidingSpotEvidenceDistance ,
                 CHASE_AI_CONFIG.SampleRadius ,
                 CHASE_AI_MOVEMENT.AreaMask ,
-                CHASE_AI_CONFIG.SearchPointGenerationAttemptCountPerPoint);
+                CHASE_AI_CONFIG.SearchPointGenerationAttemptCountPerPoint ,
+                _searchZoneId ,
+                _canInspectHidingSpot ,
+                _shouldRestrictToZone);
 
             if ( !hasSearchPoints )
             {
@@ -153,6 +167,10 @@ namespace HideSeek.AI
                 $"Center={_searchCenterPosition}, " +
                 $"Direction={_currentSearchDirection}, " +
                 $"Radius={_currentSearchRadius:F1}, " +
+                $"Zone={CHASE_AI_SEARCH.ActiveSearchZoneName}, " +
+                $"ZoneRestricted={CHASE_AI_SEARCH.IsZoneRestricted}, " +
+                $"CoveragePoints={CHASE_AI_SEARCH.ZoneCoveragePointCount}, " +
+                $"HidingSpotPoints={CHASE_AI_SEARCH.HidingSpotPointCount}, " +
                 $"WaitPerPoint={_searchWaitDurationPerPoint:F1}");
 
             return RequestCurrentSearchPointOrComplete();
