@@ -95,7 +95,8 @@ namespace HideSeek.AI
             _memory.RecordVisualEvidence(
                 visualObservation ,
                 Time.time ,
-                _config.VisualEvidenceDuration);
+                _config.VisualEvidenceDuration ,
+                _stateMachine.CurrentState == CHASE_AI_STATE.CHASE);
 
             _memory.UpdateMemory(Time.time);
 

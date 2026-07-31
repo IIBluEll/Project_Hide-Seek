@@ -33,9 +33,17 @@ namespace HideSeek.AI
             private set;
         }
 
-        public void RecordVisualEvidence(ChaseAIVisualObservation observation, float currentTime, float duration)
+        public void RecordVisualEvidence(
+            ChaseAIVisualObservation observation ,
+            float currentTime ,
+            float duration ,
+            bool isTrackingConfirmedTarget = false)
         {
-            if ( !observation.HasLineOfSight || observation.State != CHASE_AI_VISUAL_STATE.CONFIRMED )
+            bool canRecordVisualEvidence =
+                observation.State == CHASE_AI_VISUAL_STATE.CONFIRMED ||
+                isTrackingConfirmedTarget;
+
+            if ( !observation.HasLineOfSight || !canRecordVisualEvidence )
             {
                 return;
             }
