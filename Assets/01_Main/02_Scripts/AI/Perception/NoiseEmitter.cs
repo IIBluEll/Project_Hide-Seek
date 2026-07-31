@@ -14,8 +14,14 @@ namespace HideSeek.AI
         [ContextMenu("Emit Test Noise")]
         public void EmitNoise()
         {
+            EmitNoiseAt(transform.position);
+        }
+
+        // 발전기처럼 다른 오브젝트가 알려준 위치에서 소음을 낼 때 사용한다.
+        public void EmitNoiseAt(Vector3 position)
+        {
             NoiseData noiseData = new NoiseData(
-                transform.position,
+                position,
                 _radius,
                 _intensity,
                 _noiseType,
