@@ -22,10 +22,15 @@ namespace HideSeek.Generators
     ///
     /// 설정 데이터는 인스펙터에 두지 않는다. 난이도 하나가 모든 발전기에 같은 값을 주므로
     /// 발전기를 등록하는 쪽이 <see cref="SetConfig"/>로 넣어준다.
+    /// 그 상대가 누구인지는 알지 않는다. <see cref="Enabled"/>와 <see cref="Disabled"/>로 알리기만 한다.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class Generator : MonoBehaviour , IGeneratorProgressModel , IGeneratorQteModel
     {
+        // 발전기를 관리하는 쪽이 구독한다. 발전기는 관리자가 누구인지 알지 않는다.
+        public static event Action<Generator> Enabled;
+        public static event Action<Generator> Disabled;
+
         // 수리 관련 이벤트
         public event Action<Generator> RepairStarted; // 인자는 이 발전기
         public event Action<Generator> RepairStopped; // 중단과 완료 모두 발생. 인자는 이 발전기
@@ -58,7 +63,7 @@ namespace HideSeek.Generators
 
         private void OnEnable()
         {
-            GeneratorQteProvider.RegisterGenerator(this);
+            Enabled?.Invoke(this);
         }
 
         private void OnDisable()
@@ -66,7 +71,7 @@ namespace HideSeek.Generators
             // 수리 중에 꺼지면 State가 INTERACTING으로 굳어 다시 켜도 시작할 수 없다.
             CancelRepair();
 
-            GeneratorQteProvider.UnregisterGenerator(this);
+            Disabled?.Invoke(this);
         }
 
         private void OnDestroy()
