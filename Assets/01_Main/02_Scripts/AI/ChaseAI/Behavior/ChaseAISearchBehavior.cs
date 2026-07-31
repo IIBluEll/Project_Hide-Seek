@@ -20,6 +20,7 @@ namespace HideSeek.AI
         private int _searchZoneId = ChaseAISearchRequest.NO_ZONE_ID;
         private bool _isMovingToSearchCenter;
         private bool _isWaiting;
+        private bool _canInspectHidingSpot;
         private bool _shouldRestrictToZone;
 
         public Vector3 SearchCenterPosition => _searchCenterPosition;
@@ -56,6 +57,7 @@ namespace HideSeek.AI
             _currentSearchDuration = Mathf.Max(0f , searchRequest.SearchDuration * pointCountRatio);
             _searchZoneId = searchRequest.SearchZoneId;
             _isMovingToSearchCenter = searchRequest.ShouldMoveToCenter;
+            _canInspectHidingSpot = searchRequest.CanInspectHidingSpot;
             _shouldRestrictToZone = searchRequest.ShouldRestrictToZone;
 
             if ( searchRequest.ShouldMoveToCenter && RequestDestination(searchRequest.CenterPosition , searchRequest.Context) )
@@ -122,6 +124,7 @@ namespace HideSeek.AI
             _searchZoneId = ChaseAISearchRequest.NO_ZONE_ID;
             _isMovingToSearchCenter = false;
             _isWaiting = false;
+            _canInspectHidingSpot = false;
             _shouldRestrictToZone = false;
             LastResultReason = string.Empty;
         }
@@ -141,10 +144,12 @@ namespace HideSeek.AI
                 CHASE_AI_CONFIG.ZoneCoverageSearchPointRatio ,
                 CHASE_AI_CONFIG.DirectionalSearchAngle ,
                 CHASE_AI_CONFIG.MinimumSearchPointDistance ,
+                CHASE_AI_CONFIG.HidingSpotEvidenceDistance ,
                 CHASE_AI_CONFIG.SampleRadius ,
                 CHASE_AI_MOVEMENT.AreaMask ,
                 CHASE_AI_CONFIG.SearchPointGenerationAttemptCountPerPoint ,
                 _searchZoneId ,
+                _canInspectHidingSpot ,
                 _shouldRestrictToZone);
 
             if ( !hasSearchPoints )
@@ -165,6 +170,7 @@ namespace HideSeek.AI
                 $"Zone={CHASE_AI_SEARCH.ActiveSearchZoneName}, " +
                 $"ZoneRestricted={CHASE_AI_SEARCH.IsZoneRestricted}, " +
                 $"CoveragePoints={CHASE_AI_SEARCH.ZoneCoveragePointCount}, " +
+                $"HidingSpotPoints={CHASE_AI_SEARCH.HidingSpotPointCount}, " +
                 $"WaitPerPoint={_searchWaitDurationPerPoint:F1}");
 
             return RequestCurrentSearchPointOrComplete();
