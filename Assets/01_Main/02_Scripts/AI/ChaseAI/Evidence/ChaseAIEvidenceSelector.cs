@@ -163,6 +163,18 @@ namespace HideSeek.AI
             {
                 MasterAIHint directorHint = INVESTIGATION_CONTEXT.ActiveDirectorHint;
 
+                if ( !directorHint.IsValid(currentTime) )
+                {
+                    Debug.Log(
+                        $"[ChaseAIStateMachine] 만료된 Director Hint 수색 생략: " +
+                        $"Zone={directorHint.TargetZoneId}");
+
+                    INVESTIGATION_CONTEXT.ClearDirectorInvestigation();
+                    searchRequest = default;
+
+                    return false;
+                }
+
                 Debug.Log(
                     $"[ChaseAIStateMachine] Director Hint 수색 시작: " +
                     $"Zone={directorHint.TargetZoneId}, " +
