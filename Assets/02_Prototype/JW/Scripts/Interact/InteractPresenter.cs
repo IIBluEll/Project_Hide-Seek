@@ -12,5 +12,6 @@ public class InteractPresenter
 
         _model.OnInsightInteractEvent += _viewer.ShowInteractUI;
         _model.OnOutsightInteractionEvent += _viewer.HideInteractUI;
+
     }
 }

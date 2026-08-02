@@ -34,6 +34,7 @@ public class GrapItem : MonoBehaviour, IInteractable
 
     public void Throw(Vector3 direction, float power)
     {
+        Debug.Log(power);
         Release();
         _rb.AddForce(direction.normalized * power, ForceMode.Impulse);
     }
