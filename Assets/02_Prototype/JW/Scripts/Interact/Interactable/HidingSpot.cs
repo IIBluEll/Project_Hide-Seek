@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using System.Collections;
 using UnityEngine;
 
 public class HidingSpot : MonoBehaviour, IInteractable
@@ -12,38 +13,25 @@ public class HidingSpot : MonoBehaviour, IInteractable
 
     public bool CanInteract(PlayerInteractionController playerInteractor)
     {
-        Transform targetPosition = _isInPlayer ? _exposePosition : _hidePosition;
-        return !_isTransitioning && targetPosition != null;
+        return !_isTransitioning;
     }
 
     public void Interact(PlayerInteractionController playerInteractor)
     {
-        if (!CanInteract(playerInteractor))
-            return;
-
-        ChangeHidingState_async(playerInteractor).Forget();
+        _isTransitioning = true;
+        ScreenFader.Instance.FadeOut(() => PlayerTeleport(playerInteractor));
     }
 
-    private async UniTask ChangeHidingState_async(PlayerInteractionController playerInteractor)
+    private void PlayerTeleport(PlayerInteractionController playerInteractor)
     {
-        _isTransitioning = true;
+        Transform teleportPosition = _isInPlayer ? _exposePosition : _hidePosition;
+        playerInteractor.OnTeleport(teleportPosition);
 
-        bool isEntering = !_isInPlayer;
-        Transform targetPosition = isEntering ? _hidePosition : _exposePosition;
+        _isInPlayer = !_isInPlayer;
 
-        try
-        {
-            bool completed = await playerInteractor.TransitionPlayer_async(
-                targetPosition,
-                !isEntering,
-                this.GetCancellationTokenOnDestroy());
+        EPLAYER_STATE_TYPE type = _isInPlayer ? EPLAYER_STATE_TYPE.HIDING : EPLAYER_STATE_TYPE.NOMAL;
+        playerInteractor.OnEndTransition(type);
 
-            if (completed)
-                _isInPlayer = isEntering;
-        }
-        finally
-        {
-            _isTransitioning = false;
-        }
+        ScreenFader.Instance.FadeIn(()=> { _isTransitioning = false; });
     }
 }
