@@ -14,6 +14,7 @@ namespace HideSeek.AI
         public float AngerInfluence { get; }
         public string Context { get; }
         public bool CanInspectHidingSpot { get; }
+        public float HidingSpotInspectionChance { get; }
         public int SearchZoneId { get; }
         public bool ShouldRestrictToZone { get; }
 
@@ -26,6 +27,7 @@ namespace HideSeek.AI
             float angerInfluence ,
             string context ,
             bool canInspectHidingSpot ,
+            float hidingSpotInspectionChance ,
             int searchZoneId = NO_ZONE_ID ,
             bool shouldRestrictToZone = false)
         {
@@ -37,6 +39,7 @@ namespace HideSeek.AI
             AngerInfluence = angerInfluence;
             Context = context;
             CanInspectHidingSpot = canInspectHidingSpot;
+            HidingSpotInspectionChance = Mathf.Clamp01(hidingSpotInspectionChance);
             SearchZoneId = searchZoneId;
             ShouldRestrictToZone = shouldRestrictToZone;
         }

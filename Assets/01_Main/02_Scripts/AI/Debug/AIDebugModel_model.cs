@@ -138,6 +138,15 @@ namespace HideSeek.AI
                 $"Point={displayedPointIndex}/{chaseSnapshot.SearchPointCount}  " +
                 $"Source={chaseSnapshot.CurrentSearchPointSource}");
             STRING_BUILDER.AppendLine(
+                $"Action={chaseSnapshot.CurrentSearchAction}  " +
+                $"Progress={chaseSnapshot.SearchActionProgress:P0}  " +
+                $"Remain={chaseSnapshot.SearchActionRemainingTime:F1}s");
+            STRING_BUILDER.AppendLine(
+                $"HidingCandidate={chaseSnapshot.HidingSpotCandidateName}  " +
+                $"Chance={chaseSnapshot.HidingSpotInspectionChance:P0}  " +
+                $"Roll={FormatInspectionRoll(chaseSnapshot.HidingSpotInspectionRoll)}  " +
+                $"Selected={chaseSnapshot.WasHidingSpotSelected}");
+            STRING_BUILDER.AppendLine(
                 $"Zone={chaseSnapshot.ActiveSearchZoneName}  " +
                 $"Restricted={chaseSnapshot.IsSearchZoneRestricted}");
         }
@@ -176,6 +185,13 @@ namespace HideSeek.AI
         private static string FormatVector(Vector3 position)
         {
             return $"({position.x:F1}, {position.y:F1}, {position.z:F1})";
+        }
+
+        private static string FormatInspectionRoll(float inspectionRoll)
+        {
+            return inspectionRoll >= 0f
+                ? inspectionRoll.ToString("F2")
+                : "NONE";
         }
     }
 }
