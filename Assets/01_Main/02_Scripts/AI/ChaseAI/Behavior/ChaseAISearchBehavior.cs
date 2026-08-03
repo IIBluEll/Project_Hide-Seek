@@ -3,6 +3,14 @@ using UnityEngine;
 
 namespace HideSeek.AI
 {
+    public enum CHASE_AI_SEARCH_ACTION
+    {
+        NONE,
+        CHECK_DIRECTION,
+        OBSERVE_AREA,
+        INSPECT_HIDING_SPOT
+    }
+
     public sealed class ChaseAISearchBehavior
     {
         private readonly ChaseAIConfig CHASE_AI_CONFIG;
@@ -16,15 +24,22 @@ namespace HideSeek.AI
         private int _currentSearchPointCount;
         private Vector3 _currentSearchDirection;
         private float _searchWaitDurationPerPoint;
-        private float _waitTimer;
+        private float _searchActionDuration;
+        private float _searchActionRemainingTime;
         private int _searchZoneId = ChaseAISearchRequest.NO_ZONE_ID;
         private bool _isMovingToSearchCenter;
-        private bool _isWaiting;
+        private bool _isPerformingSearchAction;
         private bool _canInspectHidingSpot;
+        private float _hidingSpotInspectionChance;
         private bool _shouldRestrictToZone;
 
         public Vector3 SearchCenterPosition => _searchCenterPosition;
         public float CurrentSearchRadius => _currentSearchRadius;
+        public CHASE_AI_SEARCH_ACTION CurrentSearchAction { get; private set; } = CHASE_AI_SEARCH_ACTION.NONE;
+        public float SearchActionRemainingTime => Mathf.Max(0f , _searchActionRemainingTime);
+        public float SearchActionProgress => _searchActionDuration > Mathf.Epsilon
+            ? Mathf.Clamp01(1f - SearchActionRemainingTime / _searchActionDuration)
+            : 0f;
         public string ActiveSearchContext { get; private set; } = string.Empty;
         public string LastResultReason { get; private set; } = string.Empty;
 
@@ -60,6 +75,7 @@ namespace HideSeek.AI
             _searchZoneId = searchRequest.SearchZoneId;
             _isMovingToSearchCenter = searchRequest.ShouldMoveToCenter;
             _canInspectHidingSpot = searchRequest.CanInspectHidingSpot;
+            _hidingSpotInspectionChance = searchRequest.HidingSpotInspectionChance;
             _shouldRestrictToZone = searchRequest.ShouldRestrictToZone;
 
             if ( searchRequest.ShouldMoveToCenter && RequestDestination(searchRequest.CenterPosition , searchRequest.Context) )
@@ -72,14 +88,14 @@ namespace HideSeek.AI
 
         public CHASE_AI_BEHAVIOR_STATUS Tick(float deltaTime)
         {
-            if ( _isWaiting )
+            if ( _isPerformingSearchAction )
             {
-                if ( UpdateWaiting(deltaTime) )
+                if ( UpdateSearchAction(deltaTime) )
                 {
                     return CHASE_AI_BEHAVIOR_STATUS.RUNNING;
                 }
 
-                return AdvanceSearchPoint();
+                return CompleteCurrentSearchAction();
             }
 
             CHASE_AI_MOVE_STATUS moveStatus = CHASE_AI_MOVEMENT.UpdateMovement(deltaTime);
@@ -97,8 +113,7 @@ namespace HideSeek.AI
                         return BeginAreaSearch();
                     }
 
-                    StartWaiting(_searchWaitDurationPerPoint);
-                    return CHASE_AI_BEHAVIOR_STATUS.RUNNING;
+                    return BeginCurrentSearchAction();
 
                 case CHASE_AI_MOVE_STATUS.PATH_FAILED:
                 case CHASE_AI_MOVE_STATUS.STUCK:
@@ -122,12 +137,12 @@ namespace HideSeek.AI
             _currentSearchPointCount = 0;
             _currentSearchDirection = Vector3.zero;
             _searchWaitDurationPerPoint = 0f;
-            _waitTimer = 0f;
             _searchZoneId = ChaseAISearchRequest.NO_ZONE_ID;
             _isMovingToSearchCenter = false;
-            _isWaiting = false;
             _canInspectHidingSpot = false;
+            _hidingSpotInspectionChance = 0f;
             _shouldRestrictToZone = false;
+            StopSearchAction();
             ActiveSearchContext = string.Empty;
             LastResultReason = string.Empty;
         }
@@ -153,6 +168,7 @@ namespace HideSeek.AI
                 CHASE_AI_CONFIG.SearchPointGenerationAttemptCountPerPoint ,
                 _searchZoneId ,
                 _canInspectHidingSpot ,
+                _hidingSpotInspectionChance ,
                 _shouldRestrictToZone);
 
             if ( !hasSearchPoints )
@@ -219,24 +235,112 @@ namespace HideSeek.AI
             return false;
         }
 
-        private void StartWaiting(float duration)
+        private CHASE_AI_BEHAVIOR_STATUS BeginCurrentSearchAction()
         {
-            _waitTimer = duration;
-            _isWaiting = true;
-        }
+            CHASE_AI_SEARCH_POINT_SOURCE searchPointSource = CHASE_AI_SEARCH_POINT_SOURCE.RANDOM;
 
-        private bool UpdateWaiting(float deltaTime)
-        {
-            _waitTimer -= deltaTime;
-
-            if ( _waitTimer > 0f )
+            if ( !CHASE_AI_SEARCH.TryGetSearchPointSource(
+                    CHASE_AI_SEARCH.CurrentPointIndex ,
+                    out searchPointSource) )
             {
-                return true;
+                searchPointSource = CHASE_AI_SEARCH_POINT_SOURCE.RANDOM;
             }
 
-            _isWaiting = false;
+            CurrentSearchAction = ResolveSearchAction(searchPointSource);
+            _searchActionDuration = _searchWaitDurationPerPoint * GetSearchActionTimeMultiplier(CurrentSearchAction);
+            _searchActionRemainingTime = _searchActionDuration;
+            _isPerformingSearchAction = _searchActionDuration > 0f;
 
-            return false;
+            Debug.Log(
+                $"[ChaseAISearchBehavior] 수색 행동 시작: " +
+                $"Action={CurrentSearchAction}, " +
+                $"Source={searchPointSource}, " +
+                $"Point={CHASE_AI_SEARCH.CurrentPointIndex + 1}/{CHASE_AI_SEARCH.PointCount}, " +
+                $"Duration={_searchActionDuration:F1}");
+
+            if ( !_isPerformingSearchAction )
+            {
+                return CompleteCurrentSearchAction();
+            }
+
+            return CHASE_AI_BEHAVIOR_STATUS.RUNNING;
+        }
+
+        private bool UpdateSearchAction(float deltaTime)
+        {
+            _searchActionRemainingTime -= Mathf.Max(0f , deltaTime);
+
+            return _searchActionRemainingTime > 0f;
+        }
+
+        private CHASE_AI_BEHAVIOR_STATUS CompleteCurrentSearchAction()
+        {
+            bool wasPlayerFound = CurrentSearchAction == CHASE_AI_SEARCH_ACTION.INSPECT_HIDING_SPOT &&
+                TryFindPlayerInCurrentHidingSpot();
+
+            StopSearchAction();
+
+            if ( wasPlayerFound )
+            {
+                LastResultReason = "Player found in hiding spot";
+
+                return CHASE_AI_BEHAVIOR_STATUS.TARGET_FOUND;
+            }
+
+            return AdvanceSearchPoint();
+        }
+
+        private bool TryFindPlayerInCurrentHidingSpot()
+        {
+            if ( !CHASE_AI_SEARCH.TryGetCurrentHidingSpot(out AIHidingSpot hidingSpot) )
+            {
+                Debug.LogWarning("[ChaseAISearchBehavior] 은신처 조사 대상 정보가 없습니다.");
+
+                return false;
+            }
+
+            bool containsPlayer = hidingSpot.ContainsPlayer();
+
+            Debug.Log(
+                $"[ChaseAISearchBehavior] 은신처 조사 완료: " +
+                $"Spot={hidingSpot.name}, " +
+                $"Type={hidingSpot.HidingSpotType}, " +
+                $"PlayerFound={containsPlayer}");
+
+            return containsPlayer;
+        }
+
+        private void StopSearchAction()
+        {
+            CurrentSearchAction = CHASE_AI_SEARCH_ACTION.NONE;
+            _searchActionDuration = 0f;
+            _searchActionRemainingTime = 0f;
+            _isPerformingSearchAction = false;
+        }
+
+        private float GetSearchActionTimeMultiplier(CHASE_AI_SEARCH_ACTION searchAction)
+        {
+            return searchAction switch
+            {
+                CHASE_AI_SEARCH_ACTION.CHECK_DIRECTION => CHASE_AI_CONFIG.DirectionalSearchActionTimeMultiplier,
+                CHASE_AI_SEARCH_ACTION.INSPECT_HIDING_SPOT => CHASE_AI_CONFIG.HidingSpotSearchActionTimeMultiplier,
+                CHASE_AI_SEARCH_ACTION.OBSERVE_AREA => CHASE_AI_CONFIG.AreaSearchActionTimeMultiplier,
+                _ => 0f
+            };
+        }
+
+        private static CHASE_AI_SEARCH_ACTION ResolveSearchAction(
+            CHASE_AI_SEARCH_POINT_SOURCE searchPointSource)
+        {
+            return searchPointSource switch
+            {
+                CHASE_AI_SEARCH_POINT_SOURCE.PREDICTED_DIRECTION => CHASE_AI_SEARCH_ACTION.CHECK_DIRECTION,
+                CHASE_AI_SEARCH_POINT_SOURCE.DIRECTIONAL => CHASE_AI_SEARCH_ACTION.CHECK_DIRECTION,
+                CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT => CHASE_AI_SEARCH_ACTION.INSPECT_HIDING_SPOT,
+                CHASE_AI_SEARCH_POINT_SOURCE.ZONE_COVERAGE => CHASE_AI_SEARCH_ACTION.OBSERVE_AREA,
+                CHASE_AI_SEARCH_POINT_SOURCE.RANDOM => CHASE_AI_SEARCH_ACTION.OBSERVE_AREA,
+                _ => CHASE_AI_SEARCH_ACTION.OBSERVE_AREA
+            };
         }
 
         private static Vector3 NormalizeHorizontalDirection(Vector3 direction)

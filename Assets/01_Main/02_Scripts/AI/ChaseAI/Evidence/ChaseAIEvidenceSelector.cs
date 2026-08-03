@@ -120,7 +120,8 @@ namespace HideSeek.AI
                     false ,
                     1f ,
                     "Audio search center" ,
-                    INVESTIGATION_CONTEXT.CurrentAudioIntensity >= CHASE_AI_CONFIG.StrongNoiseThreshold);
+                    INVESTIGATION_CONTEXT.CurrentAudioIntensity >= CHASE_AI_CONFIG.StrongNoiseThreshold ,
+                    ResolveAudioHidingSpotInspectionChance(INVESTIGATION_CONTEXT.CurrentAudioIntensity));
 
                 return true;
             }
@@ -135,7 +136,8 @@ namespace HideSeek.AI
                     true ,
                     1f ,
                     "Last seen position" ,
-                    true);
+                    true ,
+                    CHASE_AI_CONFIG.VisualHidingSpotInspectionChance);
 
                 return true;
             }
@@ -154,7 +156,8 @@ namespace HideSeek.AI
                     true ,
                     1f ,
                     "Last heard position" ,
-                    intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold);
+                    intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold ,
+                    ResolveAudioHidingSpotInspectionChance(intensity));
 
                 return true;
             }
@@ -191,6 +194,7 @@ namespace HideSeek.AI
                     CHASE_AI_CONFIG.DirectorHintAngerInfluence ,
                     "Director hint search center" ,
                     false ,
+                    0f ,
                     directorHint.TargetZoneId ,
                     true);
 
@@ -200,6 +204,13 @@ namespace HideSeek.AI
             searchRequest = default;
 
             return false;
+        }
+
+        private float ResolveAudioHidingSpotInspectionChance(float intensity)
+        {
+            return intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold
+                ? CHASE_AI_CONFIG.StrongAudioHidingSpotInspectionChance
+                : 0f;
         }
 
         public void ClearAudioInvestigation()

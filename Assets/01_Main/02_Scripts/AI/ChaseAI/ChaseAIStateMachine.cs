@@ -35,6 +35,9 @@ namespace HideSeek.AI
 
         public Vector3 SearchCenterPosition => SEARCH_BEHAVIOR.SearchCenterPosition;
         public float CurrentSearchRadius => SEARCH_BEHAVIOR.CurrentSearchRadius;
+        public CHASE_AI_SEARCH_ACTION CurrentSearchAction => SEARCH_BEHAVIOR.CurrentSearchAction;
+        public float SearchActionProgress => SEARCH_BEHAVIOR.SearchActionProgress;
+        public float SearchActionRemainingTime => SEARCH_BEHAVIOR.SearchActionRemainingTime;
         public string ActiveInvestigationName => CurrentState == CHASE_AI_STATE.INVESTIGATE
             ? EVIDENCE_SELECTOR.ActiveInvestigationName
             : "NONE";
@@ -589,6 +592,13 @@ namespace HideSeek.AI
         {
             if ( searchStatus == CHASE_AI_BEHAVIOR_STATUS.RUNNING )
             {
+                return;
+            }
+
+            if ( searchStatus == CHASE_AI_BEHAVIOR_STATUS.TARGET_FOUND )
+            {
+                ChangeState(CHASE_AI_STATE.ATTACK , "Player found during hiding spot inspection");
+
                 return;
             }
 
