@@ -14,7 +14,6 @@ public class PlayerCameraController : MonoBehaviour
     [Space()]
     [SerializeField] private float _standingCameraHeight = 1.55f;
     [SerializeField] private float _crouchCameraHeight = 1.05f;
-    [SerializeField] private float _cameraHeightSmoothTime = 0.12f;
 
     [Space()]
     [SerializeField, Range(0f, 1f)] private float _crouchWalkShakeIntensity = 0.15f;
@@ -30,7 +29,7 @@ public class PlayerCameraController : MonoBehaviour
 
     private void Awake()
     {
-        _stableCameraLocalPosition = transform.InverseTransformPoint(_camera.position);
+        _stableCameraLocalPosition = _camera.localPosition;
         _cameraHeadLocalPosition = _headBoneTrans.InverseTransformPoint(_camera.position);
     }
 
@@ -42,9 +41,13 @@ public class PlayerCameraController : MonoBehaviour
 
     private void ShakeCameraTransform()
     {
-        Vector3 stablePosition = transform.TransformPoint(_stableCameraLocalPosition);
         Vector3 animatedPosition = _headBoneTrans.TransformPoint(_cameraHeadLocalPosition);
-        _camera.position = Vector3.Lerp(stablePosition, animatedPosition, _currentShakeIntensity);
+        Vector3 animatedLocalPosition = _cameraTrans.InverseTransformPoint(animatedPosition);
+
+        _camera.localPosition = Vector3.Lerp(
+            _stableCameraLocalPosition,
+            animatedLocalPosition,
+            _currentShakeIntensity);
     }
     private void ApplyCameraRotation(float x, float y, float z)
     {
@@ -85,9 +88,11 @@ public class PlayerCameraController : MonoBehaviour
     }
     public void SetCameraHeight(POSTURE_STATE_ENUM posture)
     {
-        Vector3 cameraTrans = _cameraTrans.position;
-        cameraTrans.y = posture == POSTURE_STATE_ENUM.STANDING ? _standingCameraHeight : _crouchCameraHeight;
+        Vector3 cameraPosition = _cameraTrans.localPosition;
+        cameraPosition.y = posture == POSTURE_STATE_ENUM.STANDING
+            ? _standingCameraHeight
+            : _crouchCameraHeight;
 
-        _cameraTrans.position = cameraTrans;
+        _cameraTrans.localPosition = cameraPosition;
     }
 }

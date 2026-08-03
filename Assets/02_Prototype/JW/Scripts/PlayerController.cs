@@ -3,6 +3,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     private InteractPresenter _interactPresenter = new InteractPresenter();
+    private readonly PlayerStateController _stat = new PlayerStateController();
 
     [SerializeField] private InteractViewer _viewer;
     [SerializeField] private PlayerInteractionController _interactController;
@@ -16,17 +17,20 @@ public class PlayerController : MonoBehaviour
 
     [Header("Viewer")]
     [SerializeField] private ThrowUIViewer _throwViewer;
+    [SerializeField] private PlayerSprintStaminaViewer _sprintViewer;
 
-    private readonly PlayerStateController _stat = new PlayerStateController();
-
-    //이동
-    //회전
     private void Awake()
     {
+        Cursor.lockState = CursorLockMode.Locked;
+
         _interactPresenter.Init(_viewer, _interactController);
 
         _camera.SetCameraHeight(_move.Posture);
         _camera.SetShakeIntensity(_move.Posture, _move.Locomotion);
+
+        _interact.Init(_stat);
+
+        _move.Init(_sprintViewer);
     }
     private void Bind()
     {
@@ -59,6 +63,8 @@ public class PlayerController : MonoBehaviour
         _move.OnPostureChanged -= OnPostureChangedActioned;
         _move.OnLocomotionChanged -= OnLocomotionChangedActioned;
 
+        _hand.OnThrowPowerChanged -= _throwViewer.ChargeGage;
+        _hand.OnAimStateChanged -= _throwViewer.OnAimStateChanged;
     }
 
     #region Actions
@@ -92,8 +98,7 @@ public class PlayerController : MonoBehaviour
     }
     private void OnInteractAction(bool value)
     {
-        Debug.Log("?");
-        if(value)
+        if(_stat.CanInteraction && value)
             _interact.OnInteractAction();
     }
     private void OnPostureChangedActioned(POSTURE_STATE_ENUM posture)
@@ -107,7 +112,8 @@ public class PlayerController : MonoBehaviour
     }
     private void OnAttackAction(bool value)
     {
-        _hand.OnAimAction(value);
+        if(_stat.CanAction)
+            _hand.OnAimAction(value);
     }
     private void OnCancelAimAction(bool value)
     {
