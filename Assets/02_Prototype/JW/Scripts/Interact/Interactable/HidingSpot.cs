@@ -9,7 +9,7 @@ public class HidingSpot : MonoBehaviour, IInteractable
     private bool _isInPlayer;
     private bool _isTransitioning;
 
-    public string InteractionPrompt => _isInPlayer ? "³ª¿À±â" : "¼û±â";
+    public string InteractionPrompt => _isInPlayer ? "ë‚˜ì˜¤ê¸°" : "ìˆ¨ê¸°";
 
     public bool CanInteract(PlayerInteractionController playerInteractor)
     {
@@ -19,6 +19,7 @@ public class HidingSpot : MonoBehaviour, IInteractable
     public void Interact(PlayerInteractionController playerInteractor)
     {
         _isTransitioning = true;
+        playerInteractor.BeginTransition();
         ScreenFader.Instance.FadeOut(() => PlayerTeleport(playerInteractor));
     }
 
@@ -29,9 +30,16 @@ public class HidingSpot : MonoBehaviour, IInteractable
 
         _isInPlayer = !_isInPlayer;
 
-        EPLAYER_STATE_TYPE type = _isInPlayer ? EPLAYER_STATE_TYPE.HIDING : EPLAYER_STATE_TYPE.NOMAL;
-        playerInteractor.OnEndTransition(type);
+        PLAYER_POSITION_STATE state = _isInPlayer
+            ? PLAYER_POSITION_STATE.HIDING
+            : PLAYER_POSITION_STATE.NORMAL;
 
-        ScreenFader.Instance.FadeIn(()=> { _isTransitioning = false; });
+        playerInteractor.SetPositionState(state);
+
+        ScreenFader.Instance.FadeIn(() =>
+        {
+            _isTransitioning = false;
+            playerInteractor.EndTransition();
+        });
     }
 }
