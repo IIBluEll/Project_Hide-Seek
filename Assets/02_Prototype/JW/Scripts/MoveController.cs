@@ -38,10 +38,21 @@ public class MoveController : MonoBehaviour
     [SerializeField] private MoveSpeed _moveSpeed;
     [SerializeField] private CharacterController _controller;
     [SerializeField] private Animator _animator;
-    [SerializeField] private float _jumpHeight = 1.5f;
     [SerializeField] private float _crouchHeight = 1f;
+    
+    private float _currentSprintHP;
+    [SerializeField] private float _useStaminaAmount;
+    [SerializeField] private float _chargeAmount;
+    private float SprintStaminaNomalize => _currentSprintHP / 100;
 
+    private IPlayerStatViewer _sprintViewer;
     private POSTURE_STATE_ENUM _posture = POSTURE_STATE_ENUM.STANDING;
+
+    internal void Init(IPlayerStatViewer sprintViewer)
+    {
+        _sprintViewer = sprintViewer;
+    }
+
     private LOCOMOTION_STATE_ENUM _locomotion = LOCOMOTION_STATE_ENUM.IDLE;
 
     private Vector2 _moveInput;
@@ -76,6 +87,14 @@ public class MoveController : MonoBehaviour
 
         _controller.Move(velocity * Time.deltaTime);
         UpdateAnimator();
+
+        if (_locomotion == LOCOMOTION_STATE_ENUM.RUN)
+            _currentSprintHP -= Time.deltaTime * _useStaminaAmount;
+        else
+            _currentSprintHP += Time.deltaTime * _chargeAmount;
+
+        _currentSprintHP = Mathf.Clamp(_currentSprintHP, 0, 100);
+        _sprintViewer.UpdateSprintStamina(SprintStaminaNomalize);
     }
 
     private void UpdateVerticalVelocity()
@@ -215,6 +234,10 @@ public class MoveController : MonoBehaviour
         else
             SetPosture(POSTURE_STATE_ENUM.CROUCH);
     }
+
+
+    //TODO 달리기 체력 시스템, 체력 UI
+    //TODO 점프 빼기
     public void RequestJump()
     {
         if (!_controller.isGrounded || _verticalVelocity > 0)
@@ -223,6 +246,5 @@ public class MoveController : MonoBehaviour
         if (_posture == POSTURE_STATE_ENUM.CROUCH)
             _posture = POSTURE_STATE_ENUM.STANDING;
 
-        _verticalVelocity = Mathf.Sqrt(_jumpHeight * -2f * GRAVITY);
     }
 }
