@@ -14,13 +14,13 @@ public enum HAND_STATE_ENUM
 
 public class PlayerHandController : MonoBehaviour
 {
+    [SerializeField] private Animator _animator;
+
     [SerializeField] private Transform _itemGrapPivot;
     [SerializeField] private Transform _throwDirectionTrans;
 
     [SerializeField] private float _throwMaxPower;
     [SerializeField] private float _chargeSpeed;
-
-    [SerializeField] private Animator _animator;
 
     private GrapItem _grapItem;
     private float _currentPower;
@@ -44,7 +44,6 @@ public class PlayerHandController : MonoBehaviour
                 _state = HAND_STATE_ENUM.RECOVERY;
             }
         }
-
         if (_state == HAND_STATE_ENUM.RECOVERY)
         {
             _recoveryTime -= Time.deltaTime * 2;
@@ -56,7 +55,6 @@ public class PlayerHandController : MonoBehaviour
                 _recoveryTime = 1;
             }
         }
-
         if (_state == HAND_STATE_ENUM.THROW)
         {
             if (_animator.GetCurrentAnimatorStateInfo(1).normalizedTime > 0.6f)
@@ -67,14 +65,12 @@ public class PlayerHandController : MonoBehaviour
                 _state = HAND_STATE_ENUM.RECOVERY;
             }
         }
-
         if (_state == HAND_STATE_ENUM.AIMING)
         {
             _currentPower += Time.deltaTime * _chargeSpeed;
             _currentPower = Mathf.Clamp(_currentPower, 0, _throwMaxPower);
             OnThrowPowerChanged?.Invoke(NormalizedPower);
         }
-
     }
     public void OnAimAction(bool value)
     {
@@ -136,6 +132,12 @@ public class PlayerHandController : MonoBehaviour
         if (grapItem == null || _state == HAND_STATE_ENUM.AIMING || _state == HAND_STATE_ENUM.THROW)
             return;
 
+        if (_grapItem != null)
+        {
+            _grapItem.transform.parent = null;
+            _grapItem.Release();
+        }
+
         _grapItem = grapItem;
 
         _state = HAND_STATE_ENUM.GRAPPING;
@@ -145,12 +147,6 @@ public class PlayerHandController : MonoBehaviour
     }
     private void Grap()
     {
-        if (_grapItem != null)
-        {
-            _grapItem.transform.parent = null;
-            _grapItem.Release();
-        }
-
         _grapItem.transform.parent = _itemGrapPivot;
         _grapItem.transform.localPosition = Vector3.zero;
         _grapItem.Grapped();

@@ -1,7 +1,4 @@
 using System;
-using System.Collections;
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public class PlayerInteractionController : MonoBehaviour
@@ -21,14 +18,21 @@ public class PlayerInteractionController : MonoBehaviour
 
     public event Action<string> OnInsightInteractEvent;
     public event Action OnOutsightInteractionEvent;
-    private PlayerStateController _controller;
+    private IStateService _stat;
 
-    //π∞∞« ¡›±‚
-    //º˚±‚
+    //Î¨ºÍ±¥ Ï§çÍ∏∞
+    //Ïà®Í∏∞
     private void Awake()
     {
         if (_moveController == null)
             _moveController = GetComponent<MoveController>();
+    }
+
+    internal void Init(IStateService stat)
+    {
+        _stat = stat;
+        _hand.OnAimStateChanged -= OnAimStateChangedActioned;
+        _hand.OnAimStateChanged += OnAimStateChangedActioned;
     }
 
     private void Update()
@@ -37,32 +41,36 @@ public class PlayerInteractionController : MonoBehaviour
     }
     private void DetectInteractable()
     {
+        if (_stat != null && !_stat.CanInteraction)
+        {
+            ClearCurrentInteractable();
+            return;
+        }
+
         Ray ray = new Ray(_camera.transform.position, _camera.transform.forward);
 
         if(Physics.Raycast(ray, out RaycastHit hit, _rayDistance, _interactionRaycastLayerMask))
         {
             IInteractable interactable = hit.transform.GetComponent<IInteractable>();
 
-            if(interactable.CanInteract(this))
+            if(interactable != null && interactable.CanInteract(this))
             {
                 _currentInteractable = interactable;
                 OnInsightInteractEvent?.Invoke(_currentInteractable.InteractionPrompt);
             }
             else
             {
-                _currentInteractable = null;
-                OnOutsightInteractionEvent?.Invoke();
+                ClearCurrentInteractable();
             }
         }
         else
         {
-            _currentInteractable = null;
-            OnOutsightInteractionEvent?.Invoke();
+            ClearCurrentInteractable();
         }
     }
     public void OnInteractAction()
     {
-        if (_currentInteractable == null)
+        if ((_stat != null && !_stat.CanInteraction) || _currentInteractable == null)
             return;
 
         if (_currentInteractable.CanInteract(this))
@@ -87,8 +95,39 @@ public class PlayerInteractionController : MonoBehaviour
     {
         _rotationController.SetYRotation(rotation);
     }
-    public void OnEndTransition(EPLAYER_STATE_TYPE state)
+    public void BeginTransition()
     {
-        _controller.SetState(state);
+        _stat.SetActionState(PLAYER_ACTION_STATE.TRANSITION);
+    }
+
+    public void SetPositionState(PLAYER_POSITION_STATE state)
+    {
+        _stat.SetPositionState(state);
+    }
+
+    public void EndTransition()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.IDLE);
+    }
+
+    private void OnAimStateChangedActioned(bool isAiming)
+    {
+        PLAYER_ACTION_STATE state = isAiming
+            ? PLAYER_ACTION_STATE.ACTIONING
+            : PLAYER_ACTION_STATE.IDLE;
+
+        _stat.SetActionState(state);
+    }
+
+    private void ClearCurrentInteractable()
+    {
+        _currentInteractable = null;
+        OnOutsightInteractionEvent?.Invoke();
+    }
+
+    private void OnDestroy()
+    {
+        if (_hand != null)
+            _hand.OnAimStateChanged -= OnAimStateChangedActioned;
     }
 }
