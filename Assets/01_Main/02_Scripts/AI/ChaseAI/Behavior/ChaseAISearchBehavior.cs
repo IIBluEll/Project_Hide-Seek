@@ -25,6 +25,7 @@ namespace HideSeek.AI
 
         public Vector3 SearchCenterPosition => _searchCenterPosition;
         public float CurrentSearchRadius => _currentSearchRadius;
+        public string ActiveSearchContext { get; private set; } = string.Empty;
         public string LastResultReason { get; private set; } = string.Empty;
 
         public ChaseAISearchBehavior(
@@ -47,6 +48,7 @@ namespace HideSeek.AI
 
             _searchCenterPosition = searchRequest.CenterPosition;
             _currentSearchDirection = NormalizeHorizontalDirection(searchRequest.PreferredDirection);
+            ActiveSearchContext = searchRequest.Context;
             _currentSearchRadius = Mathf.Max(
                 0f ,
                 searchRequest.SearchRadius * CHASE_AI_ANGER.GetSearchRadiusMultiplier(searchRequest.AngerInfluence));
@@ -126,6 +128,7 @@ namespace HideSeek.AI
             _isWaiting = false;
             _canInspectHidingSpot = false;
             _shouldRestrictToZone = false;
+            ActiveSearchContext = string.Empty;
             LastResultReason = string.Empty;
         }
 
