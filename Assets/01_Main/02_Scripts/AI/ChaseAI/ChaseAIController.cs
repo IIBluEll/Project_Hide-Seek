@@ -37,6 +37,61 @@ namespace HideSeek.AI
         public float AngerFloor => _anger != null ? _anger.AngerFloor : 0f;
         public int CompletedGeneratorCount => _anger != null ? _anger.CompletedGeneratorCount : 0;
 
+        public ChaseAIDebugSnapshot GetDebugSnapshot(float currentTime)
+        {
+            ChaseAIVisualObservation visualObservation = _perception != null
+                ? _perception.CurrentObservation
+                : default;
+
+            bool hasVisualMemory = _memory != null && _memory.HasValidVisualEvidence(currentTime);
+            bool hasAudioMemory = _memory != null && _memory.HasValidAudioEvidence(currentTime);
+
+            ChaseAIEvidence visualEvidence = hasVisualMemory
+                ? _memory.VisualEvidence
+                : ChaseAIEvidence.Empty;
+            ChaseAIEvidence audioEvidence = hasAudioMemory
+                ? _memory.AudioEvidence
+                : ChaseAIEvidence.Empty;
+
+            string currentSearchPointSource = "NONE";
+
+            if ( _search != null &&
+                 _search.TryGetSearchPointSource(_search.CurrentPointIndex , out CHASE_AI_SEARCH_POINT_SOURCE searchPointSource) )
+            {
+                currentSearchPointSource = searchPointSource.ToString();
+            }
+
+            return new ChaseAIDebugSnapshot(
+                _isInitialized ,
+                CurrentState ,
+                IsRetreatPending ,
+                visualObservation.State ,
+                visualObservation.HasLineOfSight ,
+                visualObservation.DetectionRatio ,
+                hasVisualMemory ,
+                visualEvidence.Position ,
+                visualEvidence.Strength ,
+                visualEvidence.GetRemainingTime(currentTime) ,
+                hasAudioMemory ,
+                audioEvidence.Position ,
+                audioEvidence.Strength ,
+                audioEvidence.GetRemainingTime(currentTime) ,
+                _memory != null ? _memory.LastNoiseType : default ,
+                _stateMachine != null ? _stateMachine.ActiveInvestigationName : "NONE" ,
+                _stateMachine != null ? _stateMachine.ActiveSearchContext : string.Empty ,
+                _search != null ? _search.ActiveSearchZoneName : "NONE" ,
+                _search != null && _search.IsZoneRestricted ,
+                _search != null ? _search.CurrentPointIndex : 0 ,
+                _search != null ? _search.PointCount : 0 ,
+                currentSearchPointSource ,
+                CurrentAnger ,
+                AngerFloor ,
+                CompletedGeneratorCount ,
+                _anger != null ? _anger.ChaseSpeedMultiplier : 1f ,
+                _anger != null ? _anger.SearchRadiusMultiplier : 1f ,
+                _anger != null ? _anger.SearchPointCount : 0);
+        }
+
         private void Awake()
         {
             _memory = new ChaseAIMemory();
