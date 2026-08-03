@@ -35,6 +35,12 @@ namespace HideSeek.AI
 
         public Vector3 SearchCenterPosition => SEARCH_BEHAVIOR.SearchCenterPosition;
         public float CurrentSearchRadius => SEARCH_BEHAVIOR.CurrentSearchRadius;
+        public string ActiveInvestigationName => CurrentState == CHASE_AI_STATE.INVESTIGATE
+            ? EVIDENCE_SELECTOR.ActiveInvestigationName
+            : "NONE";
+        public string ActiveSearchContext => CurrentState == CHASE_AI_STATE.SEARCH
+            ? SEARCH_BEHAVIOR.ActiveSearchContext
+            : string.Empty;
         public bool IsRetreatPending => _isRetreatPending;
 
         public CHASE_AI_STATE CurrentState
