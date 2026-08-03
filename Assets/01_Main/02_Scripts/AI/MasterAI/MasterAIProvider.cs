@@ -34,6 +34,7 @@ namespace HideSeek.AI
         private bool _wasInitialDormantStateApplied;
 
         public MASTER_AI_STATE CurrentState => _director != null ? _director.CurrentState : MASTER_AI_STATE.DORMANT;
+        public ChaseAIController ChaseAIController => _chaseAIController;
         public AIWorldZone CurrentPlayerZone => _currentPlayerZone;
         public AIWorldZone TargetZone => _targetZone;
         public AIVentPoint CurrentVent => _currentVent;
@@ -41,6 +42,20 @@ namespace HideSeek.AI
         public float GlobalStress => _director != null ? _director.GlobalStress : 0f;
         public float GlobalStressRatio => _director != null ? _director.GlobalStressRatio : 0f;
         public bool HasCurrentHint => _hasCurrentHint && _currentHint.IsValid(Time.time);
+
+        public bool TryGetCurrentHint(out MasterAIHint currentHint)
+        {
+            if ( !HasCurrentHint )
+            {
+                currentHint = default;
+
+                return false;
+            }
+
+            currentHint = _currentHint;
+
+            return true;
+        }
 
         private void Start()
         {
