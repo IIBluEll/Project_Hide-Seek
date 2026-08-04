@@ -15,20 +15,24 @@ namespace HideSeek.AI
         private readonly ChaseAIConfig CHASE_AI_CONFIG;
         private readonly ChaseAIMovement CHASE_AI_MOVEMENT;
         private readonly ChaseAIAnger CHASE_AI_ANGER;
+        private readonly ChaseAIMemory CHASE_AI_MEMORY;
 
         private float _chaseRepathTimer;
         private float _lostSightTimer;
+        private bool _hasRequestedOcclusionPrediction;
 
         public string LastResultReason { get; private set; } = string.Empty;
 
         public ChaseAIChaseBehavior(
             ChaseAIConfig chaseAIConfig ,
             ChaseAIMovement chaseAIMovement ,
-            ChaseAIAnger chaseAIAnger)
+            ChaseAIAnger chaseAIAnger ,
+            ChaseAIMemory chaseAIMemory)
         {
             CHASE_AI_CONFIG = chaseAIConfig != null ? chaseAIConfig : throw new ArgumentNullException(nameof(chaseAIConfig));
             CHASE_AI_MOVEMENT = chaseAIMovement != null ? chaseAIMovement : throw new ArgumentNullException(nameof(chaseAIMovement));
             CHASE_AI_ANGER = chaseAIAnger != null ? chaseAIAnger : throw new ArgumentNullException(nameof(chaseAIAnger));
+            CHASE_AI_MEMORY = chaseAIMemory != null ? chaseAIMemory : throw new ArgumentNullException(nameof(chaseAIMemory));
         }
 
         public void Begin()
@@ -36,6 +40,7 @@ namespace HideSeek.AI
             CHASE_AI_MOVEMENT.SetSpeed(CHASE_AI_CONFIG.ChaseSpeed * CHASE_AI_ANGER.ChaseSpeedMultiplier);
             _chaseRepathTimer = 0f;
             _lostSightTimer = 0f;
+            _hasRequestedOcclusionPrediction = false;
             LastResultReason = string.Empty;
         }
 
@@ -48,12 +53,18 @@ namespace HideSeek.AI
             if ( visualObservation.HasLineOfSight )
             {
                 _lostSightTimer = 0f;
+                _hasRequestedOcclusionPrediction = false;
 
                 UpdateVisibleTargetDestination(visualObservation.VisiblePosition);
             }
             else
             {
                 _lostSightTimer += deltaTime;
+
+                if ( !_hasRequestedOcclusionPrediction )
+                {
+                    RequestOcclusionPrediction();
+                }
 
                 if ( _lostSightTimer >= CHASE_AI_CONFIG.VisualLoseTime )
                 {
@@ -84,7 +95,37 @@ namespace HideSeek.AI
         {
             _chaseRepathTimer = 0f;
             _lostSightTimer = 0f;
+            _hasRequestedOcclusionPrediction = false;
             LastResultReason = string.Empty;
+        }
+
+        private void RequestOcclusionPrediction()
+        {
+            _hasRequestedOcclusionPrediction = true;
+
+            Vector3 movementDirection = CHASE_AI_MEMORY.LastSeenMovementDirection;
+            movementDirection.y = 0f;
+
+            if ( movementDirection.sqrMagnitude <= Mathf.Epsilon ||
+                CHASE_AI_MEMORY.VisualEvidence.EvidenceType != CHASE_AI_EVIDENCE_TYPE.VISUAL )
+            {
+                return;
+            }
+
+            Vector3 predictedPosition =
+                CHASE_AI_MEMORY.VisualEvidence.Position +
+                movementDirection.normalized * CHASE_AI_CONFIG.ChaseOcclusionPredictionDistance;
+
+            if ( !RequestDestination(predictedPosition , "Occlusion prediction") )
+            {
+                return;
+            }
+
+            Debug.Log(
+                $"[ChaseAIChaseBehavior] 시야 단절 예측 추격: " +
+                $"LastSeen={CHASE_AI_MEMORY.VisualEvidence.Position}, " +
+                $"Direction={movementDirection.normalized}, " +
+                $"Predicted={CHASE_AI_MOVEMENT.CurrentDestination}");
         }
 
         private void UpdateVisibleTargetDestination(Vector3 visiblePosition)

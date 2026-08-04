@@ -176,6 +176,11 @@ namespace HideSeek.AI
             LastResultReason = string.Empty;
         }
 
+        public void ResetHistory()
+        {
+            CHASE_AI_SEARCH.ResetHistory();
+        }
+
         private bool BuildSearchPoints()
         {
             bool hasSearchPoints = CHASE_AI_SEARCH.BuildSearchPoints(
@@ -189,6 +194,8 @@ namespace HideSeek.AI
                 CHASE_AI_CONFIG.ZoneCoverageSearchPointRatio ,
                 CHASE_AI_CONFIG.DirectionalSearchAngle ,
                 CHASE_AI_CONFIG.MinimumSearchPointDistance ,
+                CHASE_AI_CONFIG.RecentSearchPointHistoryCapacity ,
+                CHASE_AI_CONFIG.RecentSearchPointAvoidanceDistance ,
                 CHASE_AI_CONFIG.HidingSpotEvidenceDistance ,
                 CHASE_AI_CONFIG.SampleRadius ,
                 CHASE_AI_MOVEMENT.AreaMask ,
@@ -215,6 +222,8 @@ namespace HideSeek.AI
                 $"ZoneRestricted={CHASE_AI_SEARCH.IsZoneRestricted}, " +
                 $"CoveragePoints={CHASE_AI_SEARCH.ZoneCoveragePointCount}, " +
                 $"HidingSpotPoints={CHASE_AI_SEARCH.HidingSpotPointCount}, " +
+                $"RecentHistory={CHASE_AI_SEARCH.RecentlyVisitedPointCount}, " +
+                $"RecentRejected={CHASE_AI_SEARCH.RecentPointRejectCount}, " +
                 $"WaitPerPoint={_searchWaitDurationPerPoint:F1}");
 
             return true;
@@ -239,9 +248,9 @@ namespace HideSeek.AI
             return CHASE_AI_BEHAVIOR_STATUS.COMPLETED;
         }
 
-        private CHASE_AI_BEHAVIOR_STATUS AdvanceSearchPoint()
+        private CHASE_AI_BEHAVIOR_STATUS AdvanceSearchPoint(bool shouldRememberCurrentPoint = false)
         {
-            CHASE_AI_SEARCH.AdvanceToNextPoint();
+            CHASE_AI_SEARCH.AdvanceToNextPoint(shouldRememberCurrentPoint);
 
             return RequestCurrentSearchPointOrComplete();
         }
@@ -392,7 +401,7 @@ namespace HideSeek.AI
                 return CHASE_AI_BEHAVIOR_STATUS.TARGET_FOUND;
             }
 
-            return AdvanceSearchPoint();
+            return AdvanceSearchPoint(true);
         }
 
         private bool TryFindPlayerInCurrentHidingSpot()
