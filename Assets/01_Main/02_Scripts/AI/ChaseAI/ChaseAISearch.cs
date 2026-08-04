@@ -24,6 +24,7 @@ namespace HideSeek.AI
         private readonly List<AIHidingSpot> SEARCH_POINT_HIDING_SPOTS = new();
         private readonly List<AISearchPoint> ZONE_COVERAGE_CANDIDATES = new();
         private readonly List<AISearchPoint> HIDING_SPOT_CANDIDATES = new();
+        private readonly List<Vector3> RECENTLY_VISITED_POINTS = new();
         private readonly NavMeshPath SEARCH_PATH = new();
 
         private IReadOnlyList<AIWorldZone> _zones = Array.Empty<AIWorldZone>();
@@ -31,6 +32,8 @@ namespace HideSeek.AI
         private int _currentPointIndex;
         private int _zoneCoveragePointCount;
         private int _hidingSpotPointCount;
+        private int _recentSearchPointHistoryCapacity;
+        private float _recentSearchPointAvoidanceDistance;
         private bool _isZoneRestricted;
 
         public IReadOnlyList<Vector3> SearchPoints => SEARCH_POINTS;
@@ -38,6 +41,8 @@ namespace HideSeek.AI
         public int PointCount => SEARCH_POINTS.Count;
         public int ZoneCoveragePointCount => _zoneCoveragePointCount;
         public int HidingSpotPointCount => _hidingSpotPointCount;
+        public int RecentlyVisitedPointCount => RECENTLY_VISITED_POINTS.Count;
+        public int RecentPointRejectCount { get; private set; }
         public bool HasCurrentPoint => _currentPointIndex >= 0 && _currentPointIndex < SEARCH_POINTS.Count;
         public bool IsZoneRestricted => _isZoneRestricted;
         public string ActiveSearchZoneName => _activeSearchZone != null ? _activeSearchZone.DisplayName : "NONE";
@@ -62,6 +67,8 @@ namespace HideSeek.AI
             float zoneCoveragePointRatio ,
             float directionalSearchAngle ,
             float minimumPointDistance ,
+            int recentSearchPointHistoryCapacity ,
+            float recentSearchPointAvoidanceDistance ,
             float hidingSpotEvidenceDistance ,
             float sampleRadius ,
             int areaMask ,
@@ -76,6 +83,9 @@ namespace HideSeek.AI
             int targetPointCount = Mathf.Max(0 , searchPointCount);
             float validSearchRadius = Mathf.Max(0f , searchRadius);
             float validMinimumPointDistance = Mathf.Max(0f , minimumPointDistance);
+            _recentSearchPointHistoryCapacity = Mathf.Max(0 , recentSearchPointHistoryCapacity);
+            _recentSearchPointAvoidanceDistance = Mathf.Max(0f , recentSearchPointAvoidanceDistance);
+            TrimRecentSearchPointHistory();
             float validHidingSpotEvidenceDistance = Mathf.Max(0f , hidingSpotEvidenceDistance);
             float validSampleRadius = Mathf.Max(0.1f , sampleRadius);
 
@@ -132,7 +142,9 @@ namespace HideSeek.AI
                     validSampleRadius ,
                     areaMask ,
                     CHASE_AI_SEARCH_POINT_SOURCE.PREDICTED_DIRECTION ,
-                    ref pathStartPosition);
+                    ref pathStartPosition ,
+                    null ,
+                    false);
             }
 
             float validDirectionalSearchAngle = Mathf.Clamp(directionalSearchAngle , 0f , 180f);
@@ -246,6 +258,33 @@ namespace HideSeek.AI
                     ref pathStartPosition);
             }
 
+            for ( int attemptIndex = 0; attemptIndex < maximumAttemptCount; attemptIndex++ )
+            {
+                if ( SEARCH_POINTS.Count >= targetPointCount )
+                {
+                    break;
+                }
+
+                Vector2 randomOffset = UnityEngine.Random.insideUnitCircle * validSearchRadius;
+                Vector3 fallbackPosition = centerPosition +
+                    new Vector3(
+                        randomOffset.x ,
+                        0f ,
+                        randomOffset.y);
+
+                TryAddSearchPoint(
+                    fallbackPosition ,
+                    centerPosition ,
+                    validSearchRadius ,
+                    validMinimumPointDistance ,
+                    validSampleRadius ,
+                    areaMask ,
+                    CHASE_AI_SEARCH_POINT_SOURCE.RANDOM ,
+                    ref pathStartPosition ,
+                    null ,
+                    false);
+            }
+
             return SEARCH_POINTS.Count > 0;
         }
 
@@ -293,11 +332,16 @@ namespace HideSeek.AI
             return hidingSpot != null;
         }
 
-        public bool AdvanceToNextPoint()
+        public bool AdvanceToNextPoint(bool shouldRememberCurrentPoint = false)
         {
             if ( !HasCurrentPoint )
             {
                 return false;
+            }
+
+            if ( shouldRememberCurrentPoint )
+            {
+                RememberCurrentPoint();
             }
 
             _currentPointIndex++;
@@ -321,6 +365,13 @@ namespace HideSeek.AI
             HidingSpotInspectionChance = 0f;
             HidingSpotInspectionRoll = -1f;
             WasHidingSpotSelected = false;
+            RecentPointRejectCount = 0;
+        }
+
+        public void ResetHistory()
+        {
+            RECENTLY_VISITED_POINTS.Clear();
+            RecentPointRejectCount = 0;
         }
 
         private void CollectHidingSpotCandidates(
@@ -408,7 +459,8 @@ namespace HideSeek.AI
                     areaMask ,
                     CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT ,
                     ref pathStartPosition ,
-                    hidingSpotCandidate.HidingSpot);
+                    hidingSpotCandidate.HidingSpot ,
+                    false);
 
                 if ( !wasAdded )
                 {
@@ -487,7 +539,8 @@ namespace HideSeek.AI
             int areaMask ,
             CHASE_AI_SEARCH_POINT_SOURCE searchPointSource ,
             ref Vector3 pathStartPosition ,
-            AIHidingSpot hidingSpot = null)
+            AIHidingSpot hidingSpot = null ,
+            bool shouldAvoidRecentlyVisitedPoints = true)
         {
             bool hasNavMeshPosition = NavMesh.SamplePosition(
                 candidatePosition ,
@@ -514,6 +567,13 @@ namespace HideSeek.AI
 
             if ( IsTooCloseToExistingPoint(sampledPosition , minimumPointDistance) )
             {
+                return false;
+            }
+
+            if ( shouldAvoidRecentlyVisitedPoints && IsTooCloseToRecentlyVisitedPoint(sampledPosition) )
+            {
+                RecentPointRejectCount++;
+
                 return false;
             }
 
@@ -624,6 +684,57 @@ namespace HideSeek.AI
             }
 
             return false;
+        }
+
+        private bool IsTooCloseToRecentlyVisitedPoint(Vector3 candidatePosition)
+        {
+            if ( _recentSearchPointAvoidanceDistance <= 0f || RECENTLY_VISITED_POINTS.Count == 0 )
+            {
+                return false;
+            }
+
+            float squaredAvoidanceDistance =
+                _recentSearchPointAvoidanceDistance *
+                _recentSearchPointAvoidanceDistance;
+
+            for ( int pointIndex = 0; pointIndex < RECENTLY_VISITED_POINTS.Count; pointIndex++ )
+            {
+                Vector3 offset = RECENTLY_VISITED_POINTS[ pointIndex ] - candidatePosition;
+                offset.y = 0f;
+
+                if ( offset.sqrMagnitude < squaredAvoidanceDistance )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void RememberCurrentPoint()
+        {
+            if ( _recentSearchPointHistoryCapacity <= 0 || !HasCurrentPoint )
+            {
+                return;
+            }
+
+            RECENTLY_VISITED_POINTS.Add(SEARCH_POINTS[ _currentPointIndex ]);
+            TrimRecentSearchPointHistory();
+        }
+
+        private void TrimRecentSearchPointHistory()
+        {
+            if ( _recentSearchPointHistoryCapacity <= 0 )
+            {
+                RECENTLY_VISITED_POINTS.Clear();
+
+                return;
+            }
+
+            while ( RECENTLY_VISITED_POINTS.Count > _recentSearchPointHistoryCapacity )
+            {
+                RECENTLY_VISITED_POINTS.RemoveAt(0);
+            }
         }
 
         private bool HasCompletePath(

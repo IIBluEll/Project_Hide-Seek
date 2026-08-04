@@ -26,6 +26,8 @@ MonoBehaviour:
   _verticalSightAngle: 60
   _visualConfirmTime: 0.5
   _visualLoseTime: 0.5
+  _minimumDistanceDetectionMultiplier: 0.45
+  _minimumPeripheralDetectionMultiplier: 0.55
   _visualEvidenceDuration: 10
   _weakNoiseEvidenceDuration: 4
   _strongNoiseEvidenceDuration: 8
@@ -65,9 +67,14 @@ MonoBehaviour:
   _hidingSpotSearchActionTimeMultiplier: 1.6
   _searchRotationSpeed: 120
   _areaSearchSweepAngle: 90
+  _recentSearchPointHistoryCapacity: 6
+  _recentSearchPointAvoidanceDistance: 2
   _chaseSpeed: 7
   _patrolWaitTime: 0.5
   _searchWaitTime: 3
   _chaseRepathInterval: 0.2
   _chaseDestinationUpdateDistance: 0.5
+  _chaseOcclusionPredictionDistance: 2
+  _patrolRecentPointHistoryCapacity: 2
+  _patrolRecentPointWeightMultiplier: 0.15
   _attackRange: 1.5

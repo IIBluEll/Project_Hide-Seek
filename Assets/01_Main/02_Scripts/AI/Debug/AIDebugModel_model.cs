@@ -83,7 +83,8 @@ namespace HideSeek.AI
             STRING_BUILDER.AppendLine(
                 $"Visual={chaseSnapshot.VisualState}  " +
                 $"LOS={chaseSnapshot.HasLineOfSight}  " +
-                $"Detection={chaseSnapshot.DetectionRatio:P0}");
+                $"Detection={chaseSnapshot.DetectionRatio:P0}  " +
+                $"Gain=x{chaseSnapshot.DetectionSpeedMultiplier:F2}");
         }
 
         private void AppendEvidenceData(ChaseAIDebugSnapshot chaseSnapshot)

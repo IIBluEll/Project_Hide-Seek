@@ -77,9 +77,9 @@ namespace HideSeek.AI
             INVESTIGATION_CONTEXT = new ChaseAIInvestigationContext(config);
             EVIDENCE_SELECTOR = new ChaseAIEvidenceSelector(config , memory , INVESTIGATION_CONTEXT);
             CHASE_AI_ANGER = chaseAIAnger;
-            CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger);
+            CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger , memory);
             SEARCH_BEHAVIOR = new ChaseAISearchBehavior(config , movement , search , chaseAIAnger);
-            PATROL_ROUTE = new ChaseAIPatrolRoute(patrolPoints);
+            PATROL_ROUTE = new ChaseAIPatrolRoute(config , patrolPoints);
             PATROL_ROUTE.ConfigureZones(zones);
         }
 
@@ -88,6 +88,7 @@ namespace HideSeek.AI
             _movement.Stop();
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
+            SEARCH_BEHAVIOR.ResetHistory();
             EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
@@ -326,8 +327,6 @@ namespace HideSeek.AI
 
         private void UpdatePatrol(float deltaTime)
         {
-            CHASE_AI_ANGER.TickCalmDecay(deltaTime);
-
             if ( UpdateWaiting(deltaTime) )
             {
                 return;
@@ -530,6 +529,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
+            SEARCH_BEHAVIOR.ResetHistory();
             EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
@@ -558,7 +558,6 @@ namespace HideSeek.AI
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
             EVIDENCE_SELECTOR.ClearAllEvidence();
-            CHASE_AI_ANGER.ResetCalmDecay();
 
             _movement.SetSpeed(_config.WalkSpeed);
             PATROL_ROUTE.Refresh(_movement.Position);
@@ -611,6 +610,7 @@ namespace HideSeek.AI
         {
             SEARCH_BEHAVIOR.Stop();
             EVIDENCE_SELECTOR.ClearInvestigations();
+            CHASE_AI_ANGER.ResetCalmDecay();
             CHASE_AI_ANGER.ResetChaseBuildUp();
             CHASE_BEHAVIOR.Begin();
         }
@@ -791,7 +791,7 @@ namespace HideSeek.AI
 
         private void AdvancePatrolPoint()
         {
-            PATROL_ROUTE.Advance();
+            PATROL_ROUTE.Advance(_movement.Position);
         }
 
         private void StartWaiting(float duration)
