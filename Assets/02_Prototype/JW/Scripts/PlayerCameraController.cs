@@ -14,12 +14,12 @@ public class PlayerCameraController : MonoBehaviour
     [Space()]
     [SerializeField] private float _standingCameraHeight = 1.55f;
     [SerializeField] private float _crouchCameraHeight = 1.05f;
+    [SerializeField] private float _proneCameraHeight = 0.55f;
 
     [Space()]
     [SerializeField, Range(0f, 1f)] private float _crouchWalkShakeIntensity = 0.15f;
     [SerializeField, Range(0f, 1f)] private float _walkShakeIntensity = 0.35f;
     [SerializeField, Range(0f, 1f)] private float _runShakeIntensity = 0.6f;
-    [SerializeField, Range(0f, 1f)] private float _airShakeIntensity = 0.1f; 
 
     private float _pitch;
     private float _currentShakeIntensity;
@@ -72,12 +72,6 @@ public class PlayerCameraController : MonoBehaviour
             return;
         }
 
-        if (locomotion == LOCOMOTION_STATE_ENUM.AIR)
-        {
-            _currentShakeIntensity = _airShakeIntensity;
-            return;
-        }
-
         if (posture == POSTURE_STATE_ENUM.CROUCH)
         {
             _currentShakeIntensity = _crouchWalkShakeIntensity;
@@ -89,9 +83,19 @@ public class PlayerCameraController : MonoBehaviour
     public void SetCameraHeight(POSTURE_STATE_ENUM posture)
     {
         Vector3 cameraPosition = _cameraTrans.localPosition;
-        cameraPosition.y = posture == POSTURE_STATE_ENUM.STANDING
-            ? _standingCameraHeight
-            : _crouchCameraHeight;
+
+        switch (posture)
+        {
+            case POSTURE_STATE_ENUM.STANDING:
+                cameraPosition.y = _standingCameraHeight;
+                break;
+            case POSTURE_STATE_ENUM.CROUCH:
+                cameraPosition.y = _crouchCameraHeight;
+                break;
+            case POSTURE_STATE_ENUM.PRONE:
+                cameraPosition.y = _proneCameraHeight;
+                break;
+        }
 
         _cameraTrans.localPosition = cameraPosition;
     }

@@ -8,9 +8,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private InteractViewer _viewer;
     [SerializeField] private PlayerInteractionController _interactController;
 
+    [SerializeField] private PlayerAnimationController _animationController;
+
+    [SerializeField] private CharacterRotationController _rotator;
     [SerializeField] private PlayerInputReader _inputReader;
     [SerializeField] private MoveController _move;
-    [SerializeField] private CharacterRotationController _rotation;
     [SerializeField] private PlayerCameraController _camera;
     [SerializeField] private PlayerInteractionController _interact;
     [SerializeField] private PlayerHandController _hand;
@@ -28,9 +30,9 @@ public class PlayerController : MonoBehaviour
         _camera.SetCameraHeight(_move.Posture);
         _camera.SetShakeIntensity(_move.Posture, _move.Locomotion);
 
-        _interact.Init(_stat);
+        _interact.Init(_stat, _move, _rotator, _hand);
 
-        _move.Init(_sprintViewer);
+        _rotator.Init(this.transform);
     }
     private void Bind()
     {
@@ -38,40 +40,36 @@ public class PlayerController : MonoBehaviour
         _inputReader.OnLookEvent += OnLookAction;
         _inputReader.OnSprintEvent += OnSprintAction;
         _inputReader.OnCrouchEvent += OnCrouchAction;
-        _inputReader.OnJumpEvent += OnJumpAction;
         _inputReader.OnInteractionEvent += OnInteractAction;
         _inputReader.OnAttackEvent += OnAttackAction;
         _inputReader.OnCancelAimEvent += OnCancelAimAction;
 
-        _move.OnPostureChanged += OnPostureChangedActioned;
-        _move.OnLocomotionChanged += OnLocomotionChangedActioned;
-
         _hand.OnThrowPowerChanged += _throwViewer.ChargeGage;
         _hand.OnAimStateChanged += _throwViewer.OnAimStateChanged;
 
-        _stat.OnChangedPositionStateEvent += (state) => 
-        { 
-            if (state == PLAYER_POSITION_STATE.HIDING) _move.ResetMoveState(); 
-        };
+        _stat.OnChangedPositionStateEvent += OnChangePositionState;
+        _stat.OnChangedActionStateEvent += OnChangeActionState;
+
+        _move.OnChangedStamina += _sprintViewer.UpdateSprintStamina;
+        _move.OnMoveEvent += _animationController.SetMoveAnima;
+
+        _move.OnLocomotionChanged += _animationController.SetLocomotionAnima;
+        _move.OnPostureChanged += _animationController.SetPostureParam;
+
+        _move.OnPostureChanged += OnPostureChangedActioned;
+        _move.OnLocomotionChanged += OnLocomotionChangedActioned;
     }
-    private void Unbind()
+
+    private void OnChangeActionState(PLAYER_ACTION_STATE action)
     {
-        _inputReader.OnMoveEvent -= OnMoveAction;
-        _inputReader.OnLookEvent -= OnLookAction;
-        _inputReader.OnSprintEvent -= OnSprintAction;
-        _inputReader.OnCrouchEvent -= OnCrouchAction;
-        _inputReader.OnJumpEvent -= OnJumpAction;
-        _inputReader.OnInteractionEvent -= OnInteractAction;
-        _inputReader.OnAttackEvent -= OnAttackAction;
-        _inputReader.OnCancelAimEvent -= OnCancelAimAction;
-
-        _move.OnPostureChanged -= OnPostureChangedActioned;
-        _move.OnLocomotionChanged -= OnLocomotionChangedActioned;
-
-        _hand.OnThrowPowerChanged -= _throwViewer.ChargeGage;
-        _hand.OnAimStateChanged -= _throwViewer.OnAimStateChanged;
+        if (action == PLAYER_ACTION_STATE.REPAIRING_GENERATOR)
+            _move.StopMove();
     }
-
+    private void OnChangePositionState(PLAYER_POSITION_STATE position)
+    {
+        if (position == PLAYER_POSITION_STATE.HIDING) 
+            _move.StopMove();
+    }
     #region Actions
     private void OnMoveAction(Vector2 value)
     {
@@ -84,7 +82,7 @@ public class PlayerController : MonoBehaviour
             return;
 
         _camera.RotateXAxis(value.y);
-        _rotation.Rotate(value);
+        _rotator.Rotate(value);
     }
     private void OnSprintAction(bool value)
     {
@@ -96,10 +94,6 @@ public class PlayerController : MonoBehaviour
         if (_stat.CanCrouch && value)
             _move.RequestCrouch();
     }
-    private void OnJumpAction(bool value)
-    {
-       
-    }
     private void OnInteractAction(bool value)
     {
         if (value)
@@ -107,13 +101,19 @@ public class PlayerController : MonoBehaviour
         else
             _interact.OnInteractReleaseAction();
     }
-    private void OnPostureChangedActioned(POSTURE_STATE_ENUM posture)
+    private void OnPostureChangedActioned(POSTURE_STATE_ENUM posture, bool value)
     {
+        if (!value)
+            return;
+
         _camera.SetCameraHeight(posture);
         _camera.SetShakeIntensity(posture, _move.Locomotion);
     }
-    private void OnLocomotionChangedActioned(LOCOMOTION_STATE_ENUM locomotion)
+    private void OnLocomotionChangedActioned(LOCOMOTION_STATE_ENUM locomotion, bool value)
     {
+        if (!value)
+            return;
+
         _camera.SetShakeIntensity(_move.Posture, locomotion);
     }
     private void OnAttackAction(bool value)
@@ -128,6 +128,22 @@ public class PlayerController : MonoBehaviour
     }
     #endregion
 
+    private void Unbind()
+    {
+        _inputReader.OnMoveEvent -= OnMoveAction;
+        _inputReader.OnLookEvent -= OnLookAction;
+        _inputReader.OnSprintEvent -= OnSprintAction;
+        _inputReader.OnCrouchEvent -= OnCrouchAction;
+        _inputReader.OnInteractionEvent -= OnInteractAction;
+        _inputReader.OnAttackEvent -= OnAttackAction;
+        _inputReader.OnCancelAimEvent -= OnCancelAimAction;
+
+        _move.OnPostureChanged -= OnPostureChangedActioned;
+        _move.OnLocomotionChanged -= OnLocomotionChangedActioned;
+
+        _hand.OnThrowPowerChanged -= _throwViewer.ChargeGage;
+        _hand.OnAimStateChanged -= _throwViewer.OnAimStateChanged;
+    }
     private void OnEnable()
     {
         Bind();

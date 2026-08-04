@@ -1,5 +1,3 @@
-using Cysharp.Threading.Tasks;
-using System.Collections;
 using UnityEngine;
 
 
@@ -26,10 +24,7 @@ public class HidingSpot : MonoBehaviour, IInteractable
         ScreenFader.Instance.FadeOut(() => PlayerTeleport(playerInteractor));
     }
 
-    public void InteractRelease(PlayerInteractionController playerInteractionController)
-    {
-        
-    }
+    public void InteractRelease(PlayerInteractionController playerInteractionController) { }
 
     private void PlayerTeleport(PlayerInteractionController playerInteractor)
     {
@@ -37,8 +32,13 @@ public class HidingSpot : MonoBehaviour, IInteractable
         playerInteractor.OnTeleport(teleportPosition);
 
         _isInPlayer = !_isInPlayer;
-        
-        SetHidePosture();
+
+        if (_isInPlayer)
+            playerInteractor.SetContextInteractable(this);
+        else
+            playerInteractor.ClearContextInteractable(this);
+
+        SetHidePosture(playerInteractor);
 
         PLAYER_POSITION_STATE state = _isInPlayer
             ? PLAYER_POSITION_STATE.HIDING
@@ -52,8 +52,12 @@ public class HidingSpot : MonoBehaviour, IInteractable
             playerInteractor.EndTransition();
         });
     }
-    private void SetHidePosture()
+    private void SetHidePosture(PlayerInteractionController playerInteractor)
     {
+        POSTURE_STATE_ENUM posture = _isInPlayer
+            ? _hidePosture
+            : POSTURE_STATE_ENUM.STANDING;
 
+        playerInteractor.SetPosture(posture);
     }
 }
