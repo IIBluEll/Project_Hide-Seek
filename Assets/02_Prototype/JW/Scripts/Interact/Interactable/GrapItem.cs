@@ -1,3 +1,4 @@
+using HideSeek.AI;
 using UnityEngine;
 
 public class GrapItem : MonoBehaviour, IInteractable
@@ -11,12 +12,10 @@ public class GrapItem : MonoBehaviour, IInteractable
     {
         return true;
     }
-
     public void InteractAct(PlayerInteractionController playerInteractor)
     {
         playerInteractor.TryGrap(this);
     }
-
     public void Grapped()
     {
         _rb.linearVelocity = Vector3.zero;
@@ -31,14 +30,11 @@ public class GrapItem : MonoBehaviour, IInteractable
         _rb.useGravity = true;
         _collider.isTrigger = false;
     }
-
     public void Throw(Vector3 direction, float power)
     {
-        Debug.Log(power);
         Release();
         _rb.AddForce(direction.normalized * power, ForceMode.Impulse);
     }
-
     public void InteractRelease(PlayerInteractionController playerInteractionController)
     {
         

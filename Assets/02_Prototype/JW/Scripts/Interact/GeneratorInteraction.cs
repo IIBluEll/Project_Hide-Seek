@@ -15,12 +15,12 @@ public class GeneratorInteraction : MonoBehaviour, IInteractable
     public void InteractAct(PlayerInteractionController playerInteractor)
     {
         _generator.TryBeginRepair();
-        playerInteractor.BeginActing();
+        playerInteractor.BeginGeneratorRepair();
     }
 
     public void InteractRelease(PlayerInteractionController playerInteractionController)
     {
         _generator.CancelRepair();
-        playerInteractionController.EndActing();
+        playerInteractionController.EndGeneratorRepair();
     }
 }

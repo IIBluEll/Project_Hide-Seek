@@ -1,25 +1,34 @@
 using System;
 using UnityEngine;
 
+[System.Serializable]
+public class DefactData
+{
+    public Transform CameraTrans;
+    public float RayDistance;
+    public LayerMask InteractionRaycastLayerMask;
+}
+
 public class PlayerInteractionController : MonoBehaviour
 {
-    [SerializeField] private PlayerHandController _hand;
-    [SerializeField] private Transform _player;
-    [SerializeField] private CharacterController _characterController;
-    [SerializeField] private CharacterRotationController _rotationController;
-    
-    [SerializeField] private Camera _camera;
-    [SerializeField] private float _rayDistance;
-    [SerializeField] private LayerMask _interactionRaycastLayerMask;
+    [SerializeField] private DefactData _defactData;
+
+    private PlayerHandController _hand;
+    private MoveController _moveController;
+    private CharacterRotationController _rotationController;
 
     private IInteractable _currentInteractable;
+    private IInteractable _contextInteractable;
+    private IStateService _stat;
 
     public event Action<string> OnInsightInteractEvent;
     public event Action OnOutsightInteractionEvent;
-    private IStateService _stat;
 
-    internal void Init(IStateService stat)
+    internal void Init(IStateService stat, MoveController move, CharacterRotationController rotator, PlayerHandController hand)
     {
+        _moveController = move;
+        _rotationController = rotator;
+        _hand = hand;
         _stat = stat;
         _hand.OnAimStateChanged -= OnAimStateChangedActioned;
         _hand.OnAimStateChanged += OnAimStateChangedActioned;
@@ -30,9 +39,19 @@ public class PlayerInteractionController : MonoBehaviour
     }
     private void DetectInteractable()
     {
-        Ray ray = new Ray(_camera.transform.position, _camera.transform.forward);
+        if (_contextInteractable != null)
+        {
+            if (_contextInteractable.CanInteract(this) && _stat.CanInteraction)
+                OnInsightInteractEvent?.Invoke(_contextInteractable.InteractionPrompt);
+            else
+                OnOutsightInteractionEvent?.Invoke();
 
-        if(Physics.Raycast(ray, out RaycastHit hit, _rayDistance, _interactionRaycastLayerMask))
+            return;
+        }
+
+        Ray ray = new Ray(_defactData.CameraTrans.position, _defactData.CameraTrans.forward);
+
+        if(Physics.Raycast(ray, out RaycastHit hit, _defactData.RayDistance, _defactData.InteractionRaycastLayerMask))
         {
             IInteractable interactable = hit.transform.GetComponent<IInteractable>();
 
@@ -40,7 +59,6 @@ public class PlayerInteractionController : MonoBehaviour
             {
                 if (interactable.CanInteract(this) && _stat.CanInteraction)
                 {
-                    Debug.Log("1111");
                     _currentInteractable = interactable;
                     OnInsightInteractEvent?.Invoke(_currentInteractable.InteractionPrompt);
                 }
@@ -59,25 +77,33 @@ public class PlayerInteractionController : MonoBehaviour
             ClearCurrentInteractable();
         }
     }
-
     public void OnInteractAction()
     {
-        if ((_stat != null && !_stat.CanInteraction) || _currentInteractable == null)
+        IInteractable target = _contextInteractable ?? _currentInteractable;
+
+        if ((_stat != null && !_stat.CanInteraction) || target == null)
             return;
 
-        if (_currentInteractable.CanInteract(this))
-            _currentInteractable.InteractAct(this);
+        if (target.CanInteract(this))
+            target.InteractAct(this);
     }
     public void OnInteractReleaseAction()
     {
-        if (_currentInteractable != null)
-            _currentInteractable.InteractRelease(this);
+        IInteractable target = _contextInteractable ?? _currentInteractable;
+
+        if (target != null)
+            target.InteractRelease(this);
     }
-    public void OnSubInteractAction()
+    public void SetContextInteractable(IInteractable interactable)
     {
-
+        _currentInteractable = null;
+        _contextInteractable = interactable;
     }
-
+    public void ClearContextInteractable(IInteractable interactable)
+    {
+        if (ReferenceEquals(_contextInteractable, interactable))
+            _contextInteractable = null;
+    }
     public void TryGrap(GrapItem grapItem)
     {
         _hand.GrapItem(grapItem);
@@ -89,9 +115,7 @@ public class PlayerInteractionController : MonoBehaviour
     }
     public void SetPosition(Vector3 position)
     {
-        _characterController.enabled = false;
-        _player.transform.position = position;
-        _characterController.enabled = true;
+        _moveController.Teleport(position);
     }
     public void SetRotation(Vector3 rotation)
     {
@@ -101,9 +125,9 @@ public class PlayerInteractionController : MonoBehaviour
     {
         _stat.SetPositionState(state);
     }
-    public void SetPosutre(POSTURE_STATE_ENUM postureType)
+    public void SetPosture(POSTURE_STATE_ENUM posture)
     {
-
+        _moveController.SetPosture(posture);
     }
     public void BeginTransition()
     {
@@ -115,7 +139,7 @@ public class PlayerInteractionController : MonoBehaviour
     }
     public void BeginActing()
     {
-        _stat.SetActionState(PLAYER_ACTION_STATE.ACTIONING);
+        _stat.SetActionState(PLAYER_ACTION_STATE.AIMING);
     }
     public void EndActing()
     {
@@ -124,14 +148,22 @@ public class PlayerInteractionController : MonoBehaviour
     private void OnAimStateChangedActioned(bool isAiming)
     {
         PLAYER_ACTION_STATE state = isAiming
-            ? PLAYER_ACTION_STATE.ACTIONING
+            ? PLAYER_ACTION_STATE.AIMING
             : PLAYER_ACTION_STATE.IDLE;
 
         _stat.SetActionState(state);
     }
+    public void BeginGeneratorRepair()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.REPAIRING_GENERATOR);
+    }
+
+    public void EndGeneratorRepair()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.IDLE);
+    }
     private void ClearCurrentInteractable()
     {
-        Debug.Log("ASDFASASDFASd");
         _currentInteractable = null;
         OnOutsightInteractionEvent?.Invoke();
     }

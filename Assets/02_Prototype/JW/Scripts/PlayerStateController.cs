@@ -25,7 +25,8 @@ public enum PLAYER_ACTION_STATE
 {
     IDLE,
     TRANSITION,
-    ACTIONING,
+    AIMING,
+    REPAIRING_GENERATOR
 }
 
 public class PlayerStateController : IStateService
@@ -36,9 +37,17 @@ public class PlayerStateController : IStateService
     public event Action<PLAYER_POSITION_STATE> OnChangedPositionStateEvent;
     public event Action<PLAYER_ACTION_STATE> OnChangedActionStateEvent;
 
-    public bool CanMove => _positionState == PLAYER_POSITION_STATE.NORMAL;
-    public bool CanRotate => true;
-    public bool CanCrouch => _positionState == PLAYER_POSITION_STATE.NORMAL;
+    public bool CanMove =>
+    _positionState == PLAYER_POSITION_STATE.NORMAL &&
+    _actionState != PLAYER_ACTION_STATE.REPAIRING_GENERATOR;
+
+    public bool CanRotate =>
+        _actionState != PLAYER_ACTION_STATE.REPAIRING_GENERATOR;
+
+    public bool CanCrouch =>
+        _positionState == PLAYER_POSITION_STATE.NORMAL &&
+        _actionState != PLAYER_ACTION_STATE.REPAIRING_GENERATOR;
+
     public bool CanInteraction => _actionState == PLAYER_ACTION_STATE.IDLE;
     public bool CanAction => _positionState == PLAYER_POSITION_STATE.NORMAL;
 
