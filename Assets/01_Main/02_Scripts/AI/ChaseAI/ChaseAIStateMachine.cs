@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -32,6 +33,8 @@ namespace HideSeek.AI
         private bool _isRetreatPending;
         private bool _hasRetreatFailed;
         private bool _hasPlayerCaughtRequest;
+
+        public event Action<CHASE_AI_STATE , CHASE_AI_STATE> StateChanged;
 
         public Vector3 SearchCenterPosition => SEARCH_BEHAVIOR.SearchCenterPosition;
         public float CurrentSearchRadius => SEARCH_BEHAVIOR.CurrentSearchRadius;
@@ -297,6 +300,13 @@ namespace HideSeek.AI
 
         public void Stop()
         {
+            if ( CurrentState != CHASE_AI_STATE.DORMANT )
+            {
+                ChangeState(CHASE_AI_STATE.DORMANT , "State machine stopped");
+
+                return;
+            }
+
             _movement.Stop();
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
@@ -459,6 +469,8 @@ namespace HideSeek.AI
             CurrentState = newState;
 
             Debug.Log($"[ChaseAIStateMachine] {previousState} → {newState}, Reason: {reason}");
+
+            StateChanged?.Invoke(previousState , newState);
 
             switch ( newState )
             {

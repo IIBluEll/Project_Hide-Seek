@@ -26,6 +26,7 @@ namespace HideSeek.AI
 
         public event Action RetreatFailed;
         public event Action PlayerCaught;
+        public event Action<CHASE_AI_STATE , CHASE_AI_STATE> StateChanged;
 
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
 
@@ -144,6 +145,8 @@ namespace HideSeek.AI
                 _patrolPoints ,
                 _configuredZones);
 
+            _stateMachine.StateChanged -= OnStateChangedActioned;
+            _stateMachine.StateChanged += OnStateChangedActioned;
             _stateMachine.Initialize();
             _isInitialized = true;
         }
@@ -246,6 +249,13 @@ namespace HideSeek.AI
             _stateMachine?.RefreshAngerEffects();
 
             LogAngerState("발전기 완료 이벤트");
+        }
+
+        private void OnStateChangedActioned(
+            CHASE_AI_STATE previousState ,
+            CHASE_AI_STATE currentState)
+        {
+            StateChanged?.Invoke(previousState , currentState);
         }
 
         private void SynchronizeGameProgress()

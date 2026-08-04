@@ -34,7 +34,14 @@ namespace HideSeek.AI
         private bool _isCurrentHintAccepted;
         private bool _wasInitialDormantStateApplied;
 
+        public event Action<CHASE_AI_STATE , CHASE_AI_STATE> ChaseStateChanged;
+        public event Action PlayerCaught;
+        public event Action<AIWorldZone> PlayerZoneChanged;
+
         public MASTER_AI_STATE CurrentState => _director != null ? _director.CurrentState : MASTER_AI_STATE.DORMANT;
+        public CHASE_AI_STATE CurrentChaseState => _chaseAIController != null
+            ? _chaseAIController.CurrentState
+            : CHASE_AI_STATE.DORMANT;
         public ChaseAIController ChaseAIController => _chaseAIController;
         public AIWorldZone CurrentPlayerZone => _currentPlayerZone;
         public AIWorldZone TargetZone => _targetZone;
@@ -116,6 +123,12 @@ namespace HideSeek.AI
                 return;
             }
 
+            _chaseAIController.StateChanged -= OnChaseAIStateChangedActioned;
+            _chaseAIController.StateChanged += OnChaseAIStateChangedActioned;
+
+            _chaseAIController.PlayerCaught -= OnPlayerCaughtActioned;
+            _chaseAIController.PlayerCaught += OnPlayerCaughtActioned;
+
             _chaseAIController.RetreatFailed -= OnChaseAIRetreatFailed;
             _chaseAIController.RetreatFailed += OnChaseAIRetreatFailed;
         }
@@ -124,6 +137,8 @@ namespace HideSeek.AI
         {
             if ( _chaseAIController != null )
             {
+                _chaseAIController.StateChanged -= OnChaseAIStateChangedActioned;
+                _chaseAIController.PlayerCaught -= OnPlayerCaughtActioned;
                 _chaseAIController.RetreatFailed -= OnChaseAIRetreatFailed;
             }
         }
@@ -138,6 +153,7 @@ namespace HideSeek.AI
             }
 
             _currentPlayerZone = containingZone;
+            PlayerZoneChanged?.Invoke(_currentPlayerZone);
 
             if ( _currentPlayerZone == null )
             {
@@ -147,6 +163,18 @@ namespace HideSeek.AI
             }
 
             Debug.Log($"[MasterAIProvider] Player Zone 변경: ID={_currentPlayerZone.ZoneId}, Name={_currentPlayerZone.DisplayName}" , this);
+        }
+
+        private void OnChaseAIStateChangedActioned(
+            CHASE_AI_STATE previousState ,
+            CHASE_AI_STATE currentState)
+        {
+            ChaseStateChanged?.Invoke(previousState , currentState);
+        }
+
+        private void OnPlayerCaughtActioned()
+        {
+            PlayerCaught?.Invoke();
         }
 
         private void OnChaseAIRetreatFailed()
