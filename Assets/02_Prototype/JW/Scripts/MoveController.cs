@@ -12,7 +12,8 @@ public struct MoveSpeed
 public enum POSTURE_STATE_ENUM
 {
     STANDING,
-    CROUCH
+    CROUCH,
+    PRONE
 }
 
 public enum LOCOMOTION_STATE_ENUM
@@ -23,7 +24,7 @@ public enum LOCOMOTION_STATE_ENUM
     AIR
 }
 
-
+[RequireComponent(typeof(CharacterController))]
 public class MoveController : MonoBehaviour
 {
     private const float GRAVITY = -9.81f;
@@ -36,23 +37,20 @@ public class MoveController : MonoBehaviour
     private static readonly int IS_CROUCH_HASH = Animator.StringToHash("IsCrouch");
 
     [SerializeField] private MoveSpeed _moveSpeed;
-    [SerializeField] private CharacterController _controller;
+    [SerializeField] private CharacterController _characterController;
     [SerializeField] private Animator _animator;
+
     [SerializeField] private float _crouchHeight = 1f;
-    
-    private float _currentSprintHP;
-    [SerializeField] private float _useStaminaAmount;
-    [SerializeField] private float _chargeAmount;
+    [SerializeField] private float _proneHeight = 0.5f;
+
+    private float _currentSprintHP = 100;
+    [SerializeField] private float _useStaminaAmount = 20;
+    [SerializeField] private float _chargeAmount = 10;
     private float SprintStaminaNomalize => _currentSprintHP / 100;
 
     private IPlayerStatViewer _sprintViewer;
+    
     private POSTURE_STATE_ENUM _posture = POSTURE_STATE_ENUM.STANDING;
-
-    internal void Init(IPlayerStatViewer sprintViewer)
-    {
-        _sprintViewer = sprintViewer;
-    }
-
     private LOCOMOTION_STATE_ENUM _locomotion = LOCOMOTION_STATE_ENUM.IDLE;
 
     private Vector2 _moveInput;
@@ -70,11 +68,15 @@ public class MoveController : MonoBehaviour
 
     private void Awake()
     {
-        if (_controller == null)
-            _controller = this.GetComponent<CharacterController>();
+        if (_characterController == null)
+            _characterController = this.GetComponent<CharacterController>();
 
-        _standingHeight = _controller.height;
-        _standingCenter = _controller.center;
+        _standingHeight = _characterController.height;
+        _standingCenter = _characterController.center;
+    }
+    internal void Init(IPlayerStatViewer sprintViewer)
+    {
+        _sprintViewer = sprintViewer;
     }
     private void Update()
     {
@@ -85,7 +87,7 @@ public class MoveController : MonoBehaviour
         Vector3 velocity = horizontalDirection * GetMoveSpeed();
         velocity.y = _verticalVelocity;
 
-        _controller.Move(velocity * Time.deltaTime);
+        _characterController.Move(velocity * Time.deltaTime);
         UpdateAnimator();
 
         if (_locomotion == LOCOMOTION_STATE_ENUM.RUN)
@@ -95,11 +97,13 @@ public class MoveController : MonoBehaviour
 
         _currentSprintHP = Mathf.Clamp(_currentSprintHP, 0, 100);
         _sprintViewer.UpdateSprintStamina(SprintStaminaNomalize);
-    }
 
+        if (_currentSprintHP == 0 && _locomotion == LOCOMOTION_STATE_ENUM.RUN)
+            _sprintRequested = false;
+    }
     private void UpdateVerticalVelocity()
     {
-        if (_controller.isGrounded && _verticalVelocity < 0f)
+        if (_characterController.isGrounded && _verticalVelocity < 0f)
             _verticalVelocity = GROUNDED_VERTICAL_VELOCITY;
         else
             _verticalVelocity += GRAVITY * Time.deltaTime;
@@ -153,22 +157,22 @@ public class MoveController : MonoBehaviour
     {
         if (_posture == POSTURE_STATE_ENUM.STANDING)
         {
-            _controller.height = _standingHeight;
-            _controller.center = _standingCenter;
+            _characterController.height = _standingHeight;
+            _characterController.center = _standingCenter;
             return;
         }
         
         Vector3 crouchCenter = _standingCenter;
         crouchCenter.y -= (_standingHeight - _crouchHeight) * 0.5f;
 
-        _controller.height = _crouchHeight;
-        _controller.center = crouchCenter;
+        _characterController.height = _crouchHeight;
+        _characterController.center = crouchCenter;
     }
     private void UpdateLocomotionState()
     {
         LOCOMOTION_STATE_ENUM nextLocomotion;
 
-        if (!_controller.isGrounded || _verticalVelocity > 0f)
+        if (!_characterController.isGrounded || _verticalVelocity > 0f)
         {
             nextLocomotion = LOCOMOTION_STATE_ENUM.AIR;
         }
@@ -201,9 +205,9 @@ public class MoveController : MonoBehaviour
             return false;
 
         float margin = 0.01f;
-        float radius = _controller.radius;
+        float radius = _characterController.radius;
 
-        Vector3 crouchTop = _controller.center + Vector3.up * (_controller.height * 0.5f);
+        Vector3 crouchTop = _characterController.center + Vector3.up * (_characterController.height * 0.5f);
         Vector3 standingTop = _standingCenter + Vector3.up * (_standingHeight * 0.5f);
 
         Vector3 point1 = transform.TransformPoint(crouchTop + Vector3.up * (radius + margin));
@@ -234,17 +238,10 @@ public class MoveController : MonoBehaviour
         else
             SetPosture(POSTURE_STATE_ENUM.CROUCH);
     }
-
-
-    //TODO 달리기 체력 시스템, 체력 UI
-    //TODO 점프 빼기
-    public void RequestJump()
+    public void Teleport(Vector3 position)
     {
-        if (!_controller.isGrounded || _verticalVelocity > 0)
-            return;
-
-        if (_posture == POSTURE_STATE_ENUM.CROUCH)
-            _posture = POSTURE_STATE_ENUM.STANDING;
-
+        _characterController.enabled = false;
+        _characterController.transform.position = position;
+        _characterController.enabled = true;
     }
 }
