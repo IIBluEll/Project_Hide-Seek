@@ -23,6 +23,7 @@ namespace HideSeek.AI
         private readonly List<CHASE_AI_SEARCH_POINT_SOURCE> SEARCH_POINT_SOURCES = new();
         private readonly List<AIHidingSpot> SEARCH_POINT_HIDING_SPOTS = new();
         private readonly List<AISearchPoint> ZONE_COVERAGE_CANDIDATES = new();
+        private readonly List<AISearchPoint> HIDING_SPOT_CANDIDATES = new();
         private readonly NavMeshPath SEARCH_PATH = new();
 
         private IReadOnlyList<AIWorldZone> _zones = Array.Empty<AIWorldZone>();
@@ -162,8 +163,13 @@ namespace HideSeek.AI
 
             HidingSpotInspectionChance = Mathf.Clamp01(hidingSpotInspectionChance);
 
-            AISearchPoint hidingSpotCandidate = canInspectHidingSpot && HidingSpotInspectionChance > 0f
-                ? FindNearestHidingSpot(centerPosition , validHidingSpotEvidenceDistance)
+            if ( canInspectHidingSpot && HidingSpotInspectionChance > 0f )
+            {
+                CollectHidingSpotCandidates(centerPosition , validHidingSpotEvidenceDistance);
+            }
+
+            AISearchPoint hidingSpotCandidate = HIDING_SPOT_CANDIDATES.Count > 0
+                ? HIDING_SPOT_CANDIDATES[ 0 ]
                 : null;
 
             HidingSpotCandidateName = hidingSpotCandidate != null
@@ -172,7 +178,7 @@ namespace HideSeek.AI
             HidingSpotInspectionRoll = hidingSpotCandidate != null
                 ? UnityEngine.Random.value
                 : -1f;
-            WasHidingSpotSelected = hidingSpotCandidate != null &&
+            bool didInspectionRollPass = hidingSpotCandidate != null &&
                 HidingSpotInspectionRoll <= HidingSpotInspectionChance;
 
             if ( hidingSpotCandidate != null )
@@ -182,15 +188,10 @@ namespace HideSeek.AI
                     $"Candidate={HidingSpotCandidateName}, " +
                     $"Chance={HidingSpotInspectionChance:P0}, " +
                     $"Roll={HidingSpotInspectionRoll:F2}, " +
-                    $"Selected={WasHidingSpotSelected}");
+                    $"RollPassed={didInspectionRollPass}");
             }
 
-            if ( !WasHidingSpotSelected )
-            {
-                hidingSpotCandidate = null;
-            }
-
-            int reservedHidingSpotPointCount = hidingSpotCandidate != null ? 1 : 0;
+            int reservedHidingSpotPointCount = didInspectionRollPass ? 1 : 0;
             int availablePointCount = Mathf.Max(
                 0 ,
                 targetPointCount - SEARCH_POINTS.Count - reservedHidingSpotPointCount);
@@ -208,26 +209,15 @@ namespace HideSeek.AI
                 areaMask ,
                 ref pathStartPosition);
 
-            if ( hidingSpotCandidate != null && SEARCH_POINTS.Count < targetPointCount )
+            if ( didInspectionRollPass && SEARCH_POINTS.Count < targetPointCount )
             {
-                bool wasAdded = TryAddSearchPoint(
-                    hidingSpotCandidate.Position ,
+                TryAddHidingSpotSearchPoint(
                     centerPosition ,
                     validHidingSpotEvidenceDistance ,
                     validMinimumPointDistance ,
                     validSampleRadius ,
                     areaMask ,
-                    CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT ,
-                    ref pathStartPosition ,
-                    hidingSpotCandidate.HidingSpot);
-
-                if ( wasAdded )
-                {
-                    Debug.Log(
-                        $"[ChaseAISearch] 증거 기반 은신처 조사 지점 추가: " +
-                        $"Position={hidingSpotCandidate.Position}, " +
-                        $"EvidenceDistance={Vector3.Distance(centerPosition , hidingSpotCandidate.Position):F1}");
-                }
+                    ref pathStartPosition);
             }
 
             for ( int attemptIndex = 0; attemptIndex < maximumAttemptCount; attemptIndex++ )
@@ -321,6 +311,7 @@ namespace HideSeek.AI
             SEARCH_POINT_SOURCES.Clear();
             SEARCH_POINT_HIDING_SPOTS.Clear();
             ZONE_COVERAGE_CANDIDATES.Clear();
+            HIDING_SPOT_CANDIDATES.Clear();
             _activeSearchZone = null;
             _currentPointIndex = 0;
             _zoneCoveragePointCount = 0;
@@ -332,23 +323,29 @@ namespace HideSeek.AI
             WasHidingSpotSelected = false;
         }
 
-        private AISearchPoint FindNearestHidingSpot(
+        private void CollectHidingSpotCandidates(
             Vector3 evidencePosition ,
             float evidenceDistance)
         {
+            HIDING_SPOT_CANDIDATES.Clear();
+
             if ( evidenceDistance <= 0f )
             {
-                return null;
+                return;
             }
 
-            AISearchPoint nearestHidingSpot = null;
-            float nearestSquaredDistance = evidenceDistance * evidenceDistance;
+            float maximumSquaredDistance = evidenceDistance * evidenceDistance;
 
             for ( int zoneIndex = 0; zoneIndex < _zones.Count; zoneIndex++ )
             {
                 AIWorldZone zone = _zones[ zoneIndex ];
 
                 if ( zone == null )
+                {
+                    continue;
+                }
+
+                if ( _isZoneRestricted && zone != _activeSearchZone )
                 {
                     continue;
                 }
@@ -372,17 +369,65 @@ namespace HideSeek.AI
 
                     float squaredDistance = evidenceOffset.sqrMagnitude;
 
-                    if ( squaredDistance > nearestSquaredDistance )
+                    if ( squaredDistance > maximumSquaredDistance || HIDING_SPOT_CANDIDATES.Contains(searchPoint) )
                     {
                         continue;
                     }
 
-                    nearestHidingSpot = searchPoint;
-                    nearestSquaredDistance = squaredDistance;
+                    HIDING_SPOT_CANDIDATES.Add(searchPoint);
                 }
             }
 
-            return nearestHidingSpot;
+            HIDING_SPOT_CANDIDATES.Sort((firstPoint , secondPoint) =>
+            {
+                float firstSquaredDistance = (firstPoint.Position - evidencePosition).sqrMagnitude;
+                float secondSquaredDistance = (secondPoint.Position - evidencePosition).sqrMagnitude;
+
+                return firstSquaredDistance.CompareTo(secondSquaredDistance);
+            });
+        }
+
+        private bool TryAddHidingSpotSearchPoint(
+            Vector3 centerPosition ,
+            float hidingSpotEvidenceDistance ,
+            float minimumPointDistance ,
+            float sampleRadius ,
+            int areaMask ,
+            ref Vector3 pathStartPosition)
+        {
+            for ( int candidateIndex = 0; candidateIndex < HIDING_SPOT_CANDIDATES.Count; candidateIndex++ )
+            {
+                AISearchPoint hidingSpotCandidate = HIDING_SPOT_CANDIDATES[ candidateIndex ];
+
+                bool wasAdded = TryAddSearchPoint(
+                    hidingSpotCandidate.Position ,
+                    centerPosition ,
+                    hidingSpotEvidenceDistance ,
+                    minimumPointDistance ,
+                    sampleRadius ,
+                    areaMask ,
+                    CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT ,
+                    ref pathStartPosition ,
+                    hidingSpotCandidate.HidingSpot);
+
+                if ( !wasAdded )
+                {
+                    continue;
+                }
+
+                HidingSpotCandidateName = hidingSpotCandidate.name;
+                WasHidingSpotSelected = true;
+
+                Debug.Log(
+                    $"[ChaseAISearch] 증거 기반 은신처 조사 지점 추가: " +
+                    $"Candidate={HidingSpotCandidateName}, " +
+                    $"Position={hidingSpotCandidate.Position}, " +
+                    $"EvidenceDistance={Vector3.Distance(centerPosition , hidingSpotCandidate.Position):F1}");
+
+                return true;
+            }
+
+            return false;
         }
 
         private void AddZoneCoveragePoints(
@@ -594,7 +639,41 @@ namespace HideSeek.AI
                 areaMask ,
                 SEARCH_PATH);
 
-            return hasPath && SEARCH_PATH.status == NavMeshPathStatus.PathComplete;
+            if ( !hasPath || SEARCH_PATH.status != NavMeshPathStatus.PathComplete )
+            {
+                return false;
+            }
+
+            return !_isZoneRestricted || DoesPathRemainInsideActiveZoneAfterEntry();
+        }
+
+        private bool DoesPathRemainInsideActiveZoneAfterEntry()
+        {
+            if ( _activeSearchZone == null )
+            {
+                return false;
+            }
+
+            bool hasEnteredActiveZone = false;
+            Vector3[] pathCorners = SEARCH_PATH.corners;
+
+            for ( int cornerIndex = 0; cornerIndex < pathCorners.Length; cornerIndex++ )
+            {
+                bool isInsideActiveZone = _activeSearchZone.Contains(pathCorners[ cornerIndex ]);
+
+                if ( isInsideActiveZone )
+                {
+                    hasEnteredActiveZone = true;
+                    continue;
+                }
+
+                if ( hasEnteredActiveZone )
+                {
+                    return false;
+                }
+            }
+
+            return hasEnteredActiveZone;
         }
 
         private static int CalculateDirectionalPointCount(

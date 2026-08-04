@@ -107,7 +107,7 @@ namespace HideSeek.AI
 
         private bool RequestDestination(Vector3 position , string context)
         {
-            CHASE_AI_MOVE_REQUEST_RESULT result = CHASE_AI_MOVEMENT.TrySetDestination(position , out Vector3 correctedDestination);
+            CHASE_AI_MOVE_REQUEST_RESULT result = CHASE_AI_MOVEMENT.TrySetDestination(position);
 
             if ( result == CHASE_AI_MOVE_REQUEST_RESULT.ACCEPTED )
             {

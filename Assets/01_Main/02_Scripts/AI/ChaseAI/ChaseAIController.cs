@@ -36,6 +36,9 @@ namespace HideSeek.AI
         public float CurrentAnger => _anger != null ? _anger.CurrentAnger : 0f;
         public float AngerFloor => _anger != null ? _anger.AngerFloor : 0f;
         public int CompletedGeneratorCount => _anger != null ? _anger.CompletedGeneratorCount : 0;
+        public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => _stateMachine != null
+            ? _stateMachine.ActiveEvidenceType
+            : CHASE_AI_EVIDENCE_TYPE.NONE;
 
         public ChaseAIDebugSnapshot GetDebugSnapshot(float currentTime)
         {
@@ -392,7 +395,10 @@ namespace HideSeek.AI
 
         private void DrawSearchGizmos()
         {
-            if ( _search == null || _stateMachine == null || _stateMachine.CurrentState != CHASE_AI_STATE.SEARCH )
+            if ( _search == null ||
+                _stateMachine == null ||
+                (_stateMachine.CurrentState != CHASE_AI_STATE.INVESTIGATE &&
+                 _stateMachine.CurrentState != CHASE_AI_STATE.SEARCH) )
             {
                 return;
             }
@@ -416,6 +422,15 @@ namespace HideSeek.AI
                 Gizmos.DrawSphere(searchPoint , 0.2f);
 
                 previousPosition = searchPoint;
+            }
+
+            if ( _stateMachine.CurrentSearchAction != CHASE_AI_SEARCH_ACTION.NONE &&
+                _movement != null )
+            {
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawRay(
+                    _movement.Position + Vector3.up ,
+                    _movement.Forward * 2f);
             }
         }
 

@@ -59,6 +59,7 @@ namespace HideSeek.AI
 
                 STRING_BUILDER.AppendLine(
                     $"Hint=Zone {currentHint.TargetZoneId}  " +
+                    $"Status={(MASTER_AI_PROVIDER.IsCurrentHintAccepted ? "ACCEPTED" : "PENDING")}  " +
                     $"Radius={currentHint.SearchRadius:F1}  " +
                     $"Urgency={currentHint.Urgency:F2}  " +
                     $"Remain={remainingTime:F1}s");

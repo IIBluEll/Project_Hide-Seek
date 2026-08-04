@@ -66,10 +66,13 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _areaSearchActionTimeMultiplier = 1f;
         [SerializeField, Min(0f)] private float _hidingSpotSearchActionTimeMultiplier = 1.6f;
 
+        [Header("Search Facing")]
+        [SerializeField, Min(0f)] private float _searchRotationSpeed = 120f;
+        [SerializeField, Range(0f, 180f)] private float _areaSearchSweepAngle = 90f;
+
         [Header("State Machine")]
         [SerializeField, Min(0f)] private float _chaseSpeed = 5.5f;
         [SerializeField, Min(0f)] private float _patrolWaitTime = 1f;
-        [SerializeField, Min(0f)] private float _investigateWaitTime = 2f;
         [SerializeField, Min(0f)] private float _searchWaitTime = 3f;
         [SerializeField, Min(0.02f)] private float _chaseRepathInterval = 0.2f;
         [SerializeField, Min(0f)] private float _chaseDestinationUpdateDistance = 0.5f;
@@ -125,10 +128,11 @@ namespace HideSeek.AI
         public float DirectionalSearchActionTimeMultiplier => _directionalSearchActionTimeMultiplier;
         public float AreaSearchActionTimeMultiplier => _areaSearchActionTimeMultiplier;
         public float HidingSpotSearchActionTimeMultiplier => _hidingSpotSearchActionTimeMultiplier;
+        public float SearchRotationSpeed => _searchRotationSpeed;
+        public float AreaSearchSweepAngle => _areaSearchSweepAngle;
 
         public float ChaseSpeed => _chaseSpeed;
         public float PatrolWaitTime => _patrolWaitTime;
-        public float InvestigateWaitTime => _investigateWaitTime;
         public float SearchWaitTime => _searchWaitTime;
         public float ChaseRepathInterval => _chaseRepathInterval;
 
@@ -164,6 +168,8 @@ namespace HideSeek.AI
             _directionalSearchActionTimeMultiplier = Mathf.Max(0f , _directionalSearchActionTimeMultiplier);
             _areaSearchActionTimeMultiplier = Mathf.Max(0f , _areaSearchActionTimeMultiplier);
             _hidingSpotSearchActionTimeMultiplier = Mathf.Max(0f , _hidingSpotSearchActionTimeMultiplier);
+            _searchRotationSpeed = Mathf.Max(0f , _searchRotationSpeed);
+            _areaSearchSweepAngle = Mathf.Clamp(_areaSearchSweepAngle , 0f , 180f);
             _attackRange = Mathf.Max(0f , _attackRange);
 
             if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )
