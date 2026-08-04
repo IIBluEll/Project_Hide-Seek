@@ -11,6 +11,7 @@ namespace HideSeek.AI
         public CHASE_AI_VISUAL_STATE VisualState { get; }
         public bool HasLineOfSight { get; }
         public float DetectionRatio { get; }
+        public float DetectionSpeedMultiplier { get; }
 
         public bool HasVisualMemory { get; }
         public Vector3 VisualMemoryPosition { get; }
@@ -52,6 +53,7 @@ namespace HideSeek.AI
             CHASE_AI_VISUAL_STATE visualState ,
             bool hasLineOfSight ,
             float detectionRatio ,
+            float detectionSpeedMultiplier ,
             bool hasVisualMemory ,
             Vector3 visualMemoryPosition ,
             float visualMemoryStrength ,
@@ -88,6 +90,7 @@ namespace HideSeek.AI
             VisualState = visualState;
             HasLineOfSight = hasLineOfSight;
             DetectionRatio = detectionRatio;
+            DetectionSpeedMultiplier = detectionSpeedMultiplier;
             HasVisualMemory = hasVisualMemory;
             VisualMemoryPosition = visualMemoryPosition;
             VisualMemoryStrength = visualMemoryStrength;

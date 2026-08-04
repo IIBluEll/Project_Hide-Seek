@@ -22,6 +22,7 @@ namespace HideSeek.AI
 
         private readonly ChaseAIInvestigationContext INVESTIGATION_CONTEXT;
         private readonly ChaseAIEvidenceSelector EVIDENCE_SELECTOR;
+        private readonly ChaseAIAnger CHASE_AI_ANGER;
         private readonly ChaseAIChaseBehavior CHASE_BEHAVIOR;
         private readonly ChaseAISearchBehavior SEARCH_BEHAVIOR;
         private readonly ChaseAIPatrolRoute PATROL_ROUTE;
@@ -75,9 +76,10 @@ namespace HideSeek.AI
 
             INVESTIGATION_CONTEXT = new ChaseAIInvestigationContext(config);
             EVIDENCE_SELECTOR = new ChaseAIEvidenceSelector(config , memory , INVESTIGATION_CONTEXT);
-            CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger);
+            CHASE_AI_ANGER = chaseAIAnger;
+            CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger , memory);
             SEARCH_BEHAVIOR = new ChaseAISearchBehavior(config , movement , search , chaseAIAnger);
-            PATROL_ROUTE = new ChaseAIPatrolRoute(patrolPoints);
+            PATROL_ROUTE = new ChaseAIPatrolRoute(config , patrolPoints);
             PATROL_ROUTE.ConfigureZones(zones);
         }
 
@@ -86,6 +88,7 @@ namespace HideSeek.AI
             _movement.Stop();
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
+            SEARCH_BEHAVIOR.ResetHistory();
             EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
@@ -389,6 +392,11 @@ namespace HideSeek.AI
                 return;
             }
 
+            if ( CHASE_AI_ANGER.TickChaseBuildUp(deltaTime , visualObservation.HasLineOfSight) )
+            {
+                CHASE_BEHAVIOR.RefreshAngerEffect();
+            }
+
             CHASE_AI_CHASE_RESULT chaseResult = CHASE_BEHAVIOR.Tick(deltaTime , visualObservation);
 
             if ( chaseResult == CHASE_AI_CHASE_RESULT.RUNNING )
@@ -397,6 +405,19 @@ namespace HideSeek.AI
             }
 
             string reason = CHASE_BEHAVIOR.LastResultReason;
+
+            if ( chaseResult == CHASE_AI_CHASE_RESULT.TARGET_LOST )
+            {
+                float previousAnger = CHASE_AI_ANGER.CurrentAnger;
+
+                CHASE_AI_ANGER.IncreaseAnger(_config.AngerIncreaseOnChaseLost);
+
+                Debug.Log(
+                    $"[ChaseAIStateMachine] 추격 실패 Anger 증가: " +
+                    $"Previous={previousAnger:F1}, " +
+                    $"Current={CHASE_AI_ANGER.CurrentAnger:F1}, " +
+                    $"Floor={CHASE_AI_ANGER.AngerFloor:F1}");
+            }
 
             ChangeState(CHASE_AI_STATE.SEARCH , reason);
         }
@@ -508,6 +529,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
+            SEARCH_BEHAVIOR.ResetHistory();
             EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
@@ -588,6 +610,8 @@ namespace HideSeek.AI
         {
             SEARCH_BEHAVIOR.Stop();
             EVIDENCE_SELECTOR.ClearInvestigations();
+            CHASE_AI_ANGER.ResetCalmDecay();
+            CHASE_AI_ANGER.ResetChaseBuildUp();
             CHASE_BEHAVIOR.Begin();
         }
 
@@ -767,7 +791,7 @@ namespace HideSeek.AI
 
         private void AdvancePatrolPoint()
         {
-            PATROL_ROUTE.Advance();
+            PATROL_ROUTE.Advance(_movement.Position);
         }
 
         private void StartWaiting(float duration)
