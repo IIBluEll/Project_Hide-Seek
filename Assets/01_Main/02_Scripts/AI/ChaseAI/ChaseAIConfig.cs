@@ -37,6 +37,11 @@ namespace HideSeek.AI
         [Header("Anger")]
         [SerializeField, Min(1f)] private float _maximumAnger = 100f;
         [SerializeField] private List<float> _generatorAngerFloors = new() { 0f , 20f , 40f , 60f };
+        [SerializeField, Min(0f)] private float _angerChaseBuildUpDelay = 2f;
+        [SerializeField, Min(0f)] private float _angerIncreasePerChaseSecond = 4f;
+        [SerializeField, Min(0f)] private float _angerIncreaseOnChaseLost = 10f;
+        [SerializeField, Min(0f)] private float _angerCalmDelay = 5f;
+        [SerializeField, Min(0f)] private float _angerDecreasePerSecond = 2f;
         [SerializeField, Min(1f)] private float _maximumAngerChaseSpeedMultiplier = 1.15f;
         [SerializeField, Min(1f)] private float _maximumAngerSearchRadiusMultiplier = 1.25f;
         [SerializeField, Min(1)] private int _minimumAngerSearchPointCount = 2;
@@ -104,6 +109,11 @@ namespace HideSeek.AI
         public float StrongNoiseThreshold => _strongNoiseThreshold;
 
         public float MaximumAnger => _maximumAnger;
+        public float AngerChaseBuildUpDelay => _angerChaseBuildUpDelay;
+        public float AngerIncreasePerChaseSecond => _angerIncreasePerChaseSecond;
+        public float AngerIncreaseOnChaseLost => _angerIncreaseOnChaseLost;
+        public float AngerCalmDelay => _angerCalmDelay;
+        public float AngerDecreasePerSecond => _angerDecreasePerSecond;
         public float MaximumAngerChaseSpeedMultiplier => _maximumAngerChaseSpeedMultiplier;
         public float MaximumAngerSearchRadiusMultiplier => _maximumAngerSearchRadiusMultiplier;
         public int MinimumAngerSearchPointCount => _minimumAngerSearchPointCount;
@@ -154,6 +164,11 @@ namespace HideSeek.AI
         private void OnValidate()
         {
             _maximumAnger = Mathf.Max(1f , _maximumAnger);
+            _angerChaseBuildUpDelay = Mathf.Max(0f , _angerChaseBuildUpDelay);
+            _angerIncreasePerChaseSecond = Mathf.Max(0f , _angerIncreasePerChaseSecond);
+            _angerIncreaseOnChaseLost = Mathf.Max(0f , _angerIncreaseOnChaseLost);
+            _angerCalmDelay = Mathf.Max(0f , _angerCalmDelay);
+            _angerDecreasePerSecond = Mathf.Max(0f , _angerDecreasePerSecond);
             _maximumAngerChaseSpeedMultiplier = Mathf.Max(1f , _maximumAngerChaseSpeedMultiplier);
             _maximumAngerSearchRadiusMultiplier = Mathf.Max(1f , _maximumAngerSearchRadiusMultiplier);
             _minimumAngerSearchPointCount = Mathf.Max(1 , _minimumAngerSearchPointCount);
