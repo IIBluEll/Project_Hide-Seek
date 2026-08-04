@@ -3341,7 +3341,7 @@ MonoBehaviour:
   _chaseAIController: {fileID: 1526055481}
   _animator: {fileID: 114044990}
   _idleBlend: 0
-  _walkBlend: 0.3
+  _walkBlend: 0.5
   _chaseBlend: 1
   _blendDampTime: 0.12
   _movementThreshold: 0.05

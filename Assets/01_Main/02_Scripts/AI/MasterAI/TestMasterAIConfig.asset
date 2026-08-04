@@ -27,7 +27,7 @@ MonoBehaviour:
   _otherZoneWeight: 0.2
   _hintRadius: 10
   _hintUrgency: 0.5
-  _hintDuration: 20
+  _hintDuration: 5
   _hintNavMeshSampleRadius: 2
   _hintPositionAttemptCount: 10
   _minimumHintInterval: 15
