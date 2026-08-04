@@ -72,6 +72,7 @@ namespace HideSeek.AI
                 visualObservation.State ,
                 visualObservation.HasLineOfSight ,
                 visualObservation.DetectionRatio ,
+                visualObservation.DetectionSpeedMultiplier ,
                 hasVisualMemory ,
                 visualEvidence.Position ,
                 visualEvidence.Strength ,
@@ -153,8 +154,15 @@ namespace HideSeek.AI
 
         private void Update()
         {
-            if ( !_isInitialized || _stateMachine.CurrentState == CHASE_AI_STATE.DORMANT )
+            if ( !_isInitialized )
             {
+                return;
+            }
+
+            if ( _stateMachine.CurrentState == CHASE_AI_STATE.DORMANT )
+            {
+                _anger.TickCalmDecay(Time.deltaTime);
+
                 return;
             }
 
@@ -169,6 +177,12 @@ namespace HideSeek.AI
             _memory.UpdateMemory(Time.time);
 
             _stateMachine.Tick(Time.deltaTime, visualObservation);
+
+            if ( _stateMachine.CurrentState != CHASE_AI_STATE.CHASE )
+            {
+                _anger.TickCalmDecay(Time.deltaTime);
+            }
+
             ReportPlayerCaught();
             ReportRetreatFailure();
         }
