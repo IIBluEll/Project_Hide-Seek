@@ -36,6 +36,11 @@ MonoBehaviour:
   - 20
   - 40
   - 60
+  _angerChaseBuildUpDelay: 2
+  _angerIncreasePerChaseSecond: 4
+  _angerIncreaseOnChaseLost: 10
+  _angerCalmDelay: 5
+  _angerDecreasePerSecond: 2
   _maximumAngerChaseSpeedMultiplier: 1.15
   _maximumAngerSearchRadiusMultiplier: 1.25
   _minimumAngerSearchPointCount: 2
