@@ -30,6 +30,13 @@ namespace HideSeek.AI
         public int CurrentSearchPointIndex { get; }
         public int SearchPointCount { get; }
         public string CurrentSearchPointSource { get; }
+        public CHASE_AI_SEARCH_ACTION CurrentSearchAction { get; }
+        public float SearchActionProgress { get; }
+        public float SearchActionRemainingTime { get; }
+        public string HidingSpotCandidateName { get; }
+        public float HidingSpotInspectionChance { get; }
+        public float HidingSpotInspectionRoll { get; }
+        public bool WasHidingSpotSelected { get; }
 
         public float CurrentAnger { get; }
         public float AngerFloor { get; }
@@ -61,6 +68,13 @@ namespace HideSeek.AI
             int currentSearchPointIndex ,
             int searchPointCount ,
             string currentSearchPointSource ,
+            CHASE_AI_SEARCH_ACTION currentSearchAction ,
+            float searchActionProgress ,
+            float searchActionRemainingTime ,
+            string hidingSpotCandidateName ,
+            float hidingSpotInspectionChance ,
+            float hidingSpotInspectionRoll ,
+            bool wasHidingSpotSelected ,
             float currentAnger ,
             float angerFloor ,
             int completedGeneratorCount ,
@@ -90,6 +104,13 @@ namespace HideSeek.AI
             CurrentSearchPointIndex = currentSearchPointIndex;
             SearchPointCount = searchPointCount;
             CurrentSearchPointSource = currentSearchPointSource;
+            CurrentSearchAction = currentSearchAction;
+            SearchActionProgress = searchActionProgress;
+            SearchActionRemainingTime = searchActionRemainingTime;
+            HidingSpotCandidateName = hidingSpotCandidateName;
+            HidingSpotInspectionChance = hidingSpotInspectionChance;
+            HidingSpotInspectionRoll = hidingSpotInspectionRoll;
+            WasHidingSpotSelected = wasHidingSpotSelected;
             CurrentAnger = currentAnger;
             AngerFloor = angerFloor;
             CompletedGeneratorCount = completedGeneratorCount;
