@@ -48,6 +48,11 @@ public class PlayerController : MonoBehaviour
 
         _hand.OnThrowPowerChanged += _throwViewer.ChargeGage;
         _hand.OnAimStateChanged += _throwViewer.OnAimStateChanged;
+
+        _stat.OnChangedPositionStateEvent += (state) => 
+        { 
+            if (state == PLAYER_POSITION_STATE.HIDING) _move.ResetMoveState(); 
+        };
     }
     private void Unbind()
     {
@@ -93,13 +98,14 @@ public class PlayerController : MonoBehaviour
     }
     private void OnJumpAction(bool value)
     {
-        if (_stat.CanMove && value)
-            _move.RequestJump();
+       
     }
     private void OnInteractAction(bool value)
     {
-        if(_stat.CanInteraction && value)
+        if (value)
             _interact.OnInteractAction();
+        else
+            _interact.OnInteractReleaseAction();
     }
     private void OnPostureChangedActioned(POSTURE_STATE_ENUM posture)
     {

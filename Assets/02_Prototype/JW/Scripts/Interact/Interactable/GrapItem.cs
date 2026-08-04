@@ -12,7 +12,7 @@ public class GrapItem : MonoBehaviour, IInteractable
         return true;
     }
 
-    public void Interact(PlayerInteractionController playerInteractor)
+    public void InteractAct(PlayerInteractionController playerInteractor)
     {
         playerInteractor.TryGrap(this);
     }
@@ -37,5 +37,10 @@ public class GrapItem : MonoBehaviour, IInteractable
         Debug.Log(power);
         Release();
         _rb.AddForce(direction.normalized * power, ForceMode.Impulse);
+    }
+
+    public void InteractRelease(PlayerInteractionController playerInteractionController)
+    {
+        
     }
 }

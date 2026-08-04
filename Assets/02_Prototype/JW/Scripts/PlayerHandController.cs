@@ -74,6 +74,7 @@ public class PlayerHandController : MonoBehaviour
     }
     public void OnAimAction(bool value)
     {
+        Debug.Log(value);
         if (value)
             Aim();
         else
