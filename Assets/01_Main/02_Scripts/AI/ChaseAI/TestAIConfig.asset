@@ -58,9 +58,10 @@ MonoBehaviour:
   _directionalSearchActionTimeMultiplier: 0.8
   _areaSearchActionTimeMultiplier: 1
   _hidingSpotSearchActionTimeMultiplier: 1.6
+  _searchRotationSpeed: 120
+  _areaSearchSweepAngle: 90
   _chaseSpeed: 7
   _patrolWaitTime: 0.5
-  _investigateWaitTime: 2
   _searchWaitTime: 3
   _chaseRepathInterval: 0.2
   _chaseDestinationUpdateDistance: 0.5

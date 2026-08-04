@@ -45,6 +45,12 @@ namespace HideSeek.AI
             ? SEARCH_BEHAVIOR.ActiveSearchContext
             : string.Empty;
         public bool IsRetreatPending => _isRetreatPending;
+        public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => CurrentState switch
+        {
+            CHASE_AI_STATE.INVESTIGATE => EVIDENCE_SELECTOR.ActiveInvestigationType,
+            CHASE_AI_STATE.SEARCH => SEARCH_BEHAVIOR.ActiveEvidenceType,
+            _ => CHASE_AI_EVIDENCE_TYPE.NONE
+        };
 
         public CHASE_AI_STATE CurrentState
         {
@@ -77,7 +83,7 @@ namespace HideSeek.AI
             _movement.Stop();
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
@@ -267,6 +273,13 @@ namespace HideSeek.AI
                 _isWaiting = false;
                 _stateTimer = 0f;
 
+                if ( !PrepareInvestigationSearch() )
+                {
+                    ChangeState(CHASE_AI_STATE.PATROL , "Updated audio search preparation failed");
+
+                    return false;
+                }
+
                 bool wasDestinationAccepted = RequestInvestigationDestination();
 
                 if ( !wasDestinationAccepted )
@@ -287,7 +300,7 @@ namespace HideSeek.AI
             _movement.Stop();
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
@@ -331,14 +344,10 @@ namespace HideSeek.AI
 
         private void UpdateInvestigate(float deltaTime)
         {
-            if ( _isWaiting )
+            if ( IsInsidePreparedSearchArea() )
             {
-                if ( !UpdateWaiting(deltaTime) )
-                {
-                    ChangeState(
-                        CHASE_AI_STATE.SEARCH ,
-                        $"{EVIDENCE_SELECTOR.ActiveInvestigationName} investigation completed");
-                }
+                StartPreparedInvestigationSearch(
+                    $"{EVIDENCE_SELECTOR.ActiveInvestigationName} search area entered");
 
                 return;
             }
@@ -348,7 +357,8 @@ namespace HideSeek.AI
             switch ( moveStatus )
             {
                 case CHASE_AI_MOVE_STATUS.ARRIVED:
-                    StartWaiting(_config.InvestigateWaitTime);
+                    StartPreparedInvestigationSearch(
+                        $"{EVIDENCE_SELECTOR.ActiveInvestigationName} center reached");
                     break;
 
                 case CHASE_AI_MOVE_STATUS.PATH_FAILED:
@@ -486,7 +496,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
             _retreatPosition = Vector3.zero;
@@ -499,7 +509,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
 
             _movement.SetSpeed(_config.WalkSpeed);
 
@@ -513,7 +523,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
 
             _movement.SetSpeed(_config.WalkSpeed);
             PATROL_ROUTE.Refresh(_movement.Position);
@@ -549,6 +559,13 @@ namespace HideSeek.AI
                 return;
             }
 
+            if ( !PrepareInvestigationSearch() )
+            {
+                ChangeState(CHASE_AI_STATE.PATROL , $"{context} search preparation failed");
+
+                return;
+            }
+
             if ( !RequestDestination(investigationPosition , context) )
             {
                 ChangeState(CHASE_AI_STATE.PATROL , $"{context} destination invalid");
@@ -574,7 +591,13 @@ namespace HideSeek.AI
         private void EnterSearch()
         {
             CHASE_BEHAVIOR.Stop();
-            SEARCH_BEHAVIOR.Stop();
+
+            if ( SEARCH_BEHAVIOR.IsPrepared )
+            {
+                HandleSearchStatus(SEARCH_BEHAVIOR.BeginPrepared());
+
+                return;
+            }
 
             if ( !EVIDENCE_SELECTOR.TryCreateSearchRequest(Time.time , out ChaseAISearchRequest searchRequest) )
             {
@@ -636,6 +659,50 @@ namespace HideSeek.AI
             return visualObservation.CanAttackTarget;
         }
 
+        private bool PrepareInvestigationSearch()
+        {
+            if ( !EVIDENCE_SELECTOR.TryCreateSearchRequest(
+                    Time.time ,
+                    out ChaseAISearchRequest searchRequest) )
+            {
+                return false;
+            }
+
+            return SEARCH_BEHAVIOR.Prepare(searchRequest);
+        }
+
+        private bool IsInsidePreparedSearchArea()
+        {
+            if ( !SEARCH_BEHAVIOR.IsPrepared )
+            {
+                return false;
+            }
+
+            float searchRadius = SEARCH_BEHAVIOR.CurrentSearchRadius;
+
+            if ( searchRadius <= 0f )
+            {
+                return false;
+            }
+
+            Vector3 offset = _movement.Position - SEARCH_BEHAVIOR.SearchCenterPosition;
+            offset.y = 0f;
+
+            return offset.sqrMagnitude <= searchRadius * searchRadius;
+        }
+
+        private void StartPreparedInvestigationSearch(string reason)
+        {
+            if ( !SEARCH_BEHAVIOR.IsPrepared )
+            {
+                ChangeState(CHASE_AI_STATE.PATROL , "Prepared investigation search was missing");
+
+                return;
+            }
+
+            ChangeState(CHASE_AI_STATE.SEARCH , reason);
+        }
+
         private bool RequestInvestigationDestination()
         {
             if ( !EVIDENCE_SELECTOR.TryGetInvestigationDestination(
@@ -674,9 +741,7 @@ namespace HideSeek.AI
 
         private bool RequestDestination(Vector3 position , string context)
         {
-            CHASE_AI_MOVE_REQUEST_RESULT result = _movement.TrySetDestination(
-                position ,
-                out Vector3 correctedDestination);
+            CHASE_AI_MOVE_REQUEST_RESULT result = _movement.TrySetDestination(position);
 
             if ( result == CHASE_AI_MOVE_REQUEST_RESULT.ACCEPTED )
             {

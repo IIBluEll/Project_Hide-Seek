@@ -31,6 +31,7 @@ namespace HideSeek.AI
         private float _debugLogTimer;
         private bool _isInitialized;
         private bool _hasCurrentHint;
+        private bool _isCurrentHintAccepted;
         private bool _wasInitialDormantStateApplied;
 
         public MASTER_AI_STATE CurrentState => _director != null ? _director.CurrentState : MASTER_AI_STATE.DORMANT;
@@ -41,7 +42,9 @@ namespace HideSeek.AI
 
         public float GlobalStress => _director != null ? _director.GlobalStress : 0f;
         public float GlobalStressRatio => _director != null ? _director.GlobalStressRatio : 0f;
-        public bool HasCurrentHint => _hasCurrentHint && _currentHint.IsValid(Time.time);
+        public bool HasCurrentHint => _hasCurrentHint &&
+            (_isCurrentHintAccepted || _currentHint.IsValid(Time.time));
+        public bool IsCurrentHintAccepted => _hasCurrentHint && _isCurrentHintAccepted;
 
         public bool TryGetCurrentHint(out MasterAIHint currentHint)
         {
@@ -360,6 +363,7 @@ namespace HideSeek.AI
             bool wasCreated = _hintGenerator.TryCreateHint(
                 _targetZone ,
                 Time.time ,
+                _chaseAIController.AreaMask ,
                 out MasterAIHint createdHint);
 
             if ( !wasCreated )
@@ -375,6 +379,7 @@ namespace HideSeek.AI
             _hasCurrentHint = true;
 
             bool wasAccepted = _chaseAIController.TryReceiveDirectorHint(_currentHint);
+            _isCurrentHintAccepted = wasAccepted;
 
             if ( wasAccepted )
             {
@@ -386,11 +391,34 @@ namespace HideSeek.AI
             }
 
             Debug.Log($"[MasterAIProvider] Director Hint 생성: Zone={_currentHint.TargetZoneId}, Anchor={_currentHint.SearchAnchorPosition}, Radius={_currentHint.SearchRadius:F1}, Urgency={_currentHint.Urgency:F2}, Duration={_currentHint.ExpireTime - Time.time:F1}" , this);
+
+            if ( !wasAccepted )
+            {
+                ClearDirectorHint();
+            }
         }
 
         private void UpdateDirectorHint()
         {
-            if ( !_hasCurrentHint || _currentHint.IsValid(Time.time) )
+            if ( !_hasCurrentHint )
+            {
+                return;
+            }
+
+            if ( _isCurrentHintAccepted )
+            {
+                if ( _chaseAIController.ActiveEvidenceType == CHASE_AI_EVIDENCE_TYPE.DIRECTOR_HINT )
+                {
+                    return;
+                }
+
+                Debug.Log($"[MasterAIProvider] 수락된 Director Hint 조사 종료: Zone={_currentHint.TargetZoneId}" , this);
+                ClearDirectorHint();
+
+                return;
+            }
+
+            if ( _currentHint.IsValid(Time.time) )
             {
                 return;
             }
@@ -404,6 +432,7 @@ namespace HideSeek.AI
         {
             _currentHint = default;
             _hasCurrentHint = false;
+            _isCurrentHintAccepted = false;
         }
 
         private bool ValidateReferences()
