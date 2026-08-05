@@ -22,7 +22,7 @@ public class PlayerHandController : MonoBehaviour
     [SerializeField] private float _throwMaxPower;
     [SerializeField] private float _chargeSpeed;
 
-    private GrapItem _grapItem;
+    private GrappableItem _grapItem;
     private float _currentPower;
     private float _recoveryTime;
     private HAND_STATE_ENUM _state = HAND_STATE_ENUM.EMPTY;
@@ -74,7 +74,6 @@ public class PlayerHandController : MonoBehaviour
     }
     public void OnAimAction(bool value)
     {
-        Debug.Log(value);
         if (value)
             Aim();
         else
@@ -128,7 +127,7 @@ public class PlayerHandController : MonoBehaviour
         OnThrowPowerChanged?.Invoke(0f);
         OnAimStateChanged?.Invoke(false);
     }
-    public void GrapItem(GrapItem grapItem)
+    public void GrapItem(GrappableItem grapItem)
     {
         if (grapItem == null || _state == HAND_STATE_ENUM.AIMING || _state == HAND_STATE_ENUM.THROW)
             return;

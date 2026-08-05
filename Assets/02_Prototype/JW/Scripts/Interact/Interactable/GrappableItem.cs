@@ -1,10 +1,13 @@
 using HideSeek.AI;
 using UnityEngine;
 
-public class GrapItem : MonoBehaviour, IInteractable
+public class GrappableItem : MonoBehaviour, IInteractable
 {
     [SerializeField] private Rigidbody _rb;
     [SerializeField] private Collider _collider;
+    [SerializeField] private ImpactNoiseEmitter _impactNoiseEmitter;
+
+    private bool _isThrow = false;
 
     public string InteractionPrompt => "ащ╠Б";
 
@@ -34,9 +37,23 @@ public class GrapItem : MonoBehaviour, IInteractable
     {
         Release();
         _rb.AddForce(direction.normalized * power, ForceMode.Impulse);
+
+        _isThrow = true;
     }
     public void InteractRelease(PlayerInteractionController playerInteractionController)
     {
         
+    }
+
+
+    public void OnCollisionEnter(Collision collision)
+    {
+        if (!_isThrow)
+            return;
+
+        var impactAmount = collision.relativeVelocity.magnitude;
+        _impactNoiseEmitter.OccursSound(this.transform.position, impactAmount);
+
+        _isThrow = false;
     }
 }
