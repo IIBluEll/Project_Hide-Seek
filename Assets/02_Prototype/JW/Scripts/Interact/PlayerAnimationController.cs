@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using UnityEngine;
 
 public class PlayerAnimationController : MonoBehaviour
@@ -72,4 +74,52 @@ public class PlayerAnimationController : MonoBehaviour
         _animator.SetTrigger(hash);
     }
     #endregion
+
+    public void SetLayerWeight(int layer, float value) 
+    {
+        if (!IsValidLayer(layer))
+            throw new InvalidOperationException("Not Valid Layer Index");
+
+        _animator.SetLayerWeight(layer, value);
+    }
+    public void SetLayerWeight(int layer, float value, float time) 
+    {
+        if(!IsValidLayer(layer))
+            throw new InvalidOperationException("Not Valid Layer Index");
+
+        if (value > 1 || value < 0)
+            throw new InvalidOperationException("Not Valid Value");
+
+        StartCoroutine(SetLayerWeightCo(layer, value, time));
+    }
+    private bool IsValidLayer(int layer)
+    {
+        return !(layer < 0 || layer >= _animator.layerCount);
+    }
+    private IEnumerator SetLayerWeightCo(int layer, float value, float time)
+    {
+        float startWeight = _animator.GetLayerWeight(layer);
+
+        //0~1
+        float distance = Mathf.Abs(startWeight - value);
+
+        //최종 이동에 걸리는 시간
+        float resultTime = time * distance;
+
+        if (resultTime == 0)
+            yield break;
+
+        float current = 0;
+
+        while(current < 1)
+        {
+            current += Time.deltaTime / resultTime;
+
+            float weightValue = Mathf.Lerp(startWeight, value, current);
+            _animator.SetLayerWeight(layer, weightValue);
+
+            yield return null;
+        }
+        _animator.SetLayerWeight(layer, value);
+    }
 }

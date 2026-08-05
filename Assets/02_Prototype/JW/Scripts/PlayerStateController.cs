@@ -63,7 +63,6 @@ public class PlayerStateController : IStateService
     {
         _actionState = state;
         OnChangedActionStateEvent?.Invoke(_actionState);
-
         System.Diagnostics.Debug.WriteLine(_actionState);
     }
 }
