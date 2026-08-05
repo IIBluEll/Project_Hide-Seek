@@ -19,6 +19,9 @@ public class FootSteepNoiseEmitter : MonoBehaviour
         bool wasEmitted = false;
         switch (locomotion)
         {
+            case LOCOMOTION_STATE_ENUM.IDLE:
+                noiseData = new NoiseData(this.transform.position, 0, 0, _walkNoise.NoiseType, Time.time, gameObject);
+                break;
             case LOCOMOTION_STATE_ENUM.WALK:
                 noiseData = new NoiseData(
                 this.transform.position,

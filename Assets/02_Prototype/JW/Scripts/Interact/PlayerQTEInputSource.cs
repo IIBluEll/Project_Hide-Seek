@@ -7,6 +7,7 @@ public class PlayerQTEInputSource : MonoBehaviour, IInputSource
 
     private bool _wasPressed;
 
+
     private void OnEnable()
     {
         _inputReader.OnJumpEvent += OnQteActioned;

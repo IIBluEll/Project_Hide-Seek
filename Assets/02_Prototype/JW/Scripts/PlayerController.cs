@@ -61,7 +61,17 @@ public class PlayerController : MonoBehaviour
     private void OnChangeActionState(PLAYER_ACTION_STATE action)
     {
         if (action == PLAYER_ACTION_STATE.REPAIRING_GENERATOR)
+        {
             _move.StopMove();
+            _animationController.SetLayerWeight(2, 1);
+            _animationController.SetTrigger("Working");
+        }
+
+        if(action == PLAYER_ACTION_STATE.IDLE)
+        {
+            _animationController.SetLayerWeight(2, 0, 0.3f);
+            _animationController.SetTrigger("EndWorking");
+        }
     }
     private void OnChangePositionState(PLAYER_POSITION_STATE position)
     {
@@ -112,7 +122,7 @@ public class PlayerController : MonoBehaviour
     private void OnLocomotionChangedActioned(LOCOMOTION_STATE_ENUM locomotion, bool value)
     {
         _animationController.SetLocomotionAnima(locomotion, value);
-
+        Debug.Log($"{locomotion} / {value}");
         if (value)
         {
             _camera.SetShakeIntensity(_move.Posture, locomotion);
