@@ -39,10 +39,10 @@ namespace HideSeek.Generators
         [Header("QTE 입력")]
         [Tooltip("모든 발전기가 같은 키를 쓴다.")]
         [SerializeField] private Key _qteKey = Key.Space;
-
+        [SerializeField] private PlayerQTEInputSource _qteInputSource;
         private readonly List<Generator> LIST_GENERATOR = new();
 
-        private IInputSource _qteInputSource; // 상태가 없어 모든 발전기가 하나를 공유해도 된다
+        //private IInputSource _qteInputSource; // 상태가 없어 모든 발전기가 하나를 공유해도 된다
 
         private GeneratorProgress_presenter _progressPresenter;
         private GeneratorQte_presenter _qtePresenter;
@@ -122,7 +122,7 @@ namespace HideSeek.Generators
             }
 
             // Awake 순서가 보장되지 않아 다른 오브젝트가 먼저 Register를 부를 수 있다.
-            _qteInputSource ??= new KeyboardInputSource(_qteKey);
+            //_qteInputSource ??= new KeyboardInputSource(_qteKey);
 
             LIST_GENERATOR.Add(generator);
             generator.SetConfig(_generatorConfig);

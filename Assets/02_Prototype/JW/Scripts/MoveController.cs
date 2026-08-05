@@ -8,82 +8,129 @@ public struct MoveSpeed
     public float WalkSpeed;
     public float RunSpeed;
 }
+[System.Serializable]
+public struct PostureHeight
+{
+    public float StandingHeight;
+    public float CrouchHeight;
+    public float ProneHeight;
+
+    public float GetHeight(POSTURE_STATE_ENUM posture)
+    {
+        switch (posture)
+        {
+            case POSTURE_STATE_ENUM.STANDING:
+                return StandingHeight;
+            case POSTURE_STATE_ENUM.CROUCH:
+                return CrouchHeight;
+            case POSTURE_STATE_ENUM.PRONE:
+                return ProneHeight;
+            default:
+                throw new InvalidOperationException("Enum Type Error");
+        }
+    }
+}
+
+[System.Serializable]
+public struct SprintStaminaSetting
+{
+    public float Maximum;
+    public float UseRatePerSecond;
+    public float RecoveryRatePerSecond;
+}
 
 public enum POSTURE_STATE_ENUM
 {
     STANDING,
-    CROUCH
+    CROUCH,
+    PRONE
 }
-
 public enum LOCOMOTION_STATE_ENUM
 {
     IDLE,
     WALK,
-    RUN,
-    AIR
+    RUN
 }
 
-
+[RequireComponent(typeof(CharacterController))]
 public class MoveController : MonoBehaviour
 {
     private const float GRAVITY = -9.81f;
     private const float GROUNDED_VERTICAL_VELOCITY = -2f;
     private const float MOVE_INPUT_THRESHOLD = 0.0001f;
 
-    private static readonly int X_MOVE_HASH = Animator.StringToHash("XMove");
-    private static readonly int Z_MOVE_HASH = Animator.StringToHash("ZMove");
-    private static readonly int IS_RUN_HASH = Animator.StringToHash("IsRun");
-    private static readonly int IS_CROUCH_HASH = Animator.StringToHash("IsCrouch");
-
+    [SerializeField] private CharacterController _characterController;
+    [SerializeField] private SprintStaminaSetting _staminaSetting;
     [SerializeField] private MoveSpeed _moveSpeed;
-    [SerializeField] private CharacterController _controller;
-    [SerializeField] private Animator _animator;
-    [SerializeField] private float _jumpHeight = 1.5f;
-    [SerializeField] private float _crouchHeight = 1f;
+    [SerializeField] private PostureHeight _height;
+    [SerializeField] private PostureHeight _centerHeight;
 
     private POSTURE_STATE_ENUM _posture = POSTURE_STATE_ENUM.STANDING;
     private LOCOMOTION_STATE_ENUM _locomotion = LOCOMOTION_STATE_ENUM.IDLE;
 
     private Vector2 _moveInput;
     private float _verticalVelocity;
-    public bool _sprintRequested;
+    private bool _sprintRequested;
+    private float _currentSprintHP;
 
-    private float _standingHeight;
-    private Vector3 _standingCenter;
+    public event Action<float> OnChangedStamina;
+    public event Action<Vector2> OnMoveEvent;
+    public event Action<POSTURE_STATE_ENUM, bool> OnPostureChanged;
+    public event Action<LOCOMOTION_STATE_ENUM, bool> OnLocomotionChanged;
 
     public POSTURE_STATE_ENUM Posture => _posture;
     public LOCOMOTION_STATE_ENUM Locomotion => _locomotion;
-
-    public event Action<POSTURE_STATE_ENUM> OnPostureChanged;
-    public event Action<LOCOMOTION_STATE_ENUM> OnLocomotionChanged;
+    private float SprintStaminaNomalize => _currentSprintHP / _staminaSetting.Maximum;
 
     private void Awake()
     {
-        if (_controller == null)
-            _controller = this.GetComponent<CharacterController>();
+        if (_characterController == null)
+            _characterController = this.GetComponent<CharacterController>();
 
-        _standingHeight = _controller.height;
-        _standingCenter = _controller.center;
+        _characterController.height = _height.StandingHeight;
+        _characterController.center = new Vector3(0, _centerHeight.StandingHeight, 0);
+
+        _currentSprintHP = _staminaSetting.Maximum;
     }
+
     private void Update()
     {
+        UpdateSprintStamina();
         UpdateVerticalVelocity();
         UpdateLocomotionState();
+
+        UpdateMoveResult();
+    }
+    private void UpdateMoveResult()
+    {
+        OnMoveEvent?.Invoke(_moveInput);
 
         Vector3 horizontalDirection = transform.right * _moveInput.x + transform.forward * _moveInput.y;
         Vector3 velocity = horizontalDirection * GetMoveSpeed();
         velocity.y = _verticalVelocity;
 
-        _controller.Move(velocity * Time.deltaTime);
-        UpdateAnimator();
+        _characterController.Move(velocity * Time.deltaTime);
     }
-
     private void UpdateVerticalVelocity()
     {
-        if (_controller.isGrounded && _verticalVelocity < 0f)
+        if (_characterController.isGrounded && _verticalVelocity < 0f)
             _verticalVelocity = GROUNDED_VERTICAL_VELOCITY;
         else
             _verticalVelocity += GRAVITY * Time.deltaTime;
+    }
+    private void UpdateSprintStamina()
+    {
+        if (_locomotion == LOCOMOTION_STATE_ENUM.RUN)
+            _currentSprintHP -= Time.deltaTime * _staminaSetting.UseRatePerSecond;
+        else
+            _currentSprintHP += Time.deltaTime * _staminaSetting.RecoveryRatePerSecond;
+
+        _currentSprintHP = Mathf.Clamp(_currentSprintHP, 0, _staminaSetting.Maximum);
+
+        OnChangedStamina?.Invoke(SprintStaminaNomalize);
+
+        if (_currentSprintHP == 0 && _locomotion == LOCOMOTION_STATE_ENUM.RUN)
+            _sprintRequested = false;
     }
     private float GetMoveSpeed()
     {
@@ -102,58 +149,45 @@ public class MoveController : MonoBehaviour
                 return 0;
         }
     }
-    private void UpdateAnimator()
-    {
-        _animator.SetFloat(X_MOVE_HASH, _moveInput.x);
-        _animator.SetFloat(Z_MOVE_HASH, _moveInput.y);
-        _animator.SetBool(IS_RUN_HASH, _locomotion == LOCOMOTION_STATE_ENUM.RUN);
-        _animator.SetBool(IS_CROUCH_HASH, _posture == POSTURE_STATE_ENUM.CROUCH);
-    }
     public void ResetMoveState()
     {
-        _moveInput = Vector2.zero;
-        _verticalVelocity = 0f;
-        _sprintRequested = false;
+        StopMove();
 
-        SetLocomotion(LOCOMOTION_STATE_ENUM.IDLE);
-        UpdateAnimator();
+        _verticalVelocity = 0f;
+
+        SetPosture(POSTURE_STATE_ENUM.STANDING);
     }
-    private void SetPosture(POSTURE_STATE_ENUM posture)
+    public void StopMove()
+    {
+        _moveInput = Vector2.zero;
+        _sprintRequested = false;
+        SetLocomotion(LOCOMOTION_STATE_ENUM.IDLE);
+        OnMoveEvent?.Invoke(_moveInput);
+    }
+    public void SetPosture(POSTURE_STATE_ENUM posture)
     {
         if (_posture == posture)
             return;
 
+        OnPostureChanged?.Invoke(_posture, false);
         _posture = posture;
+        OnPostureChanged?.Invoke(_posture, true);
 
         ApplyControllerHeightAndCenter();
-        UpdateLocomotionState();
-
-        OnPostureChanged?.Invoke(_posture);
     }
     private void ApplyControllerHeightAndCenter()
     {
-        if (_posture == POSTURE_STATE_ENUM.STANDING)
-        {
-            _controller.height = _standingHeight;
-            _controller.center = _standingCenter;
-            return;
-        }
-        
-        Vector3 crouchCenter = _standingCenter;
-        crouchCenter.y -= (_standingHeight - _crouchHeight) * 0.5f;
+        float height = _height.GetHeight(_posture);
+        float centerHeight = _centerHeight.GetHeight(_posture);
 
-        _controller.height = _crouchHeight;
-        _controller.center = crouchCenter;
+        _characterController.height = height;
+        _characterController.center = new Vector3(0, centerHeight, 0);
     }
     private void UpdateLocomotionState()
     {
         LOCOMOTION_STATE_ENUM nextLocomotion;
 
-        if (!_controller.isGrounded || _verticalVelocity > 0f)
-        {
-            nextLocomotion = LOCOMOTION_STATE_ENUM.AIR;
-        }
-        else if (_moveInput.sqrMagnitude <= MOVE_INPUT_THRESHOLD)
+        if (_moveInput.sqrMagnitude <= MOVE_INPUT_THRESHOLD)
         {
             nextLocomotion = LOCOMOTION_STATE_ENUM.IDLE;
         }
@@ -173,8 +207,11 @@ public class MoveController : MonoBehaviour
         if (_locomotion == locomotion)
             return;
 
+        OnLocomotionChanged?.Invoke(_locomotion, false);
+
         _locomotion = locomotion;
-        OnLocomotionChanged?.Invoke(_locomotion);
+
+        OnLocomotionChanged?.Invoke(_locomotion, true);
     }
     private bool IsCanStand()
     {
@@ -182,10 +219,10 @@ public class MoveController : MonoBehaviour
             return false;
 
         float margin = 0.01f;
-        float radius = _controller.radius;
+        float radius = _characterController.radius;
 
-        Vector3 crouchTop = _controller.center + Vector3.up * (_controller.height * 0.5f);
-        Vector3 standingTop = _standingCenter + Vector3.up * (_standingHeight * 0.5f);
+        Vector3 crouchTop = Vector3.up * _height.CrouchHeight;
+        Vector3 standingTop = Vector3.up * _height.StandingHeight;
 
         Vector3 point1 = transform.TransformPoint(crouchTop + Vector3.up * (radius + margin));
         Vector3 point2 = transform.TransformPoint(standingTop - Vector3.up * radius);
@@ -215,14 +252,10 @@ public class MoveController : MonoBehaviour
         else
             SetPosture(POSTURE_STATE_ENUM.CROUCH);
     }
-    public void RequestJump()
+    public void Teleport(Vector3 position)
     {
-        if (!_controller.isGrounded || _verticalVelocity > 0)
-            return;
-
-        if (_posture == POSTURE_STATE_ENUM.CROUCH)
-            _posture = POSTURE_STATE_ENUM.STANDING;
-
-        _verticalVelocity = Mathf.Sqrt(_jumpHeight * -2f * GRAVITY);
+        _characterController.enabled = false;
+        _characterController.transform.position = position;
+        _characterController.enabled = true;
     }
 }

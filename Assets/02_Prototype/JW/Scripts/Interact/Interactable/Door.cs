@@ -19,11 +19,16 @@ public class Door : MonoBehaviour, IInteractable
         return !_isRotate;
     }
 
-    public void Interact(PlayerInteractionController playerInteractor)
+    public void InteractAct(PlayerInteractionController playerInteractor)
     {
         _isOpen = !_isOpen;
 
         StartCoroutine(RoateDoorCo(_isOpen));
+    }
+
+    public void InteractRelease(PlayerInteractionController playerInteractionController)
+    {
+        
     }
 
     private IEnumerator RoateDoorCo(bool isOpen)
