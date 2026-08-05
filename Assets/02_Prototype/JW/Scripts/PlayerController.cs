@@ -5,7 +5,6 @@ public class PlayerController : MonoBehaviour
     private InteractPresenter _interactPresenter = new InteractPresenter();
     private readonly PlayerStateController _stat = new PlayerStateController();
 
-    [SerializeField] private InteractViewer _viewer;
     [SerializeField] private PlayerInteractionController _interactController;
 
     [SerializeField] private PlayerAnimationController _animationController;
@@ -19,6 +18,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private FootSteepNoiseEmitter _footNoiseEmitter;
 
     [Header("Viewer")]
+    [SerializeField] private InteractViewer _interactionViewer;
     [SerializeField] private ThrowUIViewer _throwViewer;
     [SerializeField] private PlayerSprintStaminaViewer _sprintViewer;
 
@@ -26,7 +26,7 @@ public class PlayerController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
 
-        _interactPresenter.Init(_viewer, _interactController);
+        _interactPresenter.Init(_interactionViewer, _interactController);
 
         _camera.SetCameraHeight(_move.Posture);
         _camera.SetShakeIntensity(_move.Posture, _move.Locomotion);
