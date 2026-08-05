@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private PlayerCameraController _camera;
     [SerializeField] private PlayerInteractionController _interact;
     [SerializeField] private PlayerHandController _hand;
+    [SerializeField] private FootSteepNoiseEmitter _footNoiseEmitter;
 
     [Header("Viewer")]
     [SerializeField] private ThrowUIViewer _throwViewer;
@@ -52,9 +53,6 @@ public class PlayerController : MonoBehaviour
 
         _move.OnChangedStamina += _sprintViewer.UpdateSprintStamina;
         _move.OnMoveEvent += _animationController.SetMoveAnima;
-
-        _move.OnLocomotionChanged += _animationController.SetLocomotionAnima;
-        _move.OnPostureChanged += _animationController.SetPostureParam;
 
         _move.OnPostureChanged += OnPostureChangedActioned;
         _move.OnLocomotionChanged += OnLocomotionChangedActioned;
@@ -103,18 +101,23 @@ public class PlayerController : MonoBehaviour
     }
     private void OnPostureChangedActioned(POSTURE_STATE_ENUM posture, bool value)
     {
-        if (!value)
-            return;
+        _animationController.SetPostureParam(posture, value);
 
-        _camera.SetCameraHeight(posture);
-        _camera.SetShakeIntensity(posture, _move.Locomotion);
+        if (value)
+        {
+            _camera.SetCameraHeight(posture);
+            _camera.SetShakeIntensity(posture, _move.Locomotion);
+        }
     }
     private void OnLocomotionChangedActioned(LOCOMOTION_STATE_ENUM locomotion, bool value)
     {
-        if (!value)
-            return;
+        _animationController.SetLocomotionAnima(locomotion, value);
 
-        _camera.SetShakeIntensity(_move.Posture, locomotion);
+        if (value)
+        {
+            _camera.SetShakeIntensity(_move.Posture, locomotion);
+            _footNoiseEmitter.OccurredFootNoise(locomotion);
+        }
     }
     private void OnAttackAction(bool value)
     {

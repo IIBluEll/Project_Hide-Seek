@@ -104,7 +104,7 @@ public class PlayerInteractionController : MonoBehaviour
         if (ReferenceEquals(_contextInteractable, interactable))
             _contextInteractable = null;
     }
-    public void TryGrap(GrapItem grapItem)
+    public void TryGrap(GrappableItem grapItem)
     {
         _hand.GrapItem(grapItem);
     }
