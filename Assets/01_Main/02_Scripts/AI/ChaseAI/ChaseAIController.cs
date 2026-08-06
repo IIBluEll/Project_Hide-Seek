@@ -26,6 +26,7 @@ namespace HideSeek.AI
 
         public event Action RetreatFailed;
         public event Action PlayerCaught;
+        public event Action<CHASE_AI_STATE , CHASE_AI_STATE> StateChanged;
 
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
 
@@ -36,6 +37,9 @@ namespace HideSeek.AI
         public float CurrentAnger => _anger != null ? _anger.CurrentAnger : 0f;
         public float AngerFloor => _anger != null ? _anger.AngerFloor : 0f;
         public int CompletedGeneratorCount => _anger != null ? _anger.CompletedGeneratorCount : 0;
+        public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => _stateMachine != null
+            ? _stateMachine.ActiveEvidenceType
+            : CHASE_AI_EVIDENCE_TYPE.NONE;
 
         public ChaseAIDebugSnapshot GetDebugSnapshot(float currentTime)
         {
@@ -68,6 +72,7 @@ namespace HideSeek.AI
                 visualObservation.State ,
                 visualObservation.HasLineOfSight ,
                 visualObservation.DetectionRatio ,
+                visualObservation.DetectionSpeedMultiplier ,
                 hasVisualMemory ,
                 visualEvidence.Position ,
                 visualEvidence.Strength ,
@@ -84,6 +89,13 @@ namespace HideSeek.AI
                 _search != null ? _search.CurrentPointIndex : 0 ,
                 _search != null ? _search.PointCount : 0 ,
                 currentSearchPointSource ,
+                _stateMachine != null ? _stateMachine.CurrentSearchAction : CHASE_AI_SEARCH_ACTION.NONE ,
+                _stateMachine != null ? _stateMachine.SearchActionProgress : 0f ,
+                _stateMachine != null ? _stateMachine.SearchActionRemainingTime : 0f ,
+                _search != null ? _search.HidingSpotCandidateName : "NONE" ,
+                _search != null ? _search.HidingSpotInspectionChance : 0f ,
+                _search != null ? _search.HidingSpotInspectionRoll : -1f ,
+                _search != null && _search.WasHidingSpotSelected ,
                 CurrentAnger ,
                 AngerFloor ,
                 CompletedGeneratorCount ,
@@ -134,14 +146,23 @@ namespace HideSeek.AI
                 _patrolPoints ,
                 _configuredZones);
 
+            _stateMachine.StateChanged -= OnStateChangedActioned;
+            _stateMachine.StateChanged += OnStateChangedActioned;
             _stateMachine.Initialize();
             _isInitialized = true;
         }
 
         private void Update()
         {
-            if ( !_isInitialized || _stateMachine.CurrentState == CHASE_AI_STATE.DORMANT )
+            if ( !_isInitialized )
             {
+                return;
+            }
+
+            if ( _stateMachine.CurrentState == CHASE_AI_STATE.DORMANT )
+            {
+                _anger.TickCalmDecay(Time.deltaTime);
+
                 return;
             }
 
@@ -156,6 +177,12 @@ namespace HideSeek.AI
             _memory.UpdateMemory(Time.time);
 
             _stateMachine.Tick(Time.deltaTime, visualObservation);
+
+            if ( _stateMachine.CurrentState != CHASE_AI_STATE.CHASE )
+            {
+                _anger.TickCalmDecay(Time.deltaTime);
+            }
+
             ReportPlayerCaught();
             ReportRetreatFailure();
         }
@@ -236,6 +263,13 @@ namespace HideSeek.AI
             _stateMachine?.RefreshAngerEffects();
 
             LogAngerState("발전기 완료 이벤트");
+        }
+
+        private void OnStateChangedActioned(
+            CHASE_AI_STATE previousState ,
+            CHASE_AI_STATE currentState)
+        {
+            StateChanged?.Invoke(previousState , currentState);
         }
 
         private void SynchronizeGameProgress()
@@ -385,7 +419,10 @@ namespace HideSeek.AI
 
         private void DrawSearchGizmos()
         {
-            if ( _search == null || _stateMachine == null || _stateMachine.CurrentState != CHASE_AI_STATE.SEARCH )
+            if ( _search == null ||
+                _stateMachine == null ||
+                (_stateMachine.CurrentState != CHASE_AI_STATE.INVESTIGATE &&
+                 _stateMachine.CurrentState != CHASE_AI_STATE.SEARCH) )
             {
                 return;
             }
@@ -409,6 +446,15 @@ namespace HideSeek.AI
                 Gizmos.DrawSphere(searchPoint , 0.2f);
 
                 previousPosition = searchPoint;
+            }
+
+            if ( _stateMachine.CurrentSearchAction != CHASE_AI_SEARCH_ACTION.NONE &&
+                _movement != null )
+            {
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawRay(
+                    _movement.Position + Vector3.up ,
+                    _movement.Forward * 2f);
             }
         }
 

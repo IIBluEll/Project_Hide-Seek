@@ -15,6 +15,11 @@ namespace HideSeek.AI
 
         public bool HasActiveDirectorInvestigation { get; private set; }
         public MasterAIHint ActiveDirectorHint { get; private set; }
+        public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => HasActiveAudioInvestigation
+            ? CHASE_AI_EVIDENCE_TYPE.AUDIO
+            : HasActiveDirectorInvestigation
+                ? CHASE_AI_EVIDENCE_TYPE.DIRECTOR_HINT
+                : CHASE_AI_EVIDENCE_TYPE.NONE;
 
         public ChaseAIInvestigationContext(ChaseAIConfig chaseAIConfig)
         {

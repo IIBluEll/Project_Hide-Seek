@@ -11,6 +11,7 @@ namespace HideSeek.AI
         public CHASE_AI_VISUAL_STATE VisualState { get; }
         public bool HasLineOfSight { get; }
         public float DetectionRatio { get; }
+        public float DetectionSpeedMultiplier { get; }
 
         public bool HasVisualMemory { get; }
         public Vector3 VisualMemoryPosition { get; }
@@ -30,6 +31,13 @@ namespace HideSeek.AI
         public int CurrentSearchPointIndex { get; }
         public int SearchPointCount { get; }
         public string CurrentSearchPointSource { get; }
+        public CHASE_AI_SEARCH_ACTION CurrentSearchAction { get; }
+        public float SearchActionProgress { get; }
+        public float SearchActionRemainingTime { get; }
+        public string HidingSpotCandidateName { get; }
+        public float HidingSpotInspectionChance { get; }
+        public float HidingSpotInspectionRoll { get; }
+        public bool WasHidingSpotSelected { get; }
 
         public float CurrentAnger { get; }
         public float AngerFloor { get; }
@@ -45,6 +53,7 @@ namespace HideSeek.AI
             CHASE_AI_VISUAL_STATE visualState ,
             bool hasLineOfSight ,
             float detectionRatio ,
+            float detectionSpeedMultiplier ,
             bool hasVisualMemory ,
             Vector3 visualMemoryPosition ,
             float visualMemoryStrength ,
@@ -61,6 +70,13 @@ namespace HideSeek.AI
             int currentSearchPointIndex ,
             int searchPointCount ,
             string currentSearchPointSource ,
+            CHASE_AI_SEARCH_ACTION currentSearchAction ,
+            float searchActionProgress ,
+            float searchActionRemainingTime ,
+            string hidingSpotCandidateName ,
+            float hidingSpotInspectionChance ,
+            float hidingSpotInspectionRoll ,
+            bool wasHidingSpotSelected ,
             float currentAnger ,
             float angerFloor ,
             int completedGeneratorCount ,
@@ -74,6 +90,7 @@ namespace HideSeek.AI
             VisualState = visualState;
             HasLineOfSight = hasLineOfSight;
             DetectionRatio = detectionRatio;
+            DetectionSpeedMultiplier = detectionSpeedMultiplier;
             HasVisualMemory = hasVisualMemory;
             VisualMemoryPosition = visualMemoryPosition;
             VisualMemoryStrength = visualMemoryStrength;
@@ -90,6 +107,13 @@ namespace HideSeek.AI
             CurrentSearchPointIndex = currentSearchPointIndex;
             SearchPointCount = searchPointCount;
             CurrentSearchPointSource = currentSearchPointSource;
+            CurrentSearchAction = currentSearchAction;
+            SearchActionProgress = searchActionProgress;
+            SearchActionRemainingTime = searchActionRemainingTime;
+            HidingSpotCandidateName = hidingSpotCandidateName;
+            HidingSpotInspectionChance = hidingSpotInspectionChance;
+            HidingSpotInspectionRoll = hidingSpotInspectionRoll;
+            WasHidingSpotSelected = wasHidingSpotSelected;
             CurrentAnger = currentAnger;
             AngerFloor = angerFloor;
             CompletedGeneratorCount = completedGeneratorCount;

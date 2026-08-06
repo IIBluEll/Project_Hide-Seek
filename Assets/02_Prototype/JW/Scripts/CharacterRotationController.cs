@@ -3,16 +3,14 @@ using UnityEngine.InputSystem;
 
 public class CharacterRotationController : MonoBehaviour
 {
-    [SerializeField] private Transform _playerBody;
+    private Transform _playerBody;
     [SerializeField] private float _mouseSensitive;
 
     private float _yaw;
 
-    private void Awake()
+    public void Init(Transform body)
     {
-        if (_playerBody == null)
-            _playerBody = transform;
-
+        _playerBody = body;
         _yaw = _playerBody.localEulerAngles.y;
     }
 

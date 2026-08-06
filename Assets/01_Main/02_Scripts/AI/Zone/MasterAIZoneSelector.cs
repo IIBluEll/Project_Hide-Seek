@@ -11,8 +11,6 @@ namespace HideSeek.AI
         private readonly List<AIWorldZone> ADJACENT_CANDIDATES = new();
         private readonly List<AIWorldZone> OTHER_CANDIDATES = new();
 
-        public IReadOnlyList<AIWorldZone> Zones => ZONES;
-
         public MasterAIZoneSelector(IReadOnlyList<AIWorldZone> zones , MasterAIConfig masterAIConfig)
         {
             if ( zones == null )
@@ -62,25 +60,6 @@ namespace HideSeek.AI
             }
 
             containingZone = null;
-
-            return false;
-        }
-
-        public bool TryGetZoneById(int zoneId , out AIWorldZone foundZone)
-        {
-            for ( int zoneIndex = 0; zoneIndex < ZONES.Count; zoneIndex++ )
-            {
-                AIWorldZone zone = ZONES[zoneIndex];
-
-                if ( zone.ZoneId == zoneId )
-                {
-                    foundZone = zone;
-
-                    return true;
-                }
-            }
-
-            foundZone = null;
 
             return false;
         }

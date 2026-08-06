@@ -27,6 +27,8 @@ namespace HideSeek.AI
         [SerializeField, Range(1f, 180f)] private float _verticalSightAngle = 60f;
         [SerializeField, Min(0.01f)] private float _visualConfirmTime = 0.8f;
         [SerializeField, Min(0.01f)] private float _visualLoseTime = 0.3f;
+        [SerializeField, Range(0.1f, 1f)] private float _minimumDistanceDetectionMultiplier = 0.45f;
+        [SerializeField, Range(0.1f, 1f)] private float _minimumPeripheralDetectionMultiplier = 0.55f;
 
         [Header("Memory")]
         [SerializeField, Min(0.1f)] private float _visualEvidenceDuration = 10f;
@@ -37,6 +39,11 @@ namespace HideSeek.AI
         [Header("Anger")]
         [SerializeField, Min(1f)] private float _maximumAnger = 100f;
         [SerializeField] private List<float> _generatorAngerFloors = new() { 0f , 20f , 40f , 60f };
+        [SerializeField, Min(0f)] private float _angerChaseBuildUpDelay = 2f;
+        [SerializeField, Min(0f)] private float _angerIncreasePerChaseSecond = 4f;
+        [SerializeField, Min(0f)] private float _angerIncreaseOnChaseLost = 10f;
+        [SerializeField, Min(0f)] private float _angerCalmDelay = 5f;
+        [SerializeField, Min(0f)] private float _angerDecreasePerSecond = 2f;
         [SerializeField, Min(1f)] private float _maximumAngerChaseSpeedMultiplier = 1.15f;
         [SerializeField, Min(1f)] private float _maximumAngerSearchRadiusMultiplier = 1.25f;
         [SerializeField, Min(1)] private int _minimumAngerSearchPointCount = 2;
@@ -57,15 +64,34 @@ namespace HideSeek.AI
         [SerializeField, Range(0f, 180f)] private float _directionalSearchAngle = 120f;
         [SerializeField, Min(0f)] private float _minimumSearchPointDistance = 1.5f;
         [SerializeField, Min(0f)] private float _hidingSpotEvidenceDistance = 2.5f;
+        [SerializeField, Range(0f, 1f)] private float _visualHidingSpotInspectionChance = 0.65f;
+        [SerializeField, Range(0f, 1f)] private float _strongAudioHidingSpotInspectionChance = 0.35f;
         [SerializeField, Min(1)] private int _searchPointGenerationAttemptCountPerPoint = 10;
+
+        [Header("Search Action")]
+        [SerializeField, Min(0f)] private float _directionalSearchActionTimeMultiplier = 0.8f;
+        [SerializeField, Min(0f)] private float _areaSearchActionTimeMultiplier = 1f;
+        [SerializeField, Min(0f)] private float _hidingSpotSearchActionTimeMultiplier = 1.6f;
+
+        [Header("Search Facing")]
+        [SerializeField, Min(0f)] private float _searchRotationSpeed = 120f;
+        [SerializeField, Range(0f, 180f)] private float _areaSearchSweepAngle = 90f;
+
+        [Header("Search Memory")]
+        [SerializeField, Min(0)] private int _recentSearchPointHistoryCapacity = 6;
+        [SerializeField, Min(0f)] private float _recentSearchPointAvoidanceDistance = 2f;
 
         [Header("State Machine")]
         [SerializeField, Min(0f)] private float _chaseSpeed = 5.5f;
         [SerializeField, Min(0f)] private float _patrolWaitTime = 1f;
-        [SerializeField, Min(0f)] private float _investigateWaitTime = 2f;
         [SerializeField, Min(0f)] private float _searchWaitTime = 3f;
         [SerializeField, Min(0.02f)] private float _chaseRepathInterval = 0.2f;
         [SerializeField, Min(0f)] private float _chaseDestinationUpdateDistance = 0.5f;
+        [SerializeField, Min(0f)] private float _chaseOcclusionPredictionDistance = 2f;
+
+        [Header("Patrol Selection")]
+        [SerializeField, Min(0)] private int _patrolRecentPointHistoryCapacity = 2;
+        [SerializeField, Range(0f, 1f)] private float _patrolRecentPointWeightMultiplier = 0.15f;
 
         [Header("Attack")]
         [SerializeField, Min(0f)] private float _attackRange = 1.5f;
@@ -87,6 +113,8 @@ namespace HideSeek.AI
         public float VerticalSightAngle => _verticalSightAngle;
         public float VisualConfirmTime => _visualConfirmTime;
         public float VisualLoseTime => _visualLoseTime;
+        public float MinimumDistanceDetectionMultiplier => _minimumDistanceDetectionMultiplier;
+        public float MinimumPeripheralDetectionMultiplier => _minimumPeripheralDetectionMultiplier;
 
         public float VisualEvidenceDuration => _visualEvidenceDuration;
         public float WeakNoiseEvidenceDuration => _weakNoiseEvidenceDuration;
@@ -94,6 +122,11 @@ namespace HideSeek.AI
         public float StrongNoiseThreshold => _strongNoiseThreshold;
 
         public float MaximumAnger => _maximumAnger;
+        public float AngerChaseBuildUpDelay => _angerChaseBuildUpDelay;
+        public float AngerIncreasePerChaseSecond => _angerIncreasePerChaseSecond;
+        public float AngerIncreaseOnChaseLost => _angerIncreaseOnChaseLost;
+        public float AngerCalmDelay => _angerCalmDelay;
+        public float AngerDecreasePerSecond => _angerDecreasePerSecond;
         public float MaximumAngerChaseSpeedMultiplier => _maximumAngerChaseSpeedMultiplier;
         public float MaximumAngerSearchRadiusMultiplier => _maximumAngerSearchRadiusMultiplier;
         public int MinimumAngerSearchPointCount => _minimumAngerSearchPointCount;
@@ -112,15 +145,26 @@ namespace HideSeek.AI
         public float DirectionalSearchAngle => _directionalSearchAngle;
         public float MinimumSearchPointDistance => _minimumSearchPointDistance;
         public float HidingSpotEvidenceDistance => _hidingSpotEvidenceDistance;
+        public float VisualHidingSpotInspectionChance => _visualHidingSpotInspectionChance;
+        public float StrongAudioHidingSpotInspectionChance => _strongAudioHidingSpotInspectionChance;
         public int SearchPointGenerationAttemptCountPerPoint => _searchPointGenerationAttemptCountPerPoint;
+        public float DirectionalSearchActionTimeMultiplier => _directionalSearchActionTimeMultiplier;
+        public float AreaSearchActionTimeMultiplier => _areaSearchActionTimeMultiplier;
+        public float HidingSpotSearchActionTimeMultiplier => _hidingSpotSearchActionTimeMultiplier;
+        public float SearchRotationSpeed => _searchRotationSpeed;
+        public float AreaSearchSweepAngle => _areaSearchSweepAngle;
+        public int RecentSearchPointHistoryCapacity => _recentSearchPointHistoryCapacity;
+        public float RecentSearchPointAvoidanceDistance => _recentSearchPointAvoidanceDistance;
 
         public float ChaseSpeed => _chaseSpeed;
         public float PatrolWaitTime => _patrolWaitTime;
-        public float InvestigateWaitTime => _investigateWaitTime;
         public float SearchWaitTime => _searchWaitTime;
         public float ChaseRepathInterval => _chaseRepathInterval;
 
         public float ChaseDestinationUpdateDistance => _chaseDestinationUpdateDistance;
+        public float ChaseOcclusionPredictionDistance => _chaseOcclusionPredictionDistance;
+        public int PatrolRecentPointHistoryCapacity => _patrolRecentPointHistoryCapacity;
+        public float PatrolRecentPointWeightMultiplier => _patrolRecentPointWeightMultiplier;
         public float AttackRange => _attackRange;
 
         public float GetGeneratorAngerFloor(int completedGeneratorCount)
@@ -137,7 +181,14 @@ namespace HideSeek.AI
 
         private void OnValidate()
         {
+            _minimumDistanceDetectionMultiplier = Mathf.Clamp(_minimumDistanceDetectionMultiplier , 0.1f , 1f);
+            _minimumPeripheralDetectionMultiplier = Mathf.Clamp(_minimumPeripheralDetectionMultiplier , 0.1f , 1f);
             _maximumAnger = Mathf.Max(1f , _maximumAnger);
+            _angerChaseBuildUpDelay = Mathf.Max(0f , _angerChaseBuildUpDelay);
+            _angerIncreasePerChaseSecond = Mathf.Max(0f , _angerIncreasePerChaseSecond);
+            _angerIncreaseOnChaseLost = Mathf.Max(0f , _angerIncreaseOnChaseLost);
+            _angerCalmDelay = Mathf.Max(0f , _angerCalmDelay);
+            _angerDecreasePerSecond = Mathf.Max(0f , _angerDecreasePerSecond);
             _maximumAngerChaseSpeedMultiplier = Mathf.Max(1f , _maximumAngerChaseSpeedMultiplier);
             _maximumAngerSearchRadiusMultiplier = Mathf.Max(1f , _maximumAngerSearchRadiusMultiplier);
             _minimumAngerSearchPointCount = Mathf.Max(1 , _minimumAngerSearchPointCount);
@@ -147,6 +198,18 @@ namespace HideSeek.AI
             _zoneCoverageSearchPointRatio = Mathf.Clamp01(_zoneCoverageSearchPointRatio);
             _directionalSearchAngle = Mathf.Clamp(_directionalSearchAngle , 0f , 180f);
             _hidingSpotEvidenceDistance = Mathf.Max(0f , _hidingSpotEvidenceDistance);
+            _visualHidingSpotInspectionChance = Mathf.Clamp01(_visualHidingSpotInspectionChance);
+            _strongAudioHidingSpotInspectionChance = Mathf.Clamp01(_strongAudioHidingSpotInspectionChance);
+            _directionalSearchActionTimeMultiplier = Mathf.Max(0f , _directionalSearchActionTimeMultiplier);
+            _areaSearchActionTimeMultiplier = Mathf.Max(0f , _areaSearchActionTimeMultiplier);
+            _hidingSpotSearchActionTimeMultiplier = Mathf.Max(0f , _hidingSpotSearchActionTimeMultiplier);
+            _searchRotationSpeed = Mathf.Max(0f , _searchRotationSpeed);
+            _areaSearchSweepAngle = Mathf.Clamp(_areaSearchSweepAngle , 0f , 180f);
+            _recentSearchPointHistoryCapacity = Mathf.Max(0 , _recentSearchPointHistoryCapacity);
+            _recentSearchPointAvoidanceDistance = Mathf.Max(0f , _recentSearchPointAvoidanceDistance);
+            _chaseOcclusionPredictionDistance = Mathf.Max(0f , _chaseOcclusionPredictionDistance);
+            _patrolRecentPointHistoryCapacity = Mathf.Max(0 , _patrolRecentPointHistoryCapacity);
+            _patrolRecentPointWeightMultiplier = Mathf.Clamp01(_patrolRecentPointWeightMultiplier);
             _attackRange = Mathf.Max(0f , _attackRange);
 
             if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )

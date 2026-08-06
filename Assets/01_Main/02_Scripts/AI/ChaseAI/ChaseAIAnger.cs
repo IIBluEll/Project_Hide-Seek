@@ -7,6 +7,9 @@ namespace HideSeek.AI
     {
         private readonly ChaseAIConfig CHASE_AI_CONFIG;
 
+        private float _calmElapsed;
+        private float _visibleChaseElapsed;
+
         public event Action Changed;
 
         public float CurrentAnger { get; private set; }
@@ -54,6 +57,7 @@ namespace HideSeek.AI
 
             if ( !Mathf.Approximately(previousAnger , CurrentAnger) )
             {
+                _calmElapsed = 0f;
                 Changed?.Invoke();
             }
         }
@@ -82,6 +86,60 @@ namespace HideSeek.AI
             return Mathf.Lerp(1f , CHASE_AI_CONFIG.MaximumAngerSearchRadiusMultiplier , effectiveAngerRatio);
         }
 
+        public void ResetCalmDecay()
+        {
+            _calmElapsed = 0f;
+        }
+
+        public void ResetChaseBuildUp()
+        {
+            _visibleChaseElapsed = 0f;
+        }
+
+        public bool TickChaseBuildUp(float deltaTime , bool hasLineOfSight)
+        {
+            if ( deltaTime <= 0f || !hasLineOfSight || CurrentAnger >= CHASE_AI_CONFIG.MaximumAnger )
+            {
+                return false;
+            }
+
+            float previousVisibleChaseElapsed = _visibleChaseElapsed;
+            _visibleChaseElapsed += deltaTime;
+
+            float buildUpDelay = CHASE_AI_CONFIG.AngerChaseBuildUpDelay;
+            float activeBuildUpTime =
+                Mathf.Max(0f , _visibleChaseElapsed - buildUpDelay) -
+                Mathf.Max(0f , previousVisibleChaseElapsed - buildUpDelay);
+
+            if ( activeBuildUpTime <= 0f )
+            {
+                return false;
+            }
+
+            float previousAnger = CurrentAnger;
+
+            IncreaseAnger(CHASE_AI_CONFIG.AngerIncreasePerChaseSecond * activeBuildUpTime);
+
+            return !Mathf.Approximately(previousAnger , CurrentAnger);
+        }
+
+        public void TickCalmDecay(float deltaTime)
+        {
+            if ( deltaTime <= 0f || CurrentAnger <= AngerFloor )
+            {
+                return;
+            }
+
+            _calmElapsed += deltaTime;
+
+            if ( _calmElapsed < CHASE_AI_CONFIG.AngerCalmDelay )
+            {
+                return;
+            }
+
+            DecreaseAnger(CHASE_AI_CONFIG.AngerDecreasePerSecond * deltaTime);
+        }
+
         public int GetSearchPointCount(float angerInfluence)
         {
             float effectiveAngerRatio = AngerRatio * Mathf.Clamp01(angerInfluence);
@@ -102,6 +160,8 @@ namespace HideSeek.AI
             CompletedGeneratorCount = 0;
             AngerFloor = CHASE_AI_CONFIG.GetGeneratorAngerFloor(0);
             CurrentAnger = AngerFloor;
+            _calmElapsed = 0f;
+            _visibleChaseElapsed = 0f;
 
             NotifyChangedIfNeeded(previousAnger , previousAngerFloor , previousCompletedGeneratorCount);
         }
