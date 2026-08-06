@@ -15,10 +15,8 @@ namespace HideSeek.Integration
     }
 
     /// <summary>
-    /// Chase AI 상태와 게임 진행도를 모아 BGM 단계를 정한다. GDD 14.1
-    ///
-    /// Chase AI가 직접 BGM을 바꾸지 않는다. AI가 여럿일 때 한 개체가 추격을 포기했다고
-    /// 음악이 평온해지면 안 되기 때문이다. 등록된 AI 중 가장 높은 단계를 채택한다.
+    /// Master AI가 제공하는 Chase AI 상태와 게임 진행도를 모아 BGM 단계를 정한다. GDD 14.1
+    /// Chase AI는 BGM을 직접 참조하지 않고, 이 컴포넌트는 MasterAIProvider를 AI 공용 접근점으로 사용한다.
     ///
     /// 전환 규칙은 방향에 따라 다르다.
     /// - 상승: 단계를 건너뛴다. AMBIENT에서 CHASE로 바로 간다.
@@ -35,11 +33,8 @@ namespace HideSeek.Integration
     /// - GDD 14.1은 ENDING 조건을 "모든 발전기 완료 + 탈출 장치 활성화"로 정의하지만, 탈출 장치가 없으므로
     ///   발전기 완료 시점에 바로 진입한다. 탈출 장치가 생기면 조건을 옮길지 다시 확인한다.
     ///
-    /// TODO: 현재는 매 프레임 AI 상태를 폴링한다.
-    ///       Chase AI와 Director에 상태 변경 이벤트가 생기면 구독 방식으로 바꾼다.
-    ///       ENDING 축은 이미 이벤트를 받으므로 이 전환의 대상이 아니다.
-    /// TODO: AI 목록을 Start에서 한 번만 수집하므로 런타임에 생성되는 AI는 놓친다.
-    ///       위 이벤트 구독으로 바꿀 때 등록·해제 방식으로 같이 정리한다.
+    /// Chase 상태와 플레이어 Zone 변경은 MasterAIProvider 이벤트로 즉시 재계산한다.
+    /// AI가 상태 변경 없이 Zone 경계를 통과하는 경우를 위해 0.25초 주기 위치 재계산도 유지한다.
     /// TODO: 인접 Zone까지 포함할지는 회의에서 확정한다. GDD 14.1은 인접 Zone도 조건에 넣고 있다.
     /// TODO: GDD 14.1의 AMBIENT 조건에 있는 "긴장도가 낮은"을 반영하지 않았다.
     ///       MasterAIProvider.GlobalStress를 쓸지와 임계값은 회의에서 확정한다.
@@ -47,17 +42,16 @@ namespace HideSeek.Integration
     [DisallowMultipleComponent]
     public sealed class BgmStateConnector : MonoBehaviour
     {
+        private const float AI_ZONE_CHECK_INTERVAL = 0.25f;
+
         [Header("참조")]
         [SerializeField] private BgmPlayer _bgmPlayer;
 
-        [Tooltip("플레이어가 있는 Zone을 얻는 데 쓴다.")]
+        [Tooltip("Chase AI 상태와 플레이어 Zone 변경 이벤트를 제공한다. 비워두면 Start에서 씬의 MasterAIProvider를 찾는다.")]
         [SerializeField] private MasterAIProvider _masterAIProvider;
 
         [Tooltip("비워두면 Start에서 씬의 GameProgressProvider를 찾는다. 프리팹은 씬 오브젝트를 참조할 수 없어 폴백이 필요하다.")]
         [SerializeField] private GameProgressProvider _gameProgressProvider;
-
-        [Tooltip("비워두면 Start에서 씬의 Chase AI를 모두 찾는다.")]
-        [SerializeField] private ChaseAIController[] _arr_chaseAI;
 
         [Header("클립")]
         [SerializeField] private AudioClip _ambientClip;
@@ -73,6 +67,7 @@ namespace HideSeek.Integration
 
         private BGM_STATE _currentState = BGM_STATE.AMBIENT;
         private float _stateElapsed;
+        private float _aiZoneCheckElapsed;
         private bool _isEndingLatched;
 
         public BGM_STATE CurrentState => _currentState;
@@ -86,9 +81,9 @@ namespace HideSeek.Integration
                 return;
             }
 
-            if (HasAnyChaseAI() == false)
+            if (_masterAIProvider == null)
             {
-                _arr_chaseAI = FindObjectsByType<ChaseAIController>(FindObjectsSortMode.None);
+                _masterAIProvider = FindFirstObjectByType<MasterAIProvider>();
             }
 
             if (_gameProgressProvider == null)
@@ -96,16 +91,22 @@ namespace HideSeek.Integration
                 _gameProgressProvider = FindFirstObjectByType<GameProgressProvider>();
             }
 
-            SubscribeProgress();
-
             _currentState = BGM_STATE.AMBIENT;
             _stateElapsed = 0f;
+            _aiZoneCheckElapsed = 0f;
             _isEndingLatched = false;
             _bgmPlayer.Play(_ambientClip, 0f);
+
+            SubscribeAI();
+            SubscribeProgress();
+
+            // 최초 DORMANT 설정은 이벤트가 발행되지 않으므로 현재 상태를 명시적으로 동기화한다.
+            ReevaluateState();
         }
 
         private void OnDestroy()
         {
+            UnsubscribeAI();
             UnsubscribeProgress();
         }
 
@@ -118,6 +119,61 @@ namespace HideSeek.Integration
             }
 
             _stateElapsed += Time.deltaTime;
+            _aiZoneCheckElapsed += Time.deltaTime;
+
+            if (_aiZoneCheckElapsed < AI_ZONE_CHECK_INTERVAL)
+            {
+                return;
+            }
+
+            _aiZoneCheckElapsed %= AI_ZONE_CHECK_INTERVAL;
+            ReevaluateState();
+        }
+
+        private void SubscribeAI()
+        {
+            if (_masterAIProvider == null)
+            {
+                Debug.LogError($"[{nameof(BgmStateConnector)}] MasterAIProvider가 없어 AI 상태에 따른 BGM 전환을 수행할 수 없습니다.", this);
+                return;
+            }
+
+            _masterAIProvider.ChaseStateChanged -= OnChaseStateChangedActioned;
+            _masterAIProvider.ChaseStateChanged += OnChaseStateChangedActioned;
+
+            _masterAIProvider.PlayerZoneChanged -= OnPlayerZoneChangedActioned;
+            _masterAIProvider.PlayerZoneChanged += OnPlayerZoneChangedActioned;
+        }
+
+        private void UnsubscribeAI()
+        {
+            if (_masterAIProvider == null)
+            {
+                return;
+            }
+
+            _masterAIProvider.ChaseStateChanged -= OnChaseStateChangedActioned;
+            _masterAIProvider.PlayerZoneChanged -= OnPlayerZoneChangedActioned;
+        }
+
+        private void OnChaseStateChangedActioned(
+            CHASE_AI_STATE previousState,
+            CHASE_AI_STATE currentState)
+        {
+            ReevaluateState();
+        }
+
+        private void OnPlayerZoneChangedActioned(AIWorldZone playerZone)
+        {
+            ReevaluateState();
+        }
+
+        private void ReevaluateState()
+        {
+            if (_isEndingLatched)
+            {
+                return;
+            }
 
             BGM_STATE tTargetState = ResolveTargetState();
 
@@ -194,64 +250,24 @@ namespace HideSeek.Integration
 
             _isEndingLatched = false;
             _stateElapsed = 0f;
+            _aiZoneCheckElapsed = 0f;
 
-            // ENDING에는 하강 규칙이 없으므로 여기서 직접 내린다. 이후 단계는 Update가 다시 올린다.
+            // ENDING에는 하강 규칙이 없으므로 여기서 직접 내린 뒤 현재 AI 상태와 다시 동기화한다.
             ChangeState(BGM_STATE.AMBIENT);
-        }
-
-        // 인스펙터에서 슬롯만 만들고 비워 두는 경우가 있어 길이만으로 판단하지 않는다.
-        private bool HasAnyChaseAI()
-        {
-            if (_arr_chaseAI == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < _arr_chaseAI.Length; i++)
-            {
-                if (_arr_chaseAI[i] != null)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            ReevaluateState();
         }
 
         /// <summary>
-        /// 등록된 AI 중 가장 높은 단계를 고른다. 한 개체가 추격을 포기해도 다른 개체가
-        /// 추격 중이면 CHASE가 유지된다.
+        /// MasterAIProvider가 중계하는 현재 Chase AI 상태와 위치로 목표 단계를 정한다.
         /// </summary>
         private BGM_STATE ResolveTargetState()
         {
-            BGM_STATE tHighestState = BGM_STATE.AMBIENT;
-
-            for (int i = 0; i < _arr_chaseAI.Length; i++)
+            if (_masterAIProvider == null)
             {
-                ChaseAIController tChaseAI = _arr_chaseAI[i];
-                if (tChaseAI == null || tChaseAI.isActiveAndEnabled == false)
-                {
-                    continue;
-                }
-
-                BGM_STATE tState = ResolveStateFor(tChaseAI);
-                if (tState > tHighestState)
-                {
-                    tHighestState = tState;
-                }
-
-                if (tHighestState == BGM_STATE.CHASE)
-                {
-                    break;
-                }
+                return BGM_STATE.AMBIENT;
             }
 
-            return tHighestState;
-        }
-
-        private BGM_STATE ResolveStateFor(ChaseAIController chaseAI)
-        {
-            switch (chaseAI.CurrentState)
+            switch (_masterAIProvider.CurrentChaseState)
             {
                 case CHASE_AI_STATE.CHASE:
                 case CHASE_AI_STATE.ATTACK:
@@ -264,7 +280,11 @@ namespace HideSeek.Integration
 
                 default:
                     // PATROL, INVESTIGATE, SEARCH. 무엇을 하든 위치로만 판단한다.
-                    return IsInPlayerZone(chaseAI.transform.position) ? BGM_STATE.TENSION : BGM_STATE.AMBIENT;
+                    ChaseAIController tChaseAI = _masterAIProvider.ChaseAIController;
+
+                    return tChaseAI != null && IsInPlayerZone(tChaseAI.transform.position)
+                        ? BGM_STATE.TENSION
+                        : BGM_STATE.AMBIENT;
             }
         }
 
