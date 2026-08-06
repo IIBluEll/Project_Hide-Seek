@@ -66,7 +66,6 @@ MonoBehaviour:
   _bgmPlayer: {fileID: 311570751823705655}
   _masterAIProvider: {fileID: 0}
   _gameProgressProvider: {fileID: 0}
-  _arr_chaseAI: []
   _ambientClip: {fileID: 8300000, guid: e93683c9c0a995d48b3f20927db0ac5a, type: 3}
   _tensionClip: {fileID: 8300000, guid: 107fd7e0b0bf76b47803afb29353f3a6, type: 3}
   _chaseClip: {fileID: 8300000, guid: 10546d9649879d14e8277d84c34d122e, type: 3}
