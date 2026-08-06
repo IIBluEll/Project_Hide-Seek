@@ -14,6 +14,7 @@ namespace HideSeek.AI
         public string ActiveInvestigationName => INVESTIGATION_CONTEXT.HasActiveAudioInvestigation
             ? "Audio evidence"
             : "Director hint";
+        public CHASE_AI_EVIDENCE_TYPE ActiveInvestigationType => INVESTIGATION_CONTEXT.ActiveEvidenceType;
 
         public ChaseAIEvidenceSelector(
             ChaseAIConfig chaseAIConfig ,
@@ -28,16 +29,6 @@ namespace HideSeek.AI
         public bool TryReceiveDirectorHint(MasterAIHint directorHint , float currentTime)
         {
             if ( !directorHint.IsValid(currentTime) )
-            {
-                return false;
-            }
-
-            bool hasHigherPriorityEvidence =
-                INVESTIGATION_CONTEXT.HasActiveAudioInvestigation ||
-                CHASE_AI_MEMORY.HasValidVisualEvidence(currentTime) ||
-                CHASE_AI_MEMORY.HasValidAudioEvidence(currentTime);
-
-            if ( hasHigherPriorityEvidence )
             {
                 return false;
             }
@@ -107,7 +98,7 @@ namespace HideSeek.AI
             if ( INVESTIGATION_CONTEXT.HasActiveAudioInvestigation )
             {
                 Debug.Log(
-                    $"[ChaseAIStateMachine] 청각 수색 시작: " +
+                    $"[ChaseAIStateMachine] 청각 수색 계획 생성: " +
                     $"Position={INVESTIGATION_CONTEXT.AudioSearchPosition}, " +
                     $"Radius={INVESTIGATION_CONTEXT.AudioSearchRadius:F1}, " +
                     $"Duration={INVESTIGATION_CONTEXT.AudioSearchDuration:F1}");
@@ -117,10 +108,11 @@ namespace HideSeek.AI
                     Vector3.zero ,
                     INVESTIGATION_CONTEXT.AudioSearchRadius ,
                     INVESTIGATION_CONTEXT.AudioSearchDuration ,
-                    false ,
                     1f ,
                     "Audio search center" ,
-                    INVESTIGATION_CONTEXT.CurrentAudioIntensity >= CHASE_AI_CONFIG.StrongNoiseThreshold);
+                    CHASE_AI_EVIDENCE_TYPE.AUDIO ,
+                    INVESTIGATION_CONTEXT.CurrentAudioIntensity >= CHASE_AI_CONFIG.StrongNoiseThreshold ,
+                    ResolveAudioHidingSpotInspectionChance(INVESTIGATION_CONTEXT.CurrentAudioIntensity));
 
                 return true;
             }
@@ -132,10 +124,11 @@ namespace HideSeek.AI
                     CHASE_AI_MEMORY.LastSeenMovementDirection ,
                     CHASE_AI_CONFIG.VisualSearchRadius ,
                     CHASE_AI_CONFIG.SearchWaitTime ,
-                    true ,
                     1f ,
                     "Last seen position" ,
-                    true);
+                    CHASE_AI_EVIDENCE_TYPE.VISUAL ,
+                    true ,
+                    CHASE_AI_CONFIG.VisualHidingSpotInspectionChance);
 
                 return true;
             }
@@ -151,10 +144,11 @@ namespace HideSeek.AI
                     Vector3.zero ,
                     searchRadius ,
                     searchDuration ,
-                    true ,
                     1f ,
                     "Last heard position" ,
-                    intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold);
+                    CHASE_AI_EVIDENCE_TYPE.AUDIO ,
+                    intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold ,
+                    ResolveAudioHidingSpotInspectionChance(intensity));
 
                 return true;
             }
@@ -163,20 +157,8 @@ namespace HideSeek.AI
             {
                 MasterAIHint directorHint = INVESTIGATION_CONTEXT.ActiveDirectorHint;
 
-                if ( !directorHint.IsValid(currentTime) )
-                {
-                    Debug.Log(
-                        $"[ChaseAIStateMachine] 만료된 Director Hint 수색 생략: " +
-                        $"Zone={directorHint.TargetZoneId}");
-
-                    INVESTIGATION_CONTEXT.ClearDirectorInvestigation();
-                    searchRequest = default;
-
-                    return false;
-                }
-
                 Debug.Log(
-                    $"[ChaseAIStateMachine] Director Hint 수색 시작: " +
+                    $"[ChaseAIStateMachine] Director Hint 수색 계획 생성: " +
                     $"Zone={directorHint.TargetZoneId}, " +
                     $"Position={directorHint.SearchAnchorPosition}, " +
                     $"Radius={directorHint.SearchRadius:F1}, " +
@@ -187,10 +169,11 @@ namespace HideSeek.AI
                     Vector3.zero ,
                     directorHint.SearchRadius ,
                     CHASE_AI_CONFIG.SearchWaitTime ,
-                    false ,
                     CHASE_AI_CONFIG.DirectorHintAngerInfluence ,
                     "Director hint search center" ,
+                    CHASE_AI_EVIDENCE_TYPE.DIRECTOR_HINT ,
                     false ,
+                    0f ,
                     directorHint.TargetZoneId ,
                     true);
 
@@ -202,19 +185,22 @@ namespace HideSeek.AI
             return false;
         }
 
-        public void ClearAudioInvestigation()
+        private float ResolveAudioHidingSpotInspectionChance(float intensity)
         {
-            INVESTIGATION_CONTEXT.ClearAudioInvestigation();
-        }
-
-        public void ClearDirectorInvestigation()
-        {
-            INVESTIGATION_CONTEXT.ClearDirectorInvestigation();
+            return intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold
+                ? CHASE_AI_CONFIG.StrongAudioHidingSpotInspectionChance
+                : 0f;
         }
 
         public void ClearInvestigations()
         {
             INVESTIGATION_CONTEXT.Clear();
+        }
+
+        public void ClearAllEvidence()
+        {
+            INVESTIGATION_CONTEXT.Clear();
+            CHASE_AI_MEMORY.Clear();
         }
     }
 }

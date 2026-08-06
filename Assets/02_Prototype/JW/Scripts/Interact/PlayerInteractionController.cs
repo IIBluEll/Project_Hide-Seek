@@ -1,74 +1,110 @@
 using System;
-using System.Collections;
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
+
+[System.Serializable]
+public class DefactData
+{
+    public Transform CameraTrans;
+    public float RayDistance;
+    public LayerMask InteractionRaycastLayerMask;
+}
 
 public class PlayerInteractionController : MonoBehaviour
 {
-    [SerializeField] private PlayerHandController _hand;
-    [SerializeField] private Transform _player;
-    [SerializeField] private CharacterController _characterController;
-    [SerializeField] private CharacterRotationController _rotationController;
-    [SerializeField] private MoveController _moveController;
-    
-    [SerializeField] private Camera _camera;
-    [SerializeField] private float _rayDistance;
-    [SerializeField] private LayerMask _interactionRaycastLayerMask;
-    [SerializeField] private float _screenFadeDuration = 0.25f;
+    [SerializeField] private DefactData _defactData;
+
+    private PlayerHandController _hand;
+    private MoveController _moveController;
+    private CharacterRotationController _rotationController;
 
     private IInteractable _currentInteractable;
+    private IInteractable _contextInteractable;
+    private IStateService _stat;
 
     public event Action<string> OnInsightInteractEvent;
     public event Action OnOutsightInteractionEvent;
-    private PlayerStateController _controller;
 
-    //물건 줍기
-    //숨기
-    private void Awake()
+    internal void Init(IStateService stat, MoveController move, CharacterRotationController rotator, PlayerHandController hand)
     {
-        if (_moveController == null)
-            _moveController = GetComponent<MoveController>();
+        _moveController = move;
+        _rotationController = rotator;
+        _hand = hand;
+        _stat = stat;
+        _hand.OnAimStateChanged -= OnAimStateChangedActioned;
+        _hand.OnAimStateChanged += OnAimStateChangedActioned;
     }
-
     private void Update()
     {
         DetectInteractable();
     }
     private void DetectInteractable()
     {
-        Ray ray = new Ray(_camera.transform.position, _camera.transform.forward);
+        if (_contextInteractable != null)
+        {
+            if (_contextInteractable.CanInteract(this) && _stat.CanInteraction)
+                OnInsightInteractEvent?.Invoke(_contextInteractable.InteractionPrompt);
+            else
+                OnOutsightInteractionEvent?.Invoke();
 
-        if(Physics.Raycast(ray, out RaycastHit hit, _rayDistance, _interactionRaycastLayerMask))
+            return;
+        }
+
+        Ray ray = new Ray(_defactData.CameraTrans.position, _defactData.CameraTrans.forward);
+
+        if(Physics.Raycast(ray, out RaycastHit hit, _defactData.RayDistance, _defactData.InteractionRaycastLayerMask))
         {
             IInteractable interactable = hit.transform.GetComponent<IInteractable>();
 
-            if(interactable.CanInteract(this))
+            if(interactable != null)
             {
-                _currentInteractable = interactable;
-                OnInsightInteractEvent?.Invoke(_currentInteractable.InteractionPrompt);
+                if (interactable.CanInteract(this) && _stat.CanInteraction)
+                {
+                    _currentInteractable = interactable;
+                    OnInsightInteractEvent?.Invoke(_currentInteractable.InteractionPrompt);
+                }
+                else
+                {
+                    OnOutsightInteractionEvent?.Invoke();
+                }
             }
             else
             {
-                _currentInteractable = null;
-                OnOutsightInteractionEvent?.Invoke();
+                ClearCurrentInteractable();
             }
         }
         else
         {
-            _currentInteractable = null;
-            OnOutsightInteractionEvent?.Invoke();
+            ClearCurrentInteractable();
         }
     }
     public void OnInteractAction()
     {
-        if (_currentInteractable == null)
+        IInteractable target = _contextInteractable ?? _currentInteractable;
+
+        if ((_stat != null && !_stat.CanInteraction) || target == null)
             return;
 
-        if (_currentInteractable.CanInteract(this))
-            _currentInteractable.Interact(this);
+        if (target.CanInteract(this))
+            target.InteractAct(this);
     }
-    public void TryGrap(GrapItem grapItem)
+    public void OnInteractReleaseAction()
+    {
+        IInteractable target = _contextInteractable ?? _currentInteractable;
+
+        if (target != null)
+            target.InteractRelease(this);
+    }
+    public void SetContextInteractable(IInteractable interactable)
+    {
+        _currentInteractable = null;
+        _contextInteractable = interactable;
+    }
+    public void ClearContextInteractable(IInteractable interactable)
+    {
+        if (ReferenceEquals(_contextInteractable, interactable))
+            _contextInteractable = null;
+    }
+    public void TryGrap(GrappableItem grapItem)
     {
         _hand.GrapItem(grapItem);
     }
@@ -79,16 +115,61 @@ public class PlayerInteractionController : MonoBehaviour
     }
     public void SetPosition(Vector3 position)
     {
-        _characterController.enabled = false;
-        _player.transform.position = position;
-        _characterController.enabled = true;
+        _moveController.Teleport(position);
     }
     public void SetRotation(Vector3 rotation)
     {
         _rotationController.SetYRotation(rotation);
     }
-    public void OnEndTransition(EPLAYER_STATE_TYPE state)
+    public void SetPositionState(PLAYER_POSITION_STATE state)
     {
-        _controller.SetState(state);
+        _stat.SetPositionState(state);
+    }
+    public void SetPosture(POSTURE_STATE_ENUM posture)
+    {
+        _moveController.SetPosture(posture);
+    }
+    public void BeginTransition()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.TRANSITION);
+    }
+    public void EndTransition()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.IDLE);
+    }
+    public void BeginActing()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.AIMING);
+    }
+    public void EndActing()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.IDLE);
+    }
+    private void OnAimStateChangedActioned(bool isAiming)
+    {
+        PLAYER_ACTION_STATE state = isAiming
+            ? PLAYER_ACTION_STATE.AIMING
+            : PLAYER_ACTION_STATE.IDLE;
+
+        _stat.SetActionState(state);
+    }
+    public void BeginGeneratorRepair()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.REPAIRING_GENERATOR);
+    }
+
+    public void EndGeneratorRepair()
+    {
+        _stat.SetActionState(PLAYER_ACTION_STATE.IDLE);
+    }
+    private void ClearCurrentInteractable()
+    {
+        _currentInteractable = null;
+        OnOutsightInteractionEvent?.Invoke();
+    }
+    private void OnDestroy()
+    {
+        if (_hand != null)
+            _hand.OnAimStateChanged -= OnAimStateChangedActioned;
     }
 }

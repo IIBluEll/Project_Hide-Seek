@@ -16,7 +16,6 @@ namespace HideSeek.AI
         public MASTER_AI_STATE CurrentState { get; private set; }
         public float GlobalStress => MASTER_AI_GAUGE.GlobalStress;
         public float GlobalStressRatio => MASTER_AI_GAUGE.GlobalStressRatio;
-        public bool IsRetreatRequested => _isRetreatRequested;
 
         public MasterAIDirector(MasterAIConfig masterAIConfig)
         {

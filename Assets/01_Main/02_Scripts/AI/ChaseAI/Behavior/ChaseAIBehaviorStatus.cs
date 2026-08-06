@@ -4,6 +4,7 @@ namespace HideSeek.AI
     {
         RUNNING,
         COMPLETED,
-        FAILED
+        FAILED,
+        TARGET_FOUND
     }
 }
