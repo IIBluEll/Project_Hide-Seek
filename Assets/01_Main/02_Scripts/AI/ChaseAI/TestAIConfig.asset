@@ -55,6 +55,25 @@ MonoBehaviour:
   _maxAudioSearchRadius: 8
   _minAudioSearchDuration: 2
   _maxAudioSearchDuration: 8
+  _noisePrioritySettings:
+  - _noiseType: 0
+    _weight: 1
+  - _noiseType: 1
+    _weight: 1.05
+  - _noiseType: 2
+    _weight: 1.1
+  - _noiseType: 3
+    _weight: 1.1
+  - _noiseType: 4
+    _weight: 1.2
+  - _noiseType: 5
+    _weight: 1.05
+  - _noiseType: 6
+    _weight: 0.5
+  _minimumAudioFreshnessMultiplier: 0.6
+  _audioEvidenceReplacementMargin: 0.1
+  _sameSourceRetargetInterval: 0.4
+  _sameSourceRetargetDistance: 0.75
   _visualSearchRadius: 5
   _lastSeenPredictionDistance: 3
   _directionalSearchPointRatio: 0.65

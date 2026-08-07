@@ -87,6 +87,13 @@ namespace HideSeek.AI
                 audioEvidence.Strength ,
                 audioEvidence.GetRemainingTime(currentTime) ,
                 _memory != null ? _memory.LastNoiseType : default ,
+                _stateMachine != null && _stateMachine.HasActiveAudioInvestigation ,
+                _stateMachine != null ? _stateMachine.ActiveAudioNoiseType : default ,
+                _stateMachine != null ? _stateMachine.ActiveAudioIntensity : 0f ,
+                _stateMachine != null ? _stateMachine.GetActiveAudioFreshness(currentTime) : 0f ,
+                _stateMachine != null ? _stateMachine.GetActiveAudioScore(currentTime) : 0f ,
+                _stateMachine != null ? _stateMachine.LastAudioCandidateScore : 0f ,
+                _stateMachine != null ? _stateMachine.LastAudioDecisionReason : "NONE" ,
                 _stateMachine != null ? _stateMachine.ActiveInvestigationName : "NONE" ,
                 _stateMachine != null ? _stateMachine.ActiveSearchContext : string.Empty ,
                 _search != null ? _search.ActiveSearchZoneName : "NONE" ,
@@ -343,7 +350,7 @@ namespace HideSeek.AI
                 return;
             }
 
-            bool wasAccepted = _stateMachine.TryReceiveAudioEvidence(observation);
+            bool wasAccepted = _stateMachine.TryReceiveAudioEvidence(observation , Time.time);
 
             if(!wasAccepted)
             {

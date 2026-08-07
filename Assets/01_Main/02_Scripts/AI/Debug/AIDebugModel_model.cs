@@ -120,6 +120,19 @@ namespace HideSeek.AI
             {
                 STRING_BUILDER.AppendLine("Audio=NONE");
             }
+
+            if ( chaseSnapshot.HasActiveAudioInvestigation )
+            {
+                STRING_BUILDER.AppendLine(
+                    $"AudioPriority={chaseSnapshot.ActiveAudioNoiseType}  " +
+                    $"Intensity={chaseSnapshot.ActiveAudioIntensity:F2}  " +
+                    $"Freshness={chaseSnapshot.ActiveAudioFreshness:F2}  " +
+                    $"Score={chaseSnapshot.ActiveAudioScore:F2}");
+            }
+
+            STRING_BUILDER.AppendLine(
+                $"AudioDecision={chaseSnapshot.LastAudioDecisionReason}  " +
+                $"CandidateScore={chaseSnapshot.LastAudioCandidateScore:F2}");
         }
 
         private void AppendSearchData(ChaseAIDebugSnapshot chaseSnapshot)
