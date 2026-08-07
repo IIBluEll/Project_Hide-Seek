@@ -71,6 +71,7 @@ namespace HideSeek.AI
                 _isInitialized ,
                 CurrentState ,
                 IsRetreatPending ,
+                _stateMachine != null && _stateMachine.IsReactingToVisualSuspicion ,
                 visualObservation.State ,
                 visualObservation.HasLineOfSight ,
                 _perception != null && _perception.HasTargetVisibilityState ,

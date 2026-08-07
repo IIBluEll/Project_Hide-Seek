@@ -7,6 +7,7 @@ namespace HideSeek.AI
         public bool IsInitialized { get; }
         public CHASE_AI_STATE State { get; }
         public bool IsRetreatPending { get; }
+        public bool IsReactingToVisualSuspicion { get; }
 
         public CHASE_AI_VISUAL_STATE VisualState { get; }
         public bool HasLineOfSight { get; }
@@ -52,6 +53,7 @@ namespace HideSeek.AI
             bool isInitialized ,
             CHASE_AI_STATE state ,
             bool isRetreatPending ,
+            bool isReactingToVisualSuspicion ,
             CHASE_AI_VISUAL_STATE visualState ,
             bool hasLineOfSight ,
             bool hasTargetVisibilityState ,
@@ -91,6 +93,7 @@ namespace HideSeek.AI
             IsInitialized = isInitialized;
             State = state;
             IsRetreatPending = isRetreatPending;
+            IsReactingToVisualSuspicion = isReactingToVisualSuspicion;
             VisualState = visualState;
             HasLineOfSight = hasLineOfSight;
             HasTargetVisibilityState = hasTargetVisibilityState;

@@ -34,6 +34,7 @@ namespace HideSeek.AI
         private bool _isRetreatPending;
         private bool _hasRetreatFailed;
         private bool _hasPlayerCaughtRequest;
+        private bool _isReactingToVisualSuspicion;
 
         public event Action<CHASE_AI_STATE , CHASE_AI_STATE> StateChanged;
 
@@ -49,6 +50,7 @@ namespace HideSeek.AI
             ? SEARCH_BEHAVIOR.ActiveSearchContext
             : string.Empty;
         public bool IsRetreatPending => _isRetreatPending;
+        public bool IsReactingToVisualSuspicion => _isReactingToVisualSuspicion;
         public bool IsUsingEvidenceApproachSpeed => CurrentState switch
         {
             CHASE_AI_STATE.INVESTIGATE =>
@@ -105,6 +107,7 @@ namespace HideSeek.AI
             _isRetreatPending = false;
             _hasRetreatFailed = false;
             _hasPlayerCaughtRequest = false;
+            _isReactingToVisualSuspicion = false;
             _stateTimer = 0f;
 
             Debug.Log("[ChaseAIStateMachine] DORMANT 상태로 초기화되었습니다.");
@@ -222,6 +225,11 @@ namespace HideSeek.AI
                 ChangeState(CHASE_AI_STATE.CHASE , "Player visually confirmed");
             }
 
+            if ( UpdateVisualSuspicionResponse(deltaTime , visualObservation) )
+            {
+                return;
+            }
+
             switch ( CurrentState )
             {
                 case CHASE_AI_STATE.PATROL:
@@ -330,7 +338,63 @@ namespace HideSeek.AI
             _isRetreatPending = false;
             _hasRetreatFailed = false;
             _hasPlayerCaughtRequest = false;
+            _isReactingToVisualSuspicion = false;
             _stateTimer = 0f;
+        }
+
+        private bool UpdateVisualSuspicionResponse(
+            float deltaTime ,
+            ChaseAIVisualObservation visualObservation)
+        {
+            bool canReact = CurrentState == CHASE_AI_STATE.PATROL ||
+                CurrentState == CHASE_AI_STATE.INVESTIGATE ||
+                CurrentState == CHASE_AI_STATE.SEARCH;
+            bool shouldReact = canReact &&
+                visualObservation.HasLineOfSight &&
+                visualObservation.State == CHASE_AI_VISUAL_STATE.SUSPICIOUS &&
+                visualObservation.DetectionRatio >= _config.VisualSuspicionReactionThreshold;
+
+            if ( !shouldReact )
+            {
+                StopVisualSuspicionResponse();
+
+                return false;
+            }
+
+            if ( !_isReactingToVisualSuspicion )
+            {
+                _isReactingToVisualSuspicion = true;
+
+                Debug.Log(
+                    $"[ChaseAIStateMachine] 시각 의심 반응 시작: " +
+                    $"State={CurrentState}, " +
+                    $"Detection={visualObservation.DetectionRatio:F2}");
+            }
+
+            _movement.SetPaused(true);
+
+            Vector3 directionToVisiblePosition =
+                visualObservation.VisiblePosition - _movement.Position;
+
+            _movement.RotateTowardsDirection(
+                directionToVisiblePosition ,
+                _config.VisualSuspicionRotationSpeed ,
+                deltaTime);
+
+            return true;
+        }
+
+        private void StopVisualSuspicionResponse()
+        {
+            if ( !_isReactingToVisualSuspicion )
+            {
+                return;
+            }
+
+            _isReactingToVisualSuspicion = false;
+            _movement.SetPaused(false);
+
+            Debug.Log("[ChaseAIStateMachine] 시각 의심 반응 종료");
         }
 
         private void UpdatePatrol(float deltaTime)
@@ -481,6 +545,7 @@ namespace HideSeek.AI
 
             CHASE_AI_STATE previousState = CurrentState;
 
+            StopVisualSuspicionResponse();
             _movement.Stop();
             _isWaiting = false;
             _stateTimer = 0f;
