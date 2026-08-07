@@ -79,6 +79,20 @@ namespace HideSeek.AI
             }
         }
 
+        public void ResetToAngerFloor()
+        {
+            float previousAnger = CurrentAnger;
+
+            CurrentAnger = AngerFloor;
+            _calmElapsed = 0f;
+            _visibleChaseElapsed = 0f;
+
+            if ( !Mathf.Approximately(previousAnger , CurrentAnger) )
+            {
+                Changed?.Invoke();
+            }
+        }
+
         public float GetSearchRadiusMultiplier(float angerInfluence)
         {
             float effectiveAngerRatio = AngerRatio * Mathf.Clamp01(angerInfluence);
