@@ -1,8 +1,25 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace HideSeek.AI
 {
+    [Serializable]
+    public struct ChaseAINoisePrioritySetting
+    {
+        [SerializeField] private NOISE_TYPE _noiseType;
+        [SerializeField, Min(0f)] private float _weight;
+
+        public NOISE_TYPE NoiseType => _noiseType;
+        public float Weight => Mathf.Max(0f , _weight);
+
+        public ChaseAINoisePrioritySetting(NOISE_TYPE noiseType , float weight)
+        {
+            _noiseType = noiseType;
+            _weight = Mathf.Max(0f , weight);
+        }
+    }
+
     [CreateAssetMenu(fileName = "ChaseAIConfig" , menuName = "HideSeek/AI/Chase AI Config")]
     public sealed class ChaseAIConfig : ScriptableObject
     {
@@ -31,6 +48,10 @@ namespace HideSeek.AI
         [SerializeField, Range(0.1f, 1f)] private float _minimumDistanceDetectionMultiplier = 0.45f;
         [SerializeField, Range(0.1f, 1f)] private float _minimumPeripheralDetectionMultiplier = 0.55f;
 
+        [Header("Visual Suspicion Response")]
+        [SerializeField, Range(0f, 1f)] private float _visualSuspicionReactionThreshold = 0.35f;
+        [SerializeField, Min(0f)] private float _visualSuspicionRotationSpeed = 240f;
+
         [Header("Memory")]
         [SerializeField, Min(0.1f)] private float _visualEvidenceDuration = 10f;
         [SerializeField, Min(0.1f)] private float _weakNoiseEvidenceDuration = 4f;
@@ -56,6 +77,22 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _maxAudioSearchRadius = 8f;
         [SerializeField, Min(0f)] private float _minAudioSearchDuration = 2f;
         [SerializeField, Min(0f)] private float _maxAudioSearchDuration = 8f;
+
+        [Header("Audio Evidence Priority")]
+        [SerializeField] private List<ChaseAINoisePrioritySetting> _noisePrioritySettings = new()
+        {
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.FOOTSTEP , 1f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.RUN , 1.05f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.DECOY , 1.1f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.GENERATOR , 1.1f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.QTE_FAILURE , 1.2f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.DOOR , 1.05f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.ENVIRONMENT , 0.5f)
+        };
+        [SerializeField, Range(0f, 1f)] private float _minimumAudioFreshnessMultiplier = 0.6f;
+        [SerializeField, Min(0f)] private float _audioEvidenceReplacementMargin = 0.1f;
+        [SerializeField, Min(0f)] private float _sameSourceRetargetInterval = 0.4f;
+        [SerializeField, Min(0f)] private float _sameSourceRetargetDistance = 0.75f;
 
         [Header("Search")]
         [SerializeField, Min(0f)] private float _visualSearchRadius = 5f;
@@ -117,6 +154,8 @@ namespace HideSeek.AI
         public float VisualLoseTime => _visualLoseTime;
         public float MinimumDistanceDetectionMultiplier => _minimumDistanceDetectionMultiplier;
         public float MinimumPeripheralDetectionMultiplier => _minimumPeripheralDetectionMultiplier;
+        public float VisualSuspicionReactionThreshold => _visualSuspicionReactionThreshold;
+        public float VisualSuspicionRotationSpeed => _visualSuspicionRotationSpeed;
 
         public float VisualEvidenceDuration => _visualEvidenceDuration;
         public float WeakNoiseEvidenceDuration => _weakNoiseEvidenceDuration;
@@ -139,6 +178,10 @@ namespace HideSeek.AI
         public float MaxAudioSearchRadius => _maxAudioSearchRadius;
         public float MinAudioSearchDuration => _minAudioSearchDuration;
         public float MaxAudioSearchDuration => _maxAudioSearchDuration;
+        public float MinimumAudioFreshnessMultiplier => _minimumAudioFreshnessMultiplier;
+        public float AudioEvidenceReplacementMargin => _audioEvidenceReplacementMargin;
+        public float SameSourceRetargetInterval => _sameSourceRetargetInterval;
+        public float SameSourceRetargetDistance => _sameSourceRetargetDistance;
 
         public float VisualSearchRadius => _visualSearchRadius;
         public float LastSeenPredictionDistance => _lastSeenPredictionDistance;
@@ -181,6 +224,26 @@ namespace HideSeek.AI
             return _generatorAngerFloors[ floorIndex ];
         }
 
+        public float GetNoisePriorityWeight(NOISE_TYPE noiseType)
+        {
+            if ( _noisePrioritySettings == null )
+            {
+                return 1f;
+            }
+
+            for ( int settingIndex = 0; settingIndex < _noisePrioritySettings.Count; settingIndex++ )
+            {
+                ChaseAINoisePrioritySetting setting = _noisePrioritySettings[ settingIndex ];
+
+                if ( setting.NoiseType == noiseType )
+                {
+                    return setting.Weight;
+                }
+            }
+
+            return 1f;
+        }
+
         private void OnValidate()
         {
             float minimumEvidenceApproachSpeed = Mathf.Min(_walkSpeed , _chaseSpeed);
@@ -192,6 +255,12 @@ namespace HideSeek.AI
                 maximumEvidenceApproachSpeed);
             _minimumDistanceDetectionMultiplier = Mathf.Clamp(_minimumDistanceDetectionMultiplier , 0.1f , 1f);
             _minimumPeripheralDetectionMultiplier = Mathf.Clamp(_minimumPeripheralDetectionMultiplier , 0.1f , 1f);
+            _visualSuspicionReactionThreshold = Mathf.Clamp01(_visualSuspicionReactionThreshold);
+            _visualSuspicionRotationSpeed = Mathf.Max(0f , _visualSuspicionRotationSpeed);
+            _minimumAudioFreshnessMultiplier = Mathf.Clamp01(_minimumAudioFreshnessMultiplier);
+            _audioEvidenceReplacementMargin = Mathf.Max(0f , _audioEvidenceReplacementMargin);
+            _sameSourceRetargetInterval = Mathf.Max(0f , _sameSourceRetargetInterval);
+            _sameSourceRetargetDistance = Mathf.Max(0f , _sameSourceRetargetDistance);
             _maximumAnger = Mathf.Max(1f , _maximumAnger);
             _angerChaseBuildUpDelay = Mathf.Max(0f , _angerChaseBuildUpDelay);
             _angerIncreasePerChaseSecond = Mathf.Max(0f , _angerIncreasePerChaseSecond);
