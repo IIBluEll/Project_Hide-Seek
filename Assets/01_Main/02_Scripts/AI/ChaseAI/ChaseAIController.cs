@@ -40,6 +40,8 @@ namespace HideSeek.AI
         public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => _stateMachine != null
             ? _stateMachine.ActiveEvidenceType
             : CHASE_AI_EVIDENCE_TYPE.NONE;
+        public bool IsUsingEvidenceApproachSpeed =>
+            _stateMachine != null && _stateMachine.IsUsingEvidenceApproachSpeed;
 
         public ChaseAIDebugSnapshot GetDebugSnapshot(float currentTime)
         {
@@ -71,6 +73,8 @@ namespace HideSeek.AI
                 IsRetreatPending ,
                 visualObservation.State ,
                 visualObservation.HasLineOfSight ,
+                _perception != null && _perception.HasTargetVisibilityState ,
+                _perception != null && _perception.IsTargetFullyHidden ,
                 visualObservation.DetectionRatio ,
                 visualObservation.DetectionSpeedMultiplier ,
                 hasVisualMemory ,
@@ -205,7 +209,17 @@ namespace HideSeek.AI
 
             Debug.Log($"[ChaseAIController] Vent 출현 위치 적용: {correctedPosition}" , this);
 
-            return _stateMachine.RequestActivation();
+            bool wasActivated = _stateMachine.RequestActivation();
+
+            if ( !wasActivated )
+            {
+                return false;
+            }
+
+            _anger.ResetToAngerFloor();
+            LogAngerState("DORMANT 휴식 종료");
+
+            return true;
         }
 
         public bool RequestRetreat(Vector3 retreatPosition)

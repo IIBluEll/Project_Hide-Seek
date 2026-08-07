@@ -85,6 +85,9 @@ namespace HideSeek.AI
                 $"LOS={chaseSnapshot.HasLineOfSight}  " +
                 $"Detection={chaseSnapshot.DetectionRatio:P0}  " +
                 $"Gain=x{chaseSnapshot.DetectionSpeedMultiplier:F2}");
+            STRING_BUILDER.AppendLine(
+                $"VisibilityContract={chaseSnapshot.HasTargetVisibilityState}  " +
+                $"FullyHidden={chaseSnapshot.IsTargetFullyHidden}");
         }
 
         private void AppendEvidenceData(ChaseAIDebugSnapshot chaseSnapshot)

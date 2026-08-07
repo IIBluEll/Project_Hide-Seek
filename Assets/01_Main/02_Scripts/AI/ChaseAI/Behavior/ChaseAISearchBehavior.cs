@@ -31,6 +31,7 @@ namespace HideSeek.AI
         private int _searchZoneId = ChaseAISearchRequest.NO_ZONE_ID;
         private bool _isPrepared;
         private bool _isPerformingSearchAction;
+        private bool _isUsingEvidenceApproachSpeed;
         private bool _canInspectHidingSpot;
         private float _hidingSpotInspectionChance;
         private bool _shouldRestrictToZone;
@@ -38,6 +39,7 @@ namespace HideSeek.AI
         public Vector3 SearchCenterPosition => _searchCenterPosition;
         public float CurrentSearchRadius => _currentSearchRadius;
         public bool IsPrepared => _isPrepared;
+        public bool IsUsingEvidenceApproachSpeed => _isUsingEvidenceApproachSpeed;
         public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType { get; private set; } = CHASE_AI_EVIDENCE_TYPE.NONE;
         public CHASE_AI_SEARCH_ACTION CurrentSearchAction { get; private set; } = CHASE_AI_SEARCH_ACTION.NONE;
         public float SearchActionRemainingTime => Mathf.Max(0f , _searchActionRemainingTime);
@@ -112,12 +114,21 @@ namespace HideSeek.AI
             }
 
             _isPrepared = false;
-            CHASE_AI_MOVEMENT.SetSpeed(CHASE_AI_CONFIG.WalkSpeed);
+            _isUsingEvidenceApproachSpeed =
+                ActiveEvidenceType == CHASE_AI_EVIDENCE_TYPE.VISUAL;
+
+            float movementSpeed = _isUsingEvidenceApproachSpeed
+                ? CHASE_AI_CONFIG.EvidenceApproachSpeed
+                : CHASE_AI_CONFIG.WalkSpeed;
+
+            CHASE_AI_MOVEMENT.SetSpeed(movementSpeed);
 
             Debug.Log(
                 $"[ChaseAIStateMachine] 준비된 수색 실행 시작: " +
                 $"Center={_searchCenterPosition}, " +
                 $"Radius={_currentSearchRadius:F1}, " +
+                $"EvidenceApproach={_isUsingEvidenceApproachSpeed}, " +
+                $"Speed={movementSpeed:F1}, " +
                 $"FirstPointIndex={CHASE_AI_SEARCH.CurrentPointIndex + 1}/{CHASE_AI_SEARCH.PointCount}");
 
             return RequestCurrentSearchPointOrComplete();
@@ -167,6 +178,7 @@ namespace HideSeek.AI
             _searchWaitDurationPerPoint = 0f;
             _searchZoneId = ChaseAISearchRequest.NO_ZONE_ID;
             _isPrepared = false;
+            _isUsingEvidenceApproachSpeed = false;
             _canInspectHidingSpot = false;
             _hidingSpotInspectionChance = 0f;
             _shouldRestrictToZone = false;
@@ -271,6 +283,8 @@ namespace HideSeek.AI
 
         private CHASE_AI_BEHAVIOR_STATUS BeginCurrentSearchAction()
         {
+            CompleteEvidenceApproach();
+
             CHASE_AI_SEARCH_POINT_SOURCE searchPointSource = CHASE_AI_SEARCH_POINT_SOURCE.RANDOM;
 
             if ( !CHASE_AI_SEARCH.TryGetSearchPointSource(
@@ -300,6 +314,21 @@ namespace HideSeek.AI
             }
 
             return CHASE_AI_BEHAVIOR_STATUS.RUNNING;
+        }
+
+        private void CompleteEvidenceApproach()
+        {
+            if ( !_isUsingEvidenceApproachSpeed )
+            {
+                return;
+            }
+
+            _isUsingEvidenceApproachSpeed = false;
+            CHASE_AI_MOVEMENT.SetSpeed(CHASE_AI_CONFIG.WalkSpeed);
+
+            Debug.Log(
+                $"[ChaseAISearchBehavior] 첫 시각 수색 지점 도착: " +
+                $"걷기 속도 {CHASE_AI_CONFIG.WalkSpeed:F1}로 전환");
         }
 
         private bool UpdateSearchAction(float deltaTime)

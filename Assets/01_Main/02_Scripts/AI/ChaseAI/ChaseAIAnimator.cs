@@ -12,9 +12,13 @@ namespace HideSeek.AI
     public sealed class ChaseAIAnimator : MonoBehaviour
     {
         private const string BLEND_PARAMETER_NAME = "Blend";
+        private const string ANIMATION_SPEED_PARAMETER_NAME = "AnimationSpeed";
 
         private static readonly int BLEND_PARAMETER_HASH =
             Animator.StringToHash(BLEND_PARAMETER_NAME);
+
+        private static readonly int ANIMATION_SPEED_PARAMETER_HASH =
+            Animator.StringToHash(ANIMATION_SPEED_PARAMETER_NAME);
 
         [Header("References")]
         [SerializeField] private ChaseAIController _chaseAIController;
@@ -23,10 +27,22 @@ namespace HideSeek.AI
         [Header("Blend Values")]
         [SerializeField, Range(0f , 1f)] private float _idleBlend = 0f;
         [SerializeField, Range(0f , 1f)] private float _walkBlend = 0.5f;
+        [SerializeField, Range(0f , 1f)] private float _evidenceApproachBlend = 0.75f;
         [SerializeField, Range(0f , 1f)] private float _chaseBlend = 1f;
+
+        [Header("Animation Reference Speed")]
+        [Tooltip("걷기 애니메이션이 1배속일 때 자연스럽게 보이는 월드 이동속도입니다.")]
+        [SerializeField, Min(0.1f)] private float _walkAnimationReferenceSpeed = 4f;
+
+        [Tooltip("달리기 애니메이션이 1배속일 때 자연스럽게 보이는 월드 이동속도입니다.")]
+        [SerializeField, Min(0.1f)] private float _chaseAnimationReferenceSpeed = 6f;
+
+        [SerializeField, Min(0.1f)] private float _minimumAnimationSpeed = 0.75f;
+        [SerializeField, Min(0.1f)] private float _maximumAnimationSpeed = 1.5f;
 
         [Header("Transition")]
         [SerializeField, Min(0f)] private float _blendDampTime = 0.12f;
+        [SerializeField, Min(0f)] private float _animationSpeedDampTime = 0.1f;
         [SerializeField, Min(0f)] private float _movementThreshold = 0.05f;
 
         private NavMeshAgent _agent;
@@ -53,7 +69,8 @@ namespace HideSeek.AI
             }
 
             _animator.applyRootMotion = false;
-            _animator.SetFloat(BLEND_PARAMETER_HASH , _idleBlend);
+
+            ResetAnimatorParameters();
         }
 
         private void OnEnable()
@@ -63,53 +80,121 @@ namespace HideSeek.AI
                 return;
             }
 
-            _animator.SetFloat(BLEND_PARAMETER_HASH , _idleBlend);
+            ResetAnimatorParameters();
         }
 
         private void Update()
         {
-            float targetBlend = GetTargetBlend();
+            float movementSpeed = GetMovementSpeed();
+            float targetBlend = GetTargetBlend(movementSpeed);
+            float targetAnimationSpeed = GetTargetAnimationSpeed(movementSpeed);
 
             _animator.SetFloat(
                 BLEND_PARAMETER_HASH ,
                 targetBlend ,
                 _blendDampTime ,
                 Time.deltaTime);
+
+            _animator.SetFloat(
+                ANIMATION_SPEED_PARAMETER_HASH ,
+                targetAnimationSpeed ,
+                _animationSpeedDampTime ,
+                Time.deltaTime);
         }
 
-        private float GetTargetBlend()
+        private float GetTargetBlend(float movementSpeed)
         {
-            if ( _chaseAIController.CurrentState == CHASE_AI_STATE.ATTACK )
-            {
-                return _chaseBlend;
-            }
-
-            if ( !IsMoving() )
+            if ( movementSpeed <= _movementThreshold )
             {
                 return _idleBlend;
             }
 
+            float maximumMovementSpeed =
+                Mathf.Max(_agent.speed , _movementThreshold);
+
+            float movementRatio =
+                Mathf.Clamp01(movementSpeed / maximumMovementSpeed);
+
+            float maximumBlend = GetMaximumBlend();
+
+            return Mathf.Lerp(
+                _idleBlend ,
+                maximumBlend ,
+                movementRatio);
+        }
+
+        private float GetTargetAnimationSpeed(float movementSpeed)
+        {
+            if ( movementSpeed <= _movementThreshold )
+            {
+                return 1f;
+            }
+
+            float referenceSpeed = GetAnimationReferenceSpeed();
+
+            float animationSpeed = movementSpeed / referenceSpeed;
+
+            return Mathf.Clamp(
+                animationSpeed ,
+                _minimumAnimationSpeed ,
+                _maximumAnimationSpeed);
+        }
+
+        private float GetMaximumBlend()
+        {
             if ( _chaseAIController.CurrentState == CHASE_AI_STATE.CHASE )
             {
                 return _chaseBlend;
             }
 
-            return _walkBlend;
+            return _chaseAIController.IsUsingEvidenceApproachSpeed
+                ? _evidenceApproachBlend
+                : _walkBlend;
         }
 
-        private bool IsMoving()
+        private float GetAnimationReferenceSpeed()
+        {
+            if ( _chaseAIController.CurrentState == CHASE_AI_STATE.CHASE )
+            {
+                return _chaseAnimationReferenceSpeed;
+            }
+
+            if ( !_chaseAIController.IsUsingEvidenceApproachSpeed )
+            {
+                return _walkAnimationReferenceSpeed;
+            }
+
+            float evidenceBlendRatio = Mathf.InverseLerp(
+                _walkBlend ,
+                _chaseBlend ,
+                _evidenceApproachBlend);
+
+            return Mathf.Lerp(
+                _walkAnimationReferenceSpeed ,
+                _chaseAnimationReferenceSpeed ,
+                evidenceBlendRatio);
+        }
+
+        private float GetMovementSpeed()
         {
             if ( _agent == null ||
                  !_agent.enabled ||
                  !_agent.isOnNavMesh ||
                  _agent.isStopped )
             {
-                return false;
+                return 0f;
             }
 
-            float movementThresholdSqr = _movementThreshold * _movementThreshold;
+            Vector3 planarVelocity = _agent.velocity;
+            planarVelocity.y = 0f;
 
-            return _agent.velocity.sqrMagnitude > movementThresholdSqr;
+            return planarVelocity.magnitude;
+        }
+
+        private void ResetAnimatorParameters()
+        {
+            _animator.SetFloat(BLEND_PARAMETER_HASH , _idleBlend);
+            _animator.SetFloat(ANIMATION_SPEED_PARAMETER_HASH , 1f);
         }
 
         private bool ValidateReferences()
@@ -141,31 +226,42 @@ namespace HideSeek.AI
                 return false;
             }
 
-            if ( !HasBlendParameter() )
+            if ( !HasFloatParameter(
+                    BLEND_PARAMETER_HASH ,
+                    BLEND_PARAMETER_NAME) )
             {
-                Debug.LogError(
-                    $"[{nameof(ChaseAIAnimator)}] Float 파라미터 " +
-                    $"'{BLEND_PARAMETER_NAME}'가 없습니다." ,
-                    this);
+                return false;
+            }
 
+            if ( !HasFloatParameter(
+                    ANIMATION_SPEED_PARAMETER_HASH ,
+                    ANIMATION_SPEED_PARAMETER_NAME) )
+            {
                 return false;
             }
 
             return true;
         }
 
-        private bool HasBlendParameter()
+        private bool HasFloatParameter(
+            int parameterHash ,
+            string parameterName)
         {
             AnimatorControllerParameter[] parameters = _animator.parameters;
 
             foreach ( AnimatorControllerParameter parameter in parameters )
             {
-                if ( parameter.nameHash == BLEND_PARAMETER_HASH &&
+                if ( parameter.nameHash == parameterHash &&
                      parameter.type == AnimatorControllerParameterType.Float )
                 {
                     return true;
                 }
             }
+
+            Debug.LogError(
+                $"[{nameof(ChaseAIAnimator)}] Float 파라미터 " +
+                $"'{parameterName}'가 없습니다." ,
+                this);
 
             return false;
         }

@@ -8,6 +8,7 @@ namespace HideSeek.AI
     {
         [Header("Movement")]
         [SerializeField, Min(0f)] private float _walkSpeed = 3.5f;
+        [SerializeField, Min(0f)] private float _evidenceApproachSpeed = 4.5f;
         [SerializeField, Min(0f)] private float _acceleration = 12f;
         [SerializeField, Min(0f)] private float _angularSpeed = 360f;
         [SerializeField, Min(0f)] private float _stoppingDistance = 0.2f;
@@ -97,6 +98,7 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _attackRange = 1.5f;
 
         public float WalkSpeed => _walkSpeed;
+        public float EvidenceApproachSpeed => _evidenceApproachSpeed;
         public float Acceleration => _acceleration;
         public float AngularSpeed => _angularSpeed;
         public float StoppingDistance => _stoppingDistance;
@@ -181,6 +183,13 @@ namespace HideSeek.AI
 
         private void OnValidate()
         {
+            float minimumEvidenceApproachSpeed = Mathf.Min(_walkSpeed , _chaseSpeed);
+            float maximumEvidenceApproachSpeed = Mathf.Max(_walkSpeed , _chaseSpeed);
+
+            _evidenceApproachSpeed = Mathf.Clamp(
+                _evidenceApproachSpeed ,
+                minimumEvidenceApproachSpeed ,
+                maximumEvidenceApproachSpeed);
             _minimumDistanceDetectionMultiplier = Mathf.Clamp(_minimumDistanceDetectionMultiplier , 0.1f , 1f);
             _minimumPeripheralDetectionMultiplier = Mathf.Clamp(_minimumPeripheralDetectionMultiplier , 0.1f , 1f);
             _maximumAnger = Mathf.Max(1f , _maximumAnger);
