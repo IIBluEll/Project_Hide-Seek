@@ -122,11 +122,10 @@ public class PlayerController : MonoBehaviour
     private void OnLocomotionChangedActioned(LOCOMOTION_STATE_ENUM locomotion, bool value)
     {
         _animationController.SetLocomotionAnima(locomotion, value);
-        Debug.Log($"{locomotion} / {value}");
         if (value)
         {
             _camera.SetShakeIntensity(_move.Posture, locomotion);
-            _footNoiseEmitter.OccurredFootNoise(locomotion);
+            _footNoiseEmitter.OnChangedPlayerFootStep(locomotion);
         }
     }
     private void OnAttackAction(bool value)

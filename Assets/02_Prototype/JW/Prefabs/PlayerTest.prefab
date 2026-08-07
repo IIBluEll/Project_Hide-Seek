@@ -356,6 +356,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 719797448115294576}
   - {fileID: 393758324765427761}
   - {fileID: 3121262000289609492}
   - {fileID: 4907275617648314539}
@@ -391,7 +392,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88343b22ec7263340b8338a262097f11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  _viewer: {fileID: 0}
   _interactController: {fileID: 3460248299561768460}
   _animationController: {fileID: 6570499260553526560}
   _rotator: {fileID: 7652549782070891935}
@@ -401,6 +401,7 @@ MonoBehaviour:
   _interact: {fileID: 3460248299561768460}
   _hand: {fileID: 4887690539993326877}
   _footNoiseEmitter: {fileID: 2687568104229482316}
+  _interactionViewer: {fileID: 0}
   _throwViewer: {fileID: 0}
   _sprintViewer: {fileID: 0}
 --- !u!114 &526915386082559795
@@ -427,11 +428,11 @@ MonoBehaviour:
   _height:
     StandingHeight: 1.6
     CrouchHeight: 1
-    ProneHeight: 0.5
+    ProneHeight: 0
   _centerHeight:
     StandingHeight: 0.8
     CrouchHeight: 0.5
-    ProneHeight: 0.5
+    ProneHeight: 0
 --- !u!114 &7652549782070891935
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -465,7 +466,7 @@ MonoBehaviour:
   _maxPitch: 60
   _standingCameraHeight: 1.55
   _crouchCameraHeight: 1.05
-  _proneCameraHeight: 0.55
+  _proneCameraHeight: 0.2
   _crouchWalkShakeIntensity: 0.15
   _walkShakeIntensity: 0.35
   _runShakeIntensity: 0.6
@@ -500,7 +501,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHandController
   _animator: {fileID: 113903726235385018}
-  _itemGrapPivot: {fileID: 6938446905310713496}
+  _itemGrapPivot: {fileID: 2434990049675629045}
   _throwDirectionTrans: {fileID: 2330449259875553450}
   _throwMaxPower: 12
   _chargeSpeed: 8
@@ -613,7 +614,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 1.6
-  m_Radius: 0.3
+  m_Radius: 0.2
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
@@ -1561,7 +1562,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3620142130959842528}
-  - {fileID: 719797448115294576}
   m_Father: {fileID: 4279375969574381794}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1851736490929725402
@@ -1682,7 +1682,8 @@ Transform:
   m_LocalPosition: {x: 0.107, y: 0.042, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2434990049675629045}
   m_Father: {fileID: 1001087274455727951}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2081013211307824979
@@ -2122,12 +2123,12 @@ Transform:
   m_GameObject: {fileID: 2645216095327161827}
   serializedVersion: 2
   m_LocalRotation: {x: -0.000000059604645, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.7100003, z: 0.0109999105}
+  m_LocalPosition: {x: 0, y: 1.6, z: 0.0109999105}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2330449259875553450}
-  m_Father: {fileID: 393758324765427761}
+  m_Father: {fileID: 4279375969574381794}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2681734253935578729
 GameObject:
@@ -3785,7 +3786,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5942737371569885275
 Transform:
   m_ObjectHideFlags: 0
@@ -5963,6 +5964,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7725927631077975343}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8067925513472262976
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2434990049675629045}
+  m_Layer: 0
+  m_Name: ItemPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2434990049675629045
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8067925513472262976}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.105, y: 0.523, z: -0.881}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6938446905310713496}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8178882781067016172
 GameObject:
