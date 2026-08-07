@@ -68,7 +68,7 @@ public class PlayerCameraController : MonoBehaviour
     {
         if (locomotion == LOCOMOTION_STATE_ENUM.IDLE)
         {
-            _currentShakeIntensity = 0f;
+            _currentShakeIntensity = 1f;
             return;
         }
 
