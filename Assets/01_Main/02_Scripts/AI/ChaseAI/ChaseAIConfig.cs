@@ -31,6 +31,10 @@ namespace HideSeek.AI
         [SerializeField, Range(0.1f, 1f)] private float _minimumDistanceDetectionMultiplier = 0.45f;
         [SerializeField, Range(0.1f, 1f)] private float _minimumPeripheralDetectionMultiplier = 0.55f;
 
+        [Header("Visual Suspicion Response")]
+        [SerializeField, Range(0f, 1f)] private float _visualSuspicionReactionThreshold = 0.35f;
+        [SerializeField, Min(0f)] private float _visualSuspicionRotationSpeed = 240f;
+
         [Header("Memory")]
         [SerializeField, Min(0.1f)] private float _visualEvidenceDuration = 10f;
         [SerializeField, Min(0.1f)] private float _weakNoiseEvidenceDuration = 4f;
@@ -117,6 +121,8 @@ namespace HideSeek.AI
         public float VisualLoseTime => _visualLoseTime;
         public float MinimumDistanceDetectionMultiplier => _minimumDistanceDetectionMultiplier;
         public float MinimumPeripheralDetectionMultiplier => _minimumPeripheralDetectionMultiplier;
+        public float VisualSuspicionReactionThreshold => _visualSuspicionReactionThreshold;
+        public float VisualSuspicionRotationSpeed => _visualSuspicionRotationSpeed;
 
         public float VisualEvidenceDuration => _visualEvidenceDuration;
         public float WeakNoiseEvidenceDuration => _weakNoiseEvidenceDuration;
@@ -192,6 +198,8 @@ namespace HideSeek.AI
                 maximumEvidenceApproachSpeed);
             _minimumDistanceDetectionMultiplier = Mathf.Clamp(_minimumDistanceDetectionMultiplier , 0.1f , 1f);
             _minimumPeripheralDetectionMultiplier = Mathf.Clamp(_minimumPeripheralDetectionMultiplier , 0.1f , 1f);
+            _visualSuspicionReactionThreshold = Mathf.Clamp01(_visualSuspicionReactionThreshold);
+            _visualSuspicionRotationSpeed = Mathf.Max(0f , _visualSuspicionRotationSpeed);
             _maximumAnger = Mathf.Max(1f , _maximumAnger);
             _angerChaseBuildUpDelay = Mathf.Max(0f , _angerChaseBuildUpDelay);
             _angerIncreasePerChaseSecond = Mathf.Max(0f , _angerIncreasePerChaseSecond);
