@@ -3,7 +3,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     private InteractPresenter _interactPresenter = new InteractPresenter();
-    private readonly PlayerStateController _stat = new PlayerStateController();
+    private readonly PlayerStateController _state = new PlayerStateController();
 
     [SerializeField] private PlayerInteractionController _interactController;
 
@@ -22,6 +22,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private ThrowUIViewer _throwViewer;
     [SerializeField] private PlayerSprintStaminaViewer _sprintViewer;
 
+    public IStateService State => _state;
+
     private void Awake()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -31,7 +33,7 @@ public class PlayerController : MonoBehaviour
         _camera.SetCameraHeight(_move.Posture);
         _camera.SetShakeIntensity(_move.Posture, _move.Locomotion);
 
-        _interact.Init(_stat, _move, _rotator, _hand);
+        _interact.Init(_state, _move, _rotator, _hand);
 
         _rotator.Init(this.transform);
     }
@@ -48,8 +50,8 @@ public class PlayerController : MonoBehaviour
         _hand.OnThrowPowerChanged += _throwViewer.ChargeGage;
         _hand.OnAimStateChanged += _throwViewer.OnAimStateChanged;
 
-        _stat.OnChangedPositionStateEvent += OnChangePositionState;
-        _stat.OnChangedActionStateEvent += OnChangeActionState;
+        _state.OnChangedPositionStateEvent += OnChangePositionState;
+        _state.OnChangedActionStateEvent += OnChangeActionState;
 
         _move.OnChangedStamina += _sprintViewer.UpdateSprintStamina;
         _move.OnMoveEvent += _animationController.SetMoveAnima;
@@ -81,12 +83,12 @@ public class PlayerController : MonoBehaviour
     #region Actions
     private void OnMoveAction(Vector2 value)
     {
-        if (_stat.CanMove)
+        if (_state.CanMove)
             _move.SetMoveInput(value);
     }
     private void OnLookAction(Vector2 value)
     {
-        if (!_stat.CanRotate)
+        if (!_state.CanRotate)
             return;
 
         _camera.RotateXAxis(value.y);
@@ -94,12 +96,12 @@ public class PlayerController : MonoBehaviour
     }
     private void OnSprintAction(bool value)
     {
-        if (_stat.CanMove)
+        if (_state.CanMove)
             _move.SetSprintInput(value);
     }
     private void OnCrouchAction(bool value)
     {
-        if (_stat.CanCrouch && value)
+        if (_state.CanCrouch && value)
             _move.RequestCrouch();
     }
     private void OnInteractAction(bool value)
@@ -133,7 +135,7 @@ public class PlayerController : MonoBehaviour
     }
     private void OnAttackAction(bool value)
     {
-        if(_stat.CanAction)
+        if(_state.CanAction)
             _hand.OnAimAction(value);
     }
     private void OnCancelAimAction(bool value)
