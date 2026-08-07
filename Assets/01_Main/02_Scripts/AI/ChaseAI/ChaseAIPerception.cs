@@ -1,4 +1,5 @@
 using System;
+using HideSeek.Gameplay;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -66,9 +67,15 @@ namespace HideSeek.AI
         [Header("Hearing")]
         [SerializeField] private Transform _hearingTransform;
 
+        private IPlayerVisibilityState _targetVisibilityState;
         public event Action<ChaseAIAudioObservation> NoiseDetected;
 
         private float _detectionRatio;
+
+        public bool HasTargetVisibilityState => _targetVisibilityState != null;
+        public bool IsTargetFullyHidden =>
+            _targetVisibilityState != null &&
+            _targetVisibilityState.IsFullyHidden;
 
         public ChaseAIVisualObservation CurrentObservation
         {
@@ -112,6 +119,7 @@ namespace HideSeek.AI
         public void SetTarget(Transform targetTransform)
         {
             _targetTransform = targetTransform;
+            _targetVisibilityState = FindTargetVisibilityState(targetTransform);
             ResetPerception();
         }
 
@@ -159,6 +167,11 @@ namespace HideSeek.AI
                 return false;
             }
 
+            if ( IsTargetFullyHidden )
+            {
+                return false;
+            }
+
             Vector3 directionToTarget = _targetTransform.position - transform.position;
             directionToTarget.y = 0f;
 
@@ -195,6 +208,11 @@ namespace HideSeek.AI
             detectionSpeedMultiplier = 0f;
 
             if ( _config == null || _eyeTransform == null || _targetTransform == null )
+            {
+                return false;
+            }
+
+            if ( IsTargetFullyHidden )
             {
                 return false;
             }
@@ -313,6 +331,27 @@ namespace HideSeek.AI
                 peripheralRatio);
 
             return Mathf.Clamp01(distanceMultiplier * peripheralMultiplier);
+        }
+
+        private static IPlayerVisibilityState FindTargetVisibilityState(Transform targetTransform)
+        {
+            if ( targetTransform == null )
+            {
+                return null;
+            }
+
+            MonoBehaviour[] targetComponents =
+                targetTransform.GetComponentsInParent<MonoBehaviour>(true);
+
+            for ( int componentIndex = 0; componentIndex < targetComponents.Length; componentIndex++ )
+            {
+                if ( targetComponents[ componentIndex ] is IPlayerVisibilityState visibilityState )
+                {
+                    return visibilityState;
+                }
+            }
+
+            return null;
         }
 
         private CHASE_AI_VISUAL_STATE GetVisualState(bool hasLineOfSight)
