@@ -31,6 +31,8 @@ namespace HideSeek.AI
         public CHASE_AI_STATE CurrentState => _stateMachine != null ? _stateMachine.CurrentState : CHASE_AI_STATE.DORMANT;
 
         public bool IsRetreatPending => _stateMachine != null && _stateMachine.IsRetreatPending;
+        public bool IsReactingToVisualSuspicion =>
+            _stateMachine != null && _stateMachine.IsReactingToVisualSuspicion;
         public bool IsInitialized => _isInitialized;
         public float NavMeshSampleRadius => _config != null ? _config.SampleRadius : 0.1f;
         public int AreaMask => _movement != null ? _movement.AreaMask : UnityEngine.AI.NavMesh.AllAreas;
@@ -42,6 +44,12 @@ namespace HideSeek.AI
             : CHASE_AI_EVIDENCE_TYPE.NONE;
         public bool IsUsingEvidenceApproachSpeed =>
             _stateMachine != null && _stateMachine.IsUsingEvidenceApproachSpeed;
+        public CHASE_AI_SEARCH_ACTION CurrentSearchAction => _stateMachine != null
+            ? _stateMachine.CurrentSearchAction
+            : CHASE_AI_SEARCH_ACTION.NONE;
+        public float SearchActionProgress => _stateMachine != null
+            ? _stateMachine.SearchActionProgress
+            : 0f;
 
         public ChaseAIDebugSnapshot GetDebugSnapshot(float currentTime)
         {

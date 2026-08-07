@@ -1,8 +1,23 @@
+using System;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace HideSeek.AI
 {
+    public enum CHASE_AI_ANIMATION_ACTION
+    {
+        NONE,
+        SUSPICION,
+        LOOK_AROUND,
+        INSPECT_HIDING_SPOT
+    }
+
+    public enum CHASE_AI_FOOT
+    {
+        LEFT,
+        RIGHT
+    }
+
     /// <summary>
     /// Chase AI의 이동 상태를 Animator Blend 값으로 변환한다.
     /// 이동과 상태 판단은 기존 AI가 담당하며, 이 컴포넌트는 표현만 담당한다.
@@ -13,12 +28,23 @@ namespace HideSeek.AI
     {
         private const string BLEND_PARAMETER_NAME = "Blend";
         private const string ANIMATION_SPEED_PARAMETER_NAME = "AnimationSpeed";
+        private const string ACTION_TYPE_PARAMETER_NAME = "ActionType";
+        private const string ACTION_PROGRESS_PARAMETER_NAME = "ActionProgress";
 
         private static readonly int BLEND_PARAMETER_HASH =
             Animator.StringToHash(BLEND_PARAMETER_NAME);
 
         private static readonly int ANIMATION_SPEED_PARAMETER_HASH =
             Animator.StringToHash(ANIMATION_SPEED_PARAMETER_NAME);
+        private static readonly int ACTION_TYPE_PARAMETER_HASH =
+            Animator.StringToHash(ACTION_TYPE_PARAMETER_NAME);
+        private static readonly int ACTION_PROGRESS_PARAMETER_HASH =
+            Animator.StringToHash(ACTION_PROGRESS_PARAMETER_NAME);
+
+        public event Action<CHASE_AI_ANIMATION_ACTION , CHASE_AI_ANIMATION_ACTION> AnimationActionChanged;
+        public event Action<CHASE_AI_FOOT> FootstepActioned;
+        public event Action SearchContactActioned;
+        public event Action HidingSpotContactActioned;
 
         [Header("References")]
         [SerializeField] private ChaseAIController _chaseAIController;
@@ -46,6 +72,9 @@ namespace HideSeek.AI
         [SerializeField, Min(0f)] private float _movementThreshold = 0.05f;
 
         private NavMeshAgent _agent;
+        private CHASE_AI_ANIMATION_ACTION _currentAnimationAction;
+
+        public CHASE_AI_ANIMATION_ACTION CurrentAnimationAction => _currentAnimationAction;
 
         private void Awake()
         {
@@ -70,6 +99,8 @@ namespace HideSeek.AI
 
             _animator.applyRootMotion = false;
 
+            EnsureAnimationEventRelay();
+
             ResetAnimatorParameters();
         }
 
@@ -88,6 +119,7 @@ namespace HideSeek.AI
             float movementSpeed = GetMovementSpeed();
             float targetBlend = GetTargetBlend(movementSpeed);
             float targetAnimationSpeed = GetTargetAnimationSpeed(movementSpeed);
+            CHASE_AI_ANIMATION_ACTION targetAnimationAction = GetTargetAnimationAction();
 
             _animator.SetFloat(
                 BLEND_PARAMETER_HASH ,
@@ -100,6 +132,61 @@ namespace HideSeek.AI
                 targetAnimationSpeed ,
                 _animationSpeedDampTime ,
                 Time.deltaTime);
+
+            UpdateAnimationAction(targetAnimationAction);
+        }
+
+        internal void NotifyFootstepActioned(CHASE_AI_FOOT foot)
+        {
+            FootstepActioned?.Invoke(foot);
+        }
+
+        internal void NotifySearchContactActioned()
+        {
+            SearchContactActioned?.Invoke();
+        }
+
+        internal void NotifyHidingSpotContactActioned()
+        {
+            HidingSpotContactActioned?.Invoke();
+        }
+
+        private CHASE_AI_ANIMATION_ACTION GetTargetAnimationAction()
+        {
+            if ( _chaseAIController.IsReactingToVisualSuspicion )
+            {
+                return CHASE_AI_ANIMATION_ACTION.SUSPICION;
+            }
+
+            return _chaseAIController.CurrentSearchAction switch
+            {
+                CHASE_AI_SEARCH_ACTION.CHECK_DIRECTION => CHASE_AI_ANIMATION_ACTION.LOOK_AROUND,
+                CHASE_AI_SEARCH_ACTION.OBSERVE_AREA => CHASE_AI_ANIMATION_ACTION.LOOK_AROUND,
+                CHASE_AI_SEARCH_ACTION.INSPECT_HIDING_SPOT => CHASE_AI_ANIMATION_ACTION.INSPECT_HIDING_SPOT,
+                _ => CHASE_AI_ANIMATION_ACTION.NONE
+            };
+        }
+
+        private void UpdateAnimationAction(CHASE_AI_ANIMATION_ACTION targetAnimationAction)
+        {
+            float actionProgress = targetAnimationAction == CHASE_AI_ANIMATION_ACTION.LOOK_AROUND ||
+                targetAnimationAction == CHASE_AI_ANIMATION_ACTION.INSPECT_HIDING_SPOT
+                ? _chaseAIController.SearchActionProgress
+                : 0f;
+
+            _animator.SetFloat(ACTION_PROGRESS_PARAMETER_HASH , actionProgress);
+
+            if ( _currentAnimationAction == targetAnimationAction )
+            {
+                return;
+            }
+
+            CHASE_AI_ANIMATION_ACTION previousAnimationAction = _currentAnimationAction;
+            _currentAnimationAction = targetAnimationAction;
+
+            _animator.SetInteger(ACTION_TYPE_PARAMETER_HASH , (int)_currentAnimationAction);
+
+            AnimationActionChanged?.Invoke(previousAnimationAction , _currentAnimationAction);
         }
 
         private float GetTargetBlend(float movementSpeed)
@@ -193,8 +280,24 @@ namespace HideSeek.AI
 
         private void ResetAnimatorParameters()
         {
+            _currentAnimationAction = CHASE_AI_ANIMATION_ACTION.NONE;
             _animator.SetFloat(BLEND_PARAMETER_HASH , _idleBlend);
             _animator.SetFloat(ANIMATION_SPEED_PARAMETER_HASH , 1f);
+            _animator.SetInteger(ACTION_TYPE_PARAMETER_HASH , (int)CHASE_AI_ANIMATION_ACTION.NONE);
+            _animator.SetFloat(ACTION_PROGRESS_PARAMETER_HASH , 0f);
+        }
+
+        private void EnsureAnimationEventRelay()
+        {
+            ChaseAIAnimationEventRelay eventRelay =
+                _animator.GetComponent<ChaseAIAnimationEventRelay>();
+
+            if ( eventRelay == null )
+            {
+                eventRelay = _animator.gameObject.AddComponent<ChaseAIAnimationEventRelay>();
+            }
+
+            eventRelay.Initialize(this);
         }
 
         private bool ValidateReferences()
@@ -226,16 +329,34 @@ namespace HideSeek.AI
                 return false;
             }
 
-            if ( !HasFloatParameter(
+            if ( !HasParameter(
                     BLEND_PARAMETER_HASH ,
-                    BLEND_PARAMETER_NAME) )
+                    BLEND_PARAMETER_NAME ,
+                    AnimatorControllerParameterType.Float) )
             {
                 return false;
             }
 
-            if ( !HasFloatParameter(
+            if ( !HasParameter(
                     ANIMATION_SPEED_PARAMETER_HASH ,
-                    ANIMATION_SPEED_PARAMETER_NAME) )
+                    ANIMATION_SPEED_PARAMETER_NAME ,
+                    AnimatorControllerParameterType.Float) )
+            {
+                return false;
+            }
+
+            if ( !HasParameter(
+                    ACTION_TYPE_PARAMETER_HASH ,
+                    ACTION_TYPE_PARAMETER_NAME ,
+                    AnimatorControllerParameterType.Int) )
+            {
+                return false;
+            }
+
+            if ( !HasParameter(
+                    ACTION_PROGRESS_PARAMETER_HASH ,
+                    ACTION_PROGRESS_PARAMETER_NAME ,
+                    AnimatorControllerParameterType.Float) )
             {
                 return false;
             }
@@ -243,24 +364,25 @@ namespace HideSeek.AI
             return true;
         }
 
-        private bool HasFloatParameter(
+        private bool HasParameter(
             int parameterHash ,
-            string parameterName)
+            string parameterName ,
+            AnimatorControllerParameterType parameterType)
         {
             AnimatorControllerParameter[] parameters = _animator.parameters;
 
             foreach ( AnimatorControllerParameter parameter in parameters )
             {
                 if ( parameter.nameHash == parameterHash &&
-                     parameter.type == AnimatorControllerParameterType.Float )
+                     parameter.type == parameterType )
                 {
                     return true;
                 }
             }
 
             Debug.LogError(
-                $"[{nameof(ChaseAIAnimator)}] Float 파라미터 " +
-                $"'{parameterName}'가 없습니다." ,
+                $"[{nameof(ChaseAIAnimator)}] Animator 파라미터 " +
+                $"'{parameterName}'가 없거나 타입이 올바르지 않습니다." ,
                 this);
 
             return false;

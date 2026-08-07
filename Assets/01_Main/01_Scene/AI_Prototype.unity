@@ -3146,6 +3146,7 @@ GameObject:
   - component: {fileID: 1526055480}
   - component: {fileID: 1526055481}
   - component: {fileID: 1526055482}
+  - component: {fileID: 1526055483}
   m_Layer: 0
   m_Name: ChaseAI
   m_TagString: Untagged
@@ -3345,6 +3346,52 @@ MonoBehaviour:
   _chaseBlend: 1
   _blendDampTime: 0.12
   _movementThreshold: 0.05
+--- !u!114 &1526055483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1526055471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c4cb0e5f5e04e19905b862fcae0c9b1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAISound
+  _chaseAIController: {fileID: 1526055481}
+  _chaseAIAnimator: {fileID: 1526055482}
+  _outputMixerGroup: {fileID: 0}
+  _walkFootstepClips: []
+  _jogFootstepClips: []
+  _sprintFootstepClips: []
+  _searchContactClips: []
+  _hidingSpotContactClips: []
+  _patrolVocalClips: []
+  _investigationVocalClips: []
+  _suspicionVocalClips: []
+  _searchActionVocalClips: []
+  _hidingSpotVocalClips: []
+  _chaseStartVocalClips: []
+  _chaseVocalClips: []
+  _walkFootstepVolume: 0.7
+  _jogFootstepVolume: 0.85
+  _sprintFootstepVolume: 1
+  _walkFootstepPitchRange: {x: 0.92, y: 1.02}
+  _jogFootstepPitchRange: {x: 0.96, y: 1.06}
+  _sprintFootstepPitchRange: {x: 0.98, y: 1.08}
+  _contactVolume: 0.8
+  _voiceVolume: 1
+  _minimumPitch: 0.95
+  _maximumPitch: 1.05
+  _footstepCooldown: 0.08
+  _actionVocalCooldown: 0.5
+  _searchContactFallbackProgress: 0.5
+  _hidingSpotContactFallbackProgress: 0.65
+  _patrolVocalInterval: {x: 8, y: 15}
+  _investigationVocalInterval: {x: 5, y: 10}
+  _chaseVocalInterval: {x: 3, y: 6}
+  _minimumDistance: 2
+  _maximumDistance: 35
 --- !u!1 &1530947644
 GameObject:
   m_ObjectHideFlags: 0
