@@ -51,6 +51,11 @@ namespace HideSeek.AI
             : string.Empty;
         public bool IsRetreatPending => _isRetreatPending;
         public bool IsReactingToVisualSuspicion => _isReactingToVisualSuspicion;
+        public bool HasActiveAudioInvestigation => EVIDENCE_SELECTOR.HasActiveAudioInvestigation;
+        public NOISE_TYPE ActiveAudioNoiseType => EVIDENCE_SELECTOR.ActiveAudioNoiseType;
+        public float ActiveAudioIntensity => EVIDENCE_SELECTOR.CurrentAudioIntensity;
+        public float LastAudioCandidateScore => EVIDENCE_SELECTOR.LastAudioCandidateScore;
+        public string LastAudioDecisionReason => EVIDENCE_SELECTOR.LastAudioDecisionReason;
         public bool IsUsingEvidenceApproachSpeed => CurrentState switch
         {
             CHASE_AI_STATE.INVESTIGATE =>
@@ -64,6 +69,16 @@ namespace HideSeek.AI
             CHASE_AI_STATE.SEARCH => SEARCH_BEHAVIOR.ActiveEvidenceType,
             _ => CHASE_AI_EVIDENCE_TYPE.NONE
         };
+
+        public float GetActiveAudioFreshness(float currentTime)
+        {
+            return EVIDENCE_SELECTOR.GetCurrentAudioFreshness(currentTime);
+        }
+
+        public float GetActiveAudioScore(float currentTime)
+        {
+            return EVIDENCE_SELECTOR.GetCurrentAudioScore(currentTime);
+        }
 
         public CHASE_AI_STATE CurrentState
         {
@@ -274,7 +289,9 @@ namespace HideSeek.AI
             return CurrentState == CHASE_AI_STATE.INVESTIGATE;
         }
 
-        public bool TryReceiveAudioEvidence(ChaseAIAudioObservation observation)
+        public bool TryReceiveAudioEvidence(
+            ChaseAIAudioObservation observation ,
+            float currentTime)
         {
             if ( CurrentState == CHASE_AI_STATE.CHASE ||
                 CurrentState == CHASE_AI_STATE.ATTACK ||
@@ -284,7 +301,7 @@ namespace HideSeek.AI
                 return false;
             }
 
-            if ( !EVIDENCE_SELECTOR.TryReceiveAudioEvidence(observation) )
+            if ( !EVIDENCE_SELECTOR.TryReceiveAudioEvidence(observation , currentTime) )
             {
                 return false;
             }

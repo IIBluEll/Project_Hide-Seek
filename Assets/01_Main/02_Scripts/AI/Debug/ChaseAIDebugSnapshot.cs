@@ -26,6 +26,13 @@ namespace HideSeek.AI
         public float AudioMemoryStrength { get; }
         public float AudioMemoryRemainingTime { get; }
         public NOISE_TYPE LastNoiseType { get; }
+        public bool HasActiveAudioInvestigation { get; }
+        public NOISE_TYPE ActiveAudioNoiseType { get; }
+        public float ActiveAudioIntensity { get; }
+        public float ActiveAudioFreshness { get; }
+        public float ActiveAudioScore { get; }
+        public float LastAudioCandidateScore { get; }
+        public string LastAudioDecisionReason { get; }
 
         public string ActiveInvestigationName { get; }
         public string ActiveSearchContext { get; }
@@ -69,6 +76,13 @@ namespace HideSeek.AI
             float audioMemoryStrength ,
             float audioMemoryRemainingTime ,
             NOISE_TYPE lastNoiseType ,
+            bool hasActiveAudioInvestigation ,
+            NOISE_TYPE activeAudioNoiseType ,
+            float activeAudioIntensity ,
+            float activeAudioFreshness ,
+            float activeAudioScore ,
+            float lastAudioCandidateScore ,
+            string lastAudioDecisionReason ,
             string activeInvestigationName ,
             string activeSearchContext ,
             string activeSearchZoneName ,
@@ -109,6 +123,13 @@ namespace HideSeek.AI
             AudioMemoryStrength = audioMemoryStrength;
             AudioMemoryRemainingTime = audioMemoryRemainingTime;
             LastNoiseType = lastNoiseType;
+            HasActiveAudioInvestigation = hasActiveAudioInvestigation;
+            ActiveAudioNoiseType = activeAudioNoiseType;
+            ActiveAudioIntensity = activeAudioIntensity;
+            ActiveAudioFreshness = activeAudioFreshness;
+            ActiveAudioScore = activeAudioScore;
+            LastAudioCandidateScore = lastAudioCandidateScore;
+            LastAudioDecisionReason = lastAudioDecisionReason;
             ActiveInvestigationName = activeInvestigationName;
             ActiveSearchContext = activeSearchContext;
             ActiveSearchZoneName = activeSearchZoneName;
