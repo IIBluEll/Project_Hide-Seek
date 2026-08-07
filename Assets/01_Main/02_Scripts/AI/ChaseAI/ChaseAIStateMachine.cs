@@ -49,6 +49,13 @@ namespace HideSeek.AI
             ? SEARCH_BEHAVIOR.ActiveSearchContext
             : string.Empty;
         public bool IsRetreatPending => _isRetreatPending;
+        public bool IsUsingEvidenceApproachSpeed => CurrentState switch
+        {
+            CHASE_AI_STATE.INVESTIGATE =>
+                EVIDENCE_SELECTOR.ActiveInvestigationType == CHASE_AI_EVIDENCE_TYPE.AUDIO,
+            CHASE_AI_STATE.SEARCH => SEARCH_BEHAVIOR.IsUsingEvidenceApproachSpeed,
+            _ => false
+        };
         public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => CurrentState switch
         {
             CHASE_AI_STATE.INVESTIGATE => EVIDENCE_SELECTOR.ActiveInvestigationType,
@@ -278,6 +285,7 @@ namespace HideSeek.AI
             {
                 _isWaiting = false;
                 _stateTimer = 0f;
+                ApplyInvestigationSpeed();
 
                 if ( !PrepareInvestigationSearch() )
                 {
@@ -582,7 +590,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            _movement.SetSpeed(_config.WalkSpeed);
+            ApplyInvestigationSpeed();
 
             if ( !EVIDENCE_SELECTOR.TryGetInvestigationDestination(
                     out Vector3 investigationPosition ,
@@ -604,6 +612,18 @@ namespace HideSeek.AI
             {
                 ChangeState(CHASE_AI_STATE.PATROL , $"{context} destination invalid");
             }
+        }
+
+        private void ApplyInvestigationSpeed()
+        {
+            bool isAudioInvestigation =
+                EVIDENCE_SELECTOR.ActiveInvestigationType == CHASE_AI_EVIDENCE_TYPE.AUDIO;
+
+            float investigationSpeed = isAudioInvestigation
+                ? _config.EvidenceApproachSpeed
+                : _config.WalkSpeed;
+
+            _movement.SetSpeed(investigationSpeed);
         }
 
         private void EnterChase()

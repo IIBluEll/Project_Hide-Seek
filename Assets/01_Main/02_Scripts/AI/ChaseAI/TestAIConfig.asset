@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: TestAIConfig
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIConfig
   _walkSpeed: 5
+  _evidenceApproachSpeed: 6
   _acceleration: 12
   _angularSpeed: 360
   _stoppingDistance: 0.2
