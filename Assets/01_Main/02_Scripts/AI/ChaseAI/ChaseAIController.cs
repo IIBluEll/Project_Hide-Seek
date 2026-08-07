@@ -73,6 +73,8 @@ namespace HideSeek.AI
                 IsRetreatPending ,
                 visualObservation.State ,
                 visualObservation.HasLineOfSight ,
+                _perception != null && _perception.HasTargetVisibilityState ,
+                _perception != null && _perception.IsTargetFullyHidden ,
                 visualObservation.DetectionRatio ,
                 visualObservation.DetectionSpeedMultiplier ,
                 hasVisualMemory ,
