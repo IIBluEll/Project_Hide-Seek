@@ -27,6 +27,7 @@ namespace HideSeek.AI
         [Header("Blend Values")]
         [SerializeField, Range(0f , 1f)] private float _idleBlend = 0f;
         [SerializeField, Range(0f , 1f)] private float _walkBlend = 0.5f;
+        [SerializeField, Range(0f , 1f)] private float _evidenceApproachBlend = 0.75f;
         [SerializeField, Range(0f , 1f)] private float _chaseBlend = 1f;
 
         [Header("Animation Reference Speed")]
@@ -114,10 +115,7 @@ namespace HideSeek.AI
             float movementRatio =
                 Mathf.Clamp01(movementSpeed / maximumMovementSpeed);
 
-            float maximumBlend =
-                _chaseAIController.CurrentState == CHASE_AI_STATE.CHASE
-                    ? _chaseBlend
-                    : _walkBlend;
+            float maximumBlend = GetMaximumBlend();
 
             return Mathf.Lerp(
                 _idleBlend ,
@@ -132,10 +130,7 @@ namespace HideSeek.AI
                 return 1f;
             }
 
-            float referenceSpeed =
-                _chaseAIController.CurrentState == CHASE_AI_STATE.CHASE
-                    ? _chaseAnimationReferenceSpeed
-                    : _walkAnimationReferenceSpeed;
+            float referenceSpeed = GetAnimationReferenceSpeed();
 
             float animationSpeed = movementSpeed / referenceSpeed;
 
@@ -143,6 +138,41 @@ namespace HideSeek.AI
                 animationSpeed ,
                 _minimumAnimationSpeed ,
                 _maximumAnimationSpeed);
+        }
+
+        private float GetMaximumBlend()
+        {
+            if ( _chaseAIController.CurrentState == CHASE_AI_STATE.CHASE )
+            {
+                return _chaseBlend;
+            }
+
+            return _chaseAIController.IsUsingEvidenceApproachSpeed
+                ? _evidenceApproachBlend
+                : _walkBlend;
+        }
+
+        private float GetAnimationReferenceSpeed()
+        {
+            if ( _chaseAIController.CurrentState == CHASE_AI_STATE.CHASE )
+            {
+                return _chaseAnimationReferenceSpeed;
+            }
+
+            if ( !_chaseAIController.IsUsingEvidenceApproachSpeed )
+            {
+                return _walkAnimationReferenceSpeed;
+            }
+
+            float evidenceBlendRatio = Mathf.InverseLerp(
+                _walkBlend ,
+                _chaseBlend ,
+                _evidenceApproachBlend);
+
+            return Mathf.Lerp(
+                _walkAnimationReferenceSpeed ,
+                _chaseAnimationReferenceSpeed ,
+                evidenceBlendRatio);
         }
 
         private float GetMovementSpeed()

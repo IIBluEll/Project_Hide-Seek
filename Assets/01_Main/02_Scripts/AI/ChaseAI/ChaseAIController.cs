@@ -40,6 +40,8 @@ namespace HideSeek.AI
         public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => _stateMachine != null
             ? _stateMachine.ActiveEvidenceType
             : CHASE_AI_EVIDENCE_TYPE.NONE;
+        public bool IsUsingEvidenceApproachSpeed =>
+            _stateMachine != null && _stateMachine.IsUsingEvidenceApproachSpeed;
 
         public ChaseAIDebugSnapshot GetDebugSnapshot(float currentTime)
         {
