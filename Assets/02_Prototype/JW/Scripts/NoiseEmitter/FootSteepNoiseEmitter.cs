@@ -14,45 +14,49 @@ public class FootSteepNoiseEmitter : MonoBehaviour
     [SerializeField] private Noise _walkNoise;
     [SerializeField] private Noise _runNoise;
     public NoiseData noiseData;
-    public void OccurredFootNoise(LOCOMOTION_STATE_ENUM locomotion)
+
+    private LOCOMOTION_STATE_ENUM _footStepType = LOCOMOTION_STATE_ENUM.IDLE;
+
+    private void Update()
     {
-        bool wasEmitted = false;
-        switch (locomotion)
+        if (_footStepType == LOCOMOTION_STATE_ENUM.IDLE)
+            return;
+
+        NoiseData data = default;
+
+        switch (_footStepType)
         {
-            case LOCOMOTION_STATE_ENUM.IDLE:
-                noiseData = new NoiseData(this.transform.position, 0, 0, _walkNoise.NoiseType, Time.time, gameObject);
-                break;
             case LOCOMOTION_STATE_ENUM.WALK:
-                noiseData = new NoiseData(
-                this.transform.position,
-                _walkNoise.Radius,
-                _walkNoise.Intensity,
-                _walkNoise.NoiseType,
-                Time.time,
-                gameObject);
-                wasEmitted = NoiseProvider.Emit(noiseData);
+                data = GetNoiseData(_walkNoise.Radius, _walkNoise.Intensity, NOISE_TYPE.FOOTSTEP);
                 break;
             case LOCOMOTION_STATE_ENUM.RUN:
-                noiseData = new NoiseData(
-                this.transform.position,
-                _runNoise.Radius,
-                _runNoise.Intensity,
-                _runNoise.NoiseType,
-                Time.time,
-                gameObject);
-                wasEmitted = NoiseProvider.Emit(noiseData);
+                data = GetNoiseData(_runNoise.Radius, _runNoise.Intensity, NOISE_TYPE.RUN);
                 break;
         }
 
-        if (!wasEmitted)
+        if (NoiseProvider.Emit(data))
         {
-            return;
+            Debug.Log(
+           $"[NoiseEmitter] {data.NoiseType} 소음 발생, " +
+           $"반경: {data.Radius:F1}, 강도: {data.Intensity:F2}",
+           this);
         }
+    }
 
-        Debug.Log(
-            $"[NoiseEmitter] {noiseData.NoiseType} 소음 발생, " +
-            $"반경: {noiseData.Radius:F1}, 강도: {noiseData.Intensity:F2}",
-            this);
+    private NoiseData GetNoiseData(float radius, float intensity, NOISE_TYPE type)
+    {
+        return new NoiseData(
+               this.transform.position,
+               radius,
+               intensity,
+               NOISE_TYPE.FOOTSTEP,
+               Time.time,
+               gameObject);
+    }
+
+    public void OnChangedPlayerFootStep(LOCOMOTION_STATE_ENUM locomotion)
+    {
+        _footStepType = locomotion;
     }
     private void OnDrawGizmosSelected()
     {

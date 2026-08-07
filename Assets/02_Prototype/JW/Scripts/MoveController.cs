@@ -100,6 +100,8 @@ public class MoveController : MonoBehaviour
         UpdateLocomotionState();
 
         UpdateMoveResult();
+
+        Debug.Log(_characterController.enabled);
     }
     private void UpdateMoveResult()
     {
@@ -109,7 +111,8 @@ public class MoveController : MonoBehaviour
         Vector3 velocity = horizontalDirection * GetMoveSpeed();
         velocity.y = _verticalVelocity;
 
-        _characterController.Move(velocity * Time.deltaTime);
+        if(_characterController.enabled)
+            _characterController.Move(velocity * Time.deltaTime);
     }
     private void UpdateVerticalVelocity()
     {
@@ -254,8 +257,10 @@ public class MoveController : MonoBehaviour
     }
     public void Teleport(Vector3 position)
     {
-        _characterController.enabled = false;
         _characterController.transform.position = position;
-        _characterController.enabled = true;
+    }
+    public void CharacterControllerEnabled(bool value)
+    {
+        _characterController.enabled = value;
     }
 }
