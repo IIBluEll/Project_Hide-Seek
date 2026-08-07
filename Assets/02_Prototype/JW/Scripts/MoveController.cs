@@ -100,8 +100,6 @@ public class MoveController : MonoBehaviour
         UpdateLocomotionState();
 
         UpdateMoveResult();
-
-        Debug.Log(_characterController.enabled);
     }
     private void UpdateMoveResult()
     {

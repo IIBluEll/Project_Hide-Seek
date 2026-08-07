@@ -7,13 +7,16 @@ public struct Noise
     public NOISE_TYPE NoiseType;
     [Min(0.1f)] public float Radius;
     [Min(0.01f)] public float Intensity;
+    [Min(0.01f)] public float NoiseInterval;
 }
 
 public class FootSteepNoiseEmitter : MonoBehaviour
 {
     [SerializeField] private Noise _walkNoise;
     [SerializeField] private Noise _runNoise;
-    public NoiseData noiseData;
+
+    private float _noiseInterval;
+    private float _currentTime;
 
     private LOCOMOTION_STATE_ENUM _footStepType = LOCOMOTION_STATE_ENUM.IDLE;
 
@@ -22,6 +25,12 @@ public class FootSteepNoiseEmitter : MonoBehaviour
         if (_footStepType == LOCOMOTION_STATE_ENUM.IDLE)
             return;
 
+        _currentTime += Time.deltaTime;
+
+        if (_currentTime < _noiseInterval)
+            return;
+
+        _currentTime = 0;
         NoiseData data = default;
 
         switch (_footStepType)
@@ -57,15 +66,10 @@ public class FootSteepNoiseEmitter : MonoBehaviour
     public void OnChangedPlayerFootStep(LOCOMOTION_STATE_ENUM locomotion)
     {
         _footStepType = locomotion;
-    }
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = new Color(
-            1f,
-            0.5f,
-            0f,
-            0.35f);
 
-        Gizmos.DrawWireSphere(transform.position, noiseData.Radius);
+        if (locomotion == LOCOMOTION_STATE_ENUM.WALK)
+            _noiseInterval = _walkNoise.NoiseInterval;
+        else if (locomotion == LOCOMOTION_STATE_ENUM.RUN)
+            _noiseInterval = _runNoise.NoiseInterval;
     }
 }

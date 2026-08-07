@@ -22,7 +22,7 @@ public class PlayerCameraController : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float _runShakeIntensity = 0.6f;
 
     private float _pitch;
-    private float _currentShakeIntensity;
+    public float _currentShakeIntensity;
 
     private Vector3 _stableCameraLocalPosition;
     private Vector3 _cameraHeadLocalPosition;
