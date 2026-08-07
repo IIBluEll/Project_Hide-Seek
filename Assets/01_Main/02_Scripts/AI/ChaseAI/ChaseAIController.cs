@@ -207,7 +207,17 @@ namespace HideSeek.AI
 
             Debug.Log($"[ChaseAIController] Vent 출현 위치 적용: {correctedPosition}" , this);
 
-            return _stateMachine.RequestActivation();
+            bool wasActivated = _stateMachine.RequestActivation();
+
+            if ( !wasActivated )
+            {
+                return false;
+            }
+
+            _anger.ResetToAngerFloor();
+            LogAngerState("DORMANT 휴식 종료");
+
+            return true;
         }
 
         public bool RequestRetreat(Vector3 retreatPosition)
