@@ -636,10 +636,12 @@ MonoBehaviour:
     NoiseType: 0
     Radius: 0.5
     Intensity: 0.05
+    NoiseInterval: 0.01
   _runNoise:
     NoiseType: 1
     Radius: 1
     Intensity: 0.1
+    NoiseInterval: 0.2
 --- !u!1 &391108948303234096
 GameObject:
   m_ObjectHideFlags: 0

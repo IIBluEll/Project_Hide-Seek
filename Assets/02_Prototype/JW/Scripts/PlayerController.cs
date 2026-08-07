@@ -111,6 +111,9 @@ public class PlayerController : MonoBehaviour
     }
     private void OnPostureChangedActioned(POSTURE_STATE_ENUM posture, bool value)
     {
+        if (value)
+            Debug.Log($"{posture}");
+
         _animationController.SetPostureParam(posture, value);
 
         if (value)
