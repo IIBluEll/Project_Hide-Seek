@@ -6,60 +6,32 @@ using UnityEngine;
 public class TutorialController : MonoBehaviour
 {
     [SerializeField] private PlayerController _playerController;
-    [SerializeField] private PlayerAnimationController _animationController;
 
-    public List<BlinkData> _blinkDatas;
+    [SerializeField] private TutorialMissionController _missionController;
 
     private void Awake()
     {
-        BlockPlayerControl();
-
-        StartTutorial();
-    }
-
-    public void StartTutorial()
-    {
-        _animationController.SetTrigger("Standing");
-
-        _playerController.State.SetActionState(PLAYER_ACTION_STATE.TRANSITION);
-
-        StartCoroutine(CoBlinkScreen(FinishStandAnimation));
-    }
-    public void BlockPlayerControl()
-    {
-
-    }
-    public void FinishStandAnimation()
-    {
-        _playerController.State.SetActionState(PLAYER_ACTION_STATE.IDLE);
-        FinishTutorial();
-    }
-    public void FinishTutorial()
-    {
-
-    }
-    private IEnumerator CoBlinkScreen(Action endCall)
-    {
-        foreach (var blickData in _blinkDatas)
+        if (_missionController != null)
         {
-            Debug.Log("Start");
-            yield return ScreenFader.Instance.FadeCo(1, blickData.FadeOutTime);
-            Debug.Log("Fade Out");
-
-            yield return new WaitForSeconds(blickData.WaitTime);
-
-            yield return ScreenFader.Instance.FadeCo(0, blickData.FadeInTime);
-            Debug.Log("Fade In");
+            _missionController.AllMissionsCompleted -= OnAllMissionsCompletedActioned;
+            _missionController.AllMissionsCompleted += OnAllMissionsCompletedActioned;
         }
 
-        endCall?.Invoke();
+        _playerController.WakeUpDirect();
+
+        _missionController.StartMissionFlow();
+    }
+
+    private void OnDestroy()
+    {
+        if (_missionController != null)
+            _missionController.AllMissionsCompleted -= OnAllMissionsCompletedActioned;
+    }
+
+    private void OnAllMissionsCompletedActioned()
+    {
+        
     }
 }
 
-[System.Serializable]
-public class BlinkData
-{
-    public float FadeOutTime;
-    public float WaitTime;
-    public float FadeInTime;
-}
+
