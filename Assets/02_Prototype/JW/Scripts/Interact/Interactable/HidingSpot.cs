@@ -29,6 +29,12 @@ public class HidingSpot : MonoBehaviour, IInteractable
     private void PlayerTeleport(PlayerInteractionController playerInteractor)
     {
         Transform teleportPosition = _isInPlayer ? _exposePosition : _hidePosition;
+
+        if (_isInPlayer)
+            playerInteractor.ExitHide();
+        else
+            playerInteractor.EnterHide();
+
         playerInteractor.OnTeleport(teleportPosition);
 
         _isInPlayer = !_isInPlayer;

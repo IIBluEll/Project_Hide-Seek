@@ -20,6 +20,7 @@ public class PlayerInteractionController : MonoBehaviour
     private IInteractable _currentInteractable;
     private IInteractable _contextInteractable;
     private IStateService _stat;
+    private IPlayerVisibilityState _visible;
 
     public event Action<string> OnInsightInteractEvent;
     public event Action OnOutsightInteractionEvent;
@@ -113,6 +114,18 @@ public class PlayerInteractionController : MonoBehaviour
         SetPosition(transform.position);
         SetRotation(transform.rotation.eulerAngles);
     }
+
+    public void EnterHide()
+    {
+        _moveController.CharacterControllerEnabled(false);
+        _stat.EnterHiding();
+    }
+    public void ExitHide()
+    {
+        _moveController.CharacterControllerEnabled(true);
+        _stat.ExitHiding();
+    }
+
     public void SetPosition(Vector3 position)
     {
         _moveController.Teleport(position);

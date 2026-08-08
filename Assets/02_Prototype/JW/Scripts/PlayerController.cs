@@ -3,7 +3,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     private InteractPresenter _interactPresenter = new InteractPresenter();
-    private readonly PlayerStateController _stat = new PlayerStateController();
+    private readonly PlayerStateController _state = new PlayerStateController();
 
     [SerializeField] private PlayerInteractionController _interactController;
 
@@ -16,11 +16,15 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private PlayerInteractionController _interact;
     [SerializeField] private PlayerHandController _hand;
     [SerializeField] private FootSteepNoiseEmitter _footNoiseEmitter;
+    [SerializeField] private PlayerWakeUpBlink _wakeUpBlink;
 
     [Header("Viewer")]
     [SerializeField] private InteractViewer _interactionViewer;
     [SerializeField] private ThrowUIViewer _throwViewer;
     [SerializeField] private PlayerSprintStaminaViewer _sprintViewer;
+    public IStateService State => _state;
+
+    public IInputReader InputReader => _inputReader;
 
     private void Awake()
     {
@@ -31,10 +35,13 @@ public class PlayerController : MonoBehaviour
         _camera.SetCameraHeight(_move.Posture);
         _camera.SetShakeIntensity(_move.Posture, _move.Locomotion);
 
-        _interact.Init(_stat, _move, _rotator, _hand);
+        _interact.Init(_state, _move, _rotator, _hand);
 
         _rotator.Init(this.transform);
+
+        _wakeUpBlink.OnFinishedBlinkEvent += OnFinishedWakeup;
     }
+
     private void Bind()
     {
         _inputReader.OnMoveEvent += OnMoveAction;
@@ -48,8 +55,8 @@ public class PlayerController : MonoBehaviour
         _hand.OnThrowPowerChanged += _throwViewer.ChargeGage;
         _hand.OnAimStateChanged += _throwViewer.OnAimStateChanged;
 
-        _stat.OnChangedPositionStateEvent += OnChangePositionState;
-        _stat.OnChangedActionStateEvent += OnChangeActionState;
+        _state.OnChangedPositionStateEvent += OnChangePositionState;
+        _state.OnChangedActionStateEvent += OnChangeActionState;
 
         _move.OnChangedStamina += _sprintViewer.UpdateSprintStamina;
         _move.OnMoveEvent += _animationController.SetMoveAnima;
@@ -57,7 +64,6 @@ public class PlayerController : MonoBehaviour
         _move.OnPostureChanged += OnPostureChangedActioned;
         _move.OnLocomotionChanged += OnLocomotionChangedActioned;
     }
-
     private void OnChangeActionState(PLAYER_ACTION_STATE action)
     {
         if (action == PLAYER_ACTION_STATE.REPAIRING_GENERATOR)
@@ -81,12 +87,12 @@ public class PlayerController : MonoBehaviour
     #region Actions
     private void OnMoveAction(Vector2 value)
     {
-        if (_stat.CanMove)
+        if (_state.CanMove)
             _move.SetMoveInput(value);
     }
     private void OnLookAction(Vector2 value)
     {
-        if (!_stat.CanRotate)
+        if (!_state.CanRotate)
             return;
 
         _camera.RotateXAxis(value.y);
@@ -94,12 +100,12 @@ public class PlayerController : MonoBehaviour
     }
     private void OnSprintAction(bool value)
     {
-        if (_stat.CanMove)
+        if (_state.CanMove)
             _move.SetSprintInput(value);
     }
     private void OnCrouchAction(bool value)
     {
-        if (_stat.CanCrouch && value)
+        if (_state.CanCrouch && value)
             _move.RequestCrouch();
     }
     private void OnInteractAction(bool value)
@@ -111,6 +117,9 @@ public class PlayerController : MonoBehaviour
     }
     private void OnPostureChangedActioned(POSTURE_STATE_ENUM posture, bool value)
     {
+        if (value)
+            Debug.Log($"{posture}");
+
         _animationController.SetPostureParam(posture, value);
 
         if (value)
@@ -122,16 +131,16 @@ public class PlayerController : MonoBehaviour
     private void OnLocomotionChangedActioned(LOCOMOTION_STATE_ENUM locomotion, bool value)
     {
         _animationController.SetLocomotionAnima(locomotion, value);
-        Debug.Log($"{locomotion} / {value}");
         if (value)
         {
             _camera.SetShakeIntensity(_move.Posture, locomotion);
-            _footNoiseEmitter.OccurredFootNoise(locomotion);
+            _footNoiseEmitter.OnChangedPlayerFootStep(locomotion);
+            _footNoiseEmitter.UpdateFootSound(locomotion, _move.Posture);
         }
     }
     private void OnAttackAction(bool value)
     {
-        if(_stat.CanAction)
+        if(_state.CanAction)
             _hand.OnAimAction(value);
     }
     private void OnCancelAimAction(bool value)
@@ -140,7 +149,16 @@ public class PlayerController : MonoBehaviour
             _hand.OnAimCalcelAction();
     }
     #endregion
-
+    public void WakeUpDirect()
+    {
+        _animationController.SetTrigger("Standing");
+        State.SetActionState(PLAYER_ACTION_STATE.TRANSITION);
+        _wakeUpBlink.Play();
+    }
+    private void OnFinishedWakeup()
+    {
+        State.SetActionState(PLAYER_ACTION_STATE.IDLE);
+    }
     private void Unbind()
     {
         _inputReader.OnMoveEvent -= OnMoveAction;
