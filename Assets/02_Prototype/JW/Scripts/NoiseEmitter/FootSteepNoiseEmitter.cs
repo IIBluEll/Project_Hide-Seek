@@ -12,6 +12,10 @@ public struct Noise
 
 public class FootSteepNoiseEmitter : MonoBehaviour
 {
+    [SerializeField] private AudioSource _source;
+    [SerializeField] private AudioClip _walkClip;
+    [SerializeField] private AudioClip _runClip;
+
     [SerializeField] private Noise _walkNoise;
     [SerializeField] private Noise _runNoise;
 
@@ -43,13 +47,7 @@ public class FootSteepNoiseEmitter : MonoBehaviour
                 break;
         }
 
-        if (NoiseProvider.Emit(data))
-        {
-            Debug.Log(
-           $"[NoiseEmitter] {data.NoiseType} 소음 발생, " +
-           $"반경: {data.Radius:F1}, 강도: {data.Intensity:F2}",
-           this);
-        }
+        NoiseProvider.Emit(data);
     }
 
     private NoiseData GetNoiseData(float radius, float intensity, NOISE_TYPE type)
@@ -68,8 +66,42 @@ public class FootSteepNoiseEmitter : MonoBehaviour
         _footStepType = locomotion;
 
         if (locomotion == LOCOMOTION_STATE_ENUM.WALK)
+        {
             _noiseInterval = _walkNoise.NoiseInterval;
+        }
         else if (locomotion == LOCOMOTION_STATE_ENUM.RUN)
+        {
             _noiseInterval = _runNoise.NoiseInterval;
+        }
+    }
+
+    public void UpdateFootSound(LOCOMOTION_STATE_ENUM locomotion, POSTURE_STATE_ENUM posutre)
+    {
+        if (posutre == POSTURE_STATE_ENUM.PRONE)
+        {
+            _source.Stop();
+            return;
+        }
+
+        AudioClip clip = null;
+
+        if (locomotion == LOCOMOTION_STATE_ENUM.WALK)
+        {
+            _noiseInterval = _walkNoise.NoiseInterval;
+            clip = _walkClip;
+        }
+        else if (locomotion == LOCOMOTION_STATE_ENUM.RUN)
+        {
+            _noiseInterval = _runNoise.NoiseInterval;
+            clip = _runClip;
+        }
+
+        if (clip != null)
+        {
+            _source.clip = clip;
+            _source.Play();
+        }
+        else
+            _source.Stop();
     }
 }

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class TutorialPlayerLocomotionMission : ATutorialMission
+public sealed class TutorialPlayerLocomotionMission : TutorialMission
 {
     [SerializeField] private MoveController _moveController;
     [SerializeField] private LOCOMOTION_STATE_ENUM _targetLocomotion;

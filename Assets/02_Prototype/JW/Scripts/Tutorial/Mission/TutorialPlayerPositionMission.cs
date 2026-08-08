@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class TutorialPlayerPositionMission : ATutorialMission
+public sealed class TutorialPlayerPositionMission : TutorialMission
 {
     [SerializeField] private PlayerController _playerController;
     [SerializeField] private PLAYER_POSITION_STATE _targetPositionState;
