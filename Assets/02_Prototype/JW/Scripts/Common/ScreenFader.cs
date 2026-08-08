@@ -79,7 +79,7 @@ public class ScreenFader : MonoBehaviour
         StartCoroutine(FadeCo(0f, fadeTime, endCall));
     }
 
-    private IEnumerator FadeCo(float targetAlpha, float time, Action endCall)
+    public IEnumerator FadeCo(float targetAlpha, float time, Action endCall = null)
     {
         float current = 0;
         float startAlpha = _canvasGroup.alpha;
