@@ -146,13 +146,21 @@ namespace HideSeek.Generators
             return true;
         }
 
-        // 남은 진행도는 유예 시간 뒤부터 감소한다. GDD 7.3.6, 7.3.7
+        /// <summary>
+        /// 상호작용을 놓았을 때 호출한다. 남은 진행도는 유예 시간 뒤부터 감소한다. GDD 7.3.6, 7.3.7
+        ///
+        /// QTE가 진행 중이면 실패로 처리한다. 그러지 않으면 판정이 뜰 때마다 취소했다가 다시 시작하는 것이
+        /// 실패를 회피하는 최적 전략이 된다. GDD에는 없는 규칙이므로 회의 확인이 필요하다.
+        /// </summary>
         public void CancelRepair()
         {
             if (State != GENERATOR_STATE.INTERACTING)
             {
                 return;
             }
+
+            // 아래에서 State를 바꾸기 전에 처리해야 진행도 감소와 소음이 정상 경로를 탄다.
+            _qteRunner.CancelAsFailure();
 
             State = GENERATOR_STATE.INACTIVE;
             _stopElapsed = 0f;
