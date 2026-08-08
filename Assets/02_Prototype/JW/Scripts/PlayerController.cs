@@ -135,6 +135,7 @@ public class PlayerController : MonoBehaviour
         {
             _camera.SetShakeIntensity(_move.Posture, locomotion);
             _footNoiseEmitter.OnChangedPlayerFootStep(locomotion);
+            _footNoiseEmitter.UpdateFootSound(locomotion, _move.Posture);
         }
     }
     private void OnAttackAction(bool value)

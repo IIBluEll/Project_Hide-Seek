@@ -42,17 +42,17 @@ public class PlayerStateController : IStateService, IPlayerVisibilityState
     public bool CanMove =>
     _positionState == PLAYER_POSITION_STATE.NORMAL &&
     (_actionState == PLAYER_ACTION_STATE.IDLE || _actionState == PLAYER_ACTION_STATE.AIMING);
-
     public bool CanRotate =>
         _actionState != PLAYER_ACTION_STATE.REPAIRING_GENERATOR && _actionState != PLAYER_ACTION_STATE.TRANSITION;
-
     public bool CanCrouch =>
         _positionState == PLAYER_POSITION_STATE.NORMAL &&
         _actionState != PLAYER_ACTION_STATE.REPAIRING_GENERATOR;
-
     public bool CanInteraction => _actionState == PLAYER_ACTION_STATE.IDLE;
     public bool CanAction => _positionState == PLAYER_POSITION_STATE.NORMAL;
     public bool IsFullyHidden { get; private set; } = false;
+
+    public PLAYER_POSITION_STATE PositionState => _positionState;
+    public PLAYER_ACTION_STATE ActionState => _actionState;
 
     public void SetPositionState(PLAYER_POSITION_STATE state)
     {

@@ -1,7 +1,6 @@
-using System;
 using UnityEngine;
 
-public class PlayerRotateMission : TutorialMission
+public class PlayerRunMission : TutorialMission
 {
     [SerializeField] private PlayerController _playerController;
     private IInputReader _inputReader;
@@ -12,14 +11,15 @@ public class PlayerRotateMission : TutorialMission
         _inputReader = _playerController.InputReader;
         _stateController = _playerController.State;
 
-        _inputReader.OnLookEvent += CheckComplete;
+        _inputReader.OnSprintEvent += CheckComplete;
     }
-    private void CheckComplete(Vector2 look)
+
+    private void CheckComplete(bool isValue)
     {
         if (!IsRunning)
             return;
 
-        if (look.magnitude > 0.01f && _stateController.CanRotate)
+        if (isValue && _stateController.CanMove)
             CompleteMission();
     }
 }

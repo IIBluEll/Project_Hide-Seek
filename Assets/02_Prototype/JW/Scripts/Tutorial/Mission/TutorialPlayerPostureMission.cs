@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class TutorialPlayerPostureMission : ATutorialMission
+public sealed class TutorialPlayerPostureMission : TutorialMission
 {
     [SerializeField] private MoveController _moveController;
     [SerializeField] private POSTURE_STATE_ENUM _targetPosture;
