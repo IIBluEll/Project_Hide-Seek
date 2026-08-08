@@ -13,17 +13,17 @@ namespace HideSeek.Generators
     ///
     /// Config와 QTE 입력을 등록된 모든 발전기에 똑같이 넣어준다. 발전기별 오버라이드는 아직 없다.
     ///
-    /// TODO: 현민 담당 UI Manager가 확정되면 이 클래스를 제거하고 해당 매니저가 같은 역할을 맡는다.
-    ///       옮겨야 할 책임은 View 보유, Presenter 수명 관리, 발전기 등록 세 가지다.
-    /// TODO: Config 배포는 UI 책임이 아니다. 후보 지점 중 일부를 활성화하는 시스템(GDD 7.1)이 생기면
-    ///       그쪽으로 옮긴다. UI Manager로 따라가면 안 된다.
-    /// TODO: QTE 키는 진우 담당 InputActions가 확정되면 KeyboardInputSource 대신 그 구현을 주입한다.
-    ///       키 값 자체는 현민 담당 키 설정 시스템으로 옮긴다. GDD 13.2
-    /// TODO: 발전기 이벤트를 EventProvider로 발행할지는 추후 회의에서 결정한다. 전환 지점은 이 클래스다.
-    ///
     /// 발전기를 직접 참조하지 않고 <see cref="Generator.Enabled"/>, <see cref="Generator.Disabled"/>를 구독해
     /// 등록한다. 그래서 01_Main의 발전기 코드는 프로토타입인 이 클래스를 모른다.
     /// <see cref="ASingletone{T}.Instance"/>는 인스턴스가 없으면 GameObject를 새로 만들므로 쓰지 않는다.
+    ///
+    /// QTE 입력은 진우 담당 <see cref="PlayerQTEInputSource"/>를 인스펙터로 주입받는다. MonoBehaviour라
+    /// 코드로 만들 수 없어 씬 인스턴스에서만 할당된다. 프리팹은 씬 오브젝트를 참조할 수 없다.
+    ///
+    /// TODO: 현민 담당 UI Manager가 확정되면 이 클래스를 제거하고 해당 매니저가 같은 역할을 맡는다.
+    ///       옮겨야 할 책임은 View 보유, Presenter 수명 관리, 발전기 등록 세 가지다.
+    /// TODO: Config 배포는 UI 책임이 아니다. 후보 지점 활성화 시스템(GDD 7.1)이 생기면 그쪽으로 옮긴다.
+    /// TODO: 발전기 이벤트를 EventProvider로 발행할지는 추후 회의에서 결정한다. 전환 지점은 이 클래스다.
     /// </summary>
     [DisallowMultipleComponent, DefaultExecutionOrder(-1)]
     public sealed class GeneratorQteProvider : ASingletone<GeneratorQteProvider>
@@ -37,12 +37,13 @@ namespace HideSeek.Generators
         [SerializeField] private GeneratorQte_view _generatorQteView;
 
         [Header("QTE 입력")]
-        [Tooltip("모든 발전기가 같은 키를 쓴다.")]
+        [Tooltip("현재 동작하지 않는다. 실제 키는 PlayerQTEInputSource가 구독하는 Jump 액션이고 라벨도 그쪽이 고정 반환한다.")]
         [SerializeField] private Key _qteKey = Key.Space;
-        [SerializeField] private PlayerQTEInputSource _qteInputSource;
-        private readonly List<Generator> LIST_GENERATOR = new();
 
-        //private IInputSource _qteInputSource; // 상태가 없어 모든 발전기가 하나를 공유해도 된다
+        [Tooltip("씬에 배치한 플레이어의 컴포넌트를 직접 할당한다. 프리팹 에셋에서는 비워둘 수밖에 없다.")]
+        [SerializeField] private PlayerQTEInputSource _qteInputSource;
+
+        private readonly List<Generator> LIST_GENERATOR = new();
 
         private GeneratorProgress_presenter _progressPresenter;
         private GeneratorQte_presenter _qtePresenter;
@@ -120,9 +121,6 @@ namespace HideSeek.Generators
             {
                 return;
             }
-
-            // Awake 순서가 보장되지 않아 다른 오브젝트가 먼저 Register를 부를 수 있다.
-            //_qteInputSource ??= new KeyboardInputSource(_qteKey);
 
             LIST_GENERATOR.Add(generator);
             generator.SetConfig(_generatorConfig);
