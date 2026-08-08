@@ -16,10 +16,11 @@ public class Door : MonoBehaviour, IInteractable
     [SerializeField] private DoorState _originState;
     [SerializeField] private DoorState _openState;
 
-    private bool _isRotate = false;
-    private bool _isOpen = false;
+    [SerializeField] private bool _isOpen = false;
 
-    public string InteractionPrompt => "문 사용하기";
+    private bool _isMoving = false;
+
+    public string InteractionPrompt => _isOpen ? "문 닫기" : "문 열기";
 
     [ContextMenu("Origin 세팅")]
     public void SetOriginDoorState()
@@ -44,12 +45,12 @@ public class Door : MonoBehaviour, IInteractable
 
     public bool CanInteract(PlayerInteractionController playerInteractor)
     {
-        return !_isRotate;
+        return !_isMoving;
     }
     public void InteractAct(PlayerInteractionController playerInteractor)
     {
         _isOpen = !_isOpen;
-        _isRotate = true;
+        _isMoving = true;
         StartCoroutine(ActDoorCo(_isOpen));
     }
     public void InteractRelease(PlayerInteractionController playerInteractionController)
@@ -76,6 +77,6 @@ public class Door : MonoBehaviour, IInteractable
             yield return null;
         }
 
-        _isRotate = false;
+        _isMoving = false;
     }
 }

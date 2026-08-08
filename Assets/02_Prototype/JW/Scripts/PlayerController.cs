@@ -16,13 +16,15 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private PlayerInteractionController _interact;
     [SerializeField] private PlayerHandController _hand;
     [SerializeField] private FootSteepNoiseEmitter _footNoiseEmitter;
+    [SerializeField] private PlayerWakeUpBlink _wakeUpBlink;
 
     [Header("Viewer")]
     [SerializeField] private InteractViewer _interactionViewer;
     [SerializeField] private ThrowUIViewer _throwViewer;
     [SerializeField] private PlayerSprintStaminaViewer _sprintViewer;
-
     public IStateService State => _state;
+
+    public IInputReader InputReader => _inputReader;
 
     private void Awake()
     {
@@ -36,7 +38,10 @@ public class PlayerController : MonoBehaviour
         _interact.Init(_state, _move, _rotator, _hand);
 
         _rotator.Init(this.transform);
+
+        _wakeUpBlink.OnFinishedBlinkEvent += OnFinishedWakeup;
     }
+
     private void Bind()
     {
         _inputReader.OnMoveEvent += OnMoveAction;
@@ -59,7 +64,6 @@ public class PlayerController : MonoBehaviour
         _move.OnPostureChanged += OnPostureChangedActioned;
         _move.OnLocomotionChanged += OnLocomotionChangedActioned;
     }
-
     private void OnChangeActionState(PLAYER_ACTION_STATE action)
     {
         if (action == PLAYER_ACTION_STATE.REPAIRING_GENERATOR)
@@ -144,7 +148,16 @@ public class PlayerController : MonoBehaviour
             _hand.OnAimCalcelAction();
     }
     #endregion
-
+    public void WakeUpDirect()
+    {
+        _animationController.SetTrigger("Standing");
+        State.SetActionState(PLAYER_ACTION_STATE.TRANSITION);
+        _wakeUpBlink.Play();
+    }
+    private void OnFinishedWakeup()
+    {
+        State.SetActionState(PLAYER_ACTION_STATE.IDLE);
+    }
     private void Unbind()
     {
         _inputReader.OnMoveEvent -= OnMoveAction;
