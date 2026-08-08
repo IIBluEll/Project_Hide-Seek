@@ -141,6 +141,19 @@ namespace HideSeek.AI
             _agent.speed = Mathf.Max(0f , speed);
         }
 
+        public void SetPaused(bool isPaused)
+        {
+            if ( _agent == null ||
+                !_agent.isActiveAndEnabled ||
+                !_agent.isOnNavMesh )
+            {
+                return;
+            }
+
+            _stuckTimer = 0f;
+            _agent.isStopped = isPaused || !_hasDestination;
+        }
+
         public void RotateTowardsDirection(
             Vector3 targetDirection ,
             float rotationSpeed ,
