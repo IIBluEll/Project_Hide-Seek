@@ -10,7 +10,7 @@ namespace HideSeek.Generators
     /// Presenter끼리는 서로를 참조하지 않는다. 열고 닫는 조율은 이 클래스만 한다. AGENTS.md 3.3
     ///
     /// QTE 입력을 등록된 모든 발전기에 똑같이 넣어준다. 발전기별 오버라이드는 아직 없다.
-    /// Config 배포는 UI 책임이 아니라서 <see cref="GeneratorProvider"/>로 옮겼다.
+    /// Config 배포는 UI 책임이 아니라서 <see cref="GeneratorDirector"/>로 옮겼다.
     ///
     /// 발전기를 직접 참조하지 않고 <see cref="Generator.Enabled"/>, <see cref="Generator.Disabled"/>를 구독해
     /// 등록한다. 그래서 01_Main의 발전기 코드는 프로토타입인 이 클래스를 모른다.
@@ -24,7 +24,7 @@ namespace HideSeek.Generators
     /// TODO: 발전기 이벤트를 EventProvider로 발행할지는 추후 회의에서 결정한다. 전환 지점은 이 클래스다.
     /// </summary>
     [DisallowMultipleComponent, DefaultExecutionOrder(-1)]
-    public sealed class GeneratorQteProvider : MonoBehaviour
+    public sealed class GeneratorPresenterHost : MonoBehaviour
     {
         [Header("View")]
         [Tooltip("모든 발전기가 공유한다. 씬에 배치한 오브젝트에 직접 할당한다.")]
@@ -52,7 +52,7 @@ namespace HideSeek.Generators
 
             if (_generatorProgressView == null || _generatorQteView == null)
             {
-                Debug.LogError($"[{nameof(GeneratorQteProvider)}] View 참조가 비어 있습니다. 씬에 배치한 오브젝트에 직접 할당해야 합니다." , this);
+                Debug.LogError($"[{nameof(GeneratorPresenterHost)}] View 참조가 비어 있습니다. 씬에 배치한 오브젝트에 직접 할당해야 합니다." , this);
             }
         }
 
