@@ -8,11 +8,17 @@ namespace HideSeek.AI
     {
         private readonly IReadOnlyList<Transform> FALLBACK_PATROL_POINTS;
         private readonly List<AISearchPoint> ZONE_PATROL_POINTS = new();
+        private readonly List<AISearchPoint> ZONE_POINT_BUFFER = new();
         private readonly List<int> RECENT_POINT_INDICES = new();
+        private readonly List<AIWorldZone> ADJACENT_ZONE_CANDIDATES = new();
+        private readonly List<AIWorldZone> OTHER_ZONE_CANDIDATES = new();
+        private readonly List<AIWorldZone> RECENT_ZONES = new();
         private readonly ChaseAIConfig CHASE_AI_CONFIG;
 
         private IReadOnlyList<AIWorldZone> _zones = Array.Empty<AIWorldZone>();
         private int _currentPointIndex;
+        private int _visitedPointCountInCurrentZone;
+        private int _targetPointVisitCountInCurrentZone;
 
         public AIWorldZone CurrentZone { get; private set; }
         public bool IsUsingZoneRoute => CurrentZone != null && ZONE_PATROL_POINTS.Count > 0;
@@ -37,32 +43,28 @@ namespace HideSeek.AI
 
         public void Refresh(Vector3 currentPosition)
         {
-            Clear();
+            AIWorldZone previousZone = CurrentZone;
 
-            CurrentZone = FindContainingZone(currentPosition);
+            ResetActiveRoute();
 
-            if ( CurrentZone == null )
+            AIWorldZone containingZone = FindContainingZone(currentPosition);
+
+            if ( containingZone == null )
             {
                 _currentPointIndex = FindNearestFallbackPointIndex(currentPosition);
 
                 return;
             }
 
-            CurrentZone.CollectSearchPoints(
-                AI_SEARCH_POINT_TYPE.COVERAGE ,
-                ZONE_PATROL_POINTS);
-
-            ZONE_PATROL_POINTS.RemoveAll(
-                searchPoint => searchPoint == null || !searchPoint.isActiveAndEnabled);
-
-            if ( ZONE_PATROL_POINTS.Count == 0 )
+            if ( previousZone != null && previousZone != containingZone )
             {
-                _currentPointIndex = FindNearestFallbackPointIndex(currentPosition);
-
-                return;
+                RememberZone(previousZone);
             }
 
-            _currentPointIndex = FindNearestPointIndex(currentPosition);
+            if ( !TrySetCurrentZone(containingZone , currentPosition) )
+            {
+                _currentPointIndex = FindNearestFallbackPointIndex(currentPosition);
+            }
         }
 
         public bool TryGetCurrentPoint(
@@ -103,7 +105,7 @@ namespace HideSeek.AI
             return true;
         }
 
-        public void Advance(Vector3 currentPosition)
+        public void Advance(Vector3 currentPosition , bool didReachPoint)
         {
             if ( PointCount == 0 )
             {
@@ -111,15 +113,196 @@ namespace HideSeek.AI
             }
 
             RememberCurrentPointIndex();
+
+            if ( IsUsingZoneRoute )
+            {
+                if ( didReachPoint )
+                {
+                    _visitedPointCountInCurrentZone++;
+                }
+
+                bool shouldSelectNewZone = !didReachPoint ||
+                    _visitedPointCountInCurrentZone >= _targetPointVisitCountInCurrentZone;
+
+                if ( shouldSelectNewZone && TryMoveToNextZone(currentPosition) )
+                {
+                    return;
+                }
+            }
+
             _currentPointIndex = SelectNextPointIndex(currentPosition);
         }
 
         public void Clear()
         {
+            ResetActiveRoute();
+            RECENT_ZONES.Clear();
+        }
+
+        private void ResetActiveRoute()
+        {
             CurrentZone = null;
             ZONE_PATROL_POINTS.Clear();
+            ZONE_POINT_BUFFER.Clear();
             RECENT_POINT_INDICES.Clear();
+            ADJACENT_ZONE_CANDIDATES.Clear();
+            OTHER_ZONE_CANDIDATES.Clear();
             _currentPointIndex = 0;
+            _visitedPointCountInCurrentZone = 0;
+            _targetPointVisitCountInCurrentZone = 0;
+        }
+
+        private bool TryMoveToNextZone(Vector3 currentPosition)
+        {
+            if ( !TrySelectNextZone(out AIWorldZone nextZone , out bool isAdjacentZone) )
+            {
+                return false;
+            }
+
+            AIWorldZone previousZone = CurrentZone;
+            int completedPointVisitCount = _visitedPointCountInCurrentZone;
+
+            RememberZone(previousZone);
+
+            if ( !TrySetCurrentZone(nextZone , currentPosition) )
+            {
+                Refresh(currentPosition);
+
+                return false;
+            }
+
+            string relation = isAdjacentZone ? "Adjacent" : "Other";
+
+            Debug.Log(
+                $"[ChaseAIPatrolRoute] 순찰 Zone 변경: " +
+                $"{previousZone.DisplayName} -> {nextZone.DisplayName}, " +
+                $"Relation={relation}, " +
+                $"CompletedPoints={completedPointVisitCount}, " +
+                $"NextTargetPoints={_targetPointVisitCountInCurrentZone}");
+
+            return true;
+        }
+
+        private bool TrySelectNextZone(
+            out AIWorldZone nextZone ,
+            out bool isAdjacentZone)
+        {
+            BuildZoneCandidates(true);
+
+            if ( ADJACENT_ZONE_CANDIDATES.Count == 0 && OTHER_ZONE_CANDIDATES.Count == 0 )
+            {
+                BuildZoneCandidates(false);
+            }
+
+            bool hasAdjacentZone = ADJACENT_ZONE_CANDIDATES.Count > 0;
+            bool hasOtherZone = OTHER_ZONE_CANDIDATES.Count > 0;
+
+            if ( !hasAdjacentZone && !hasOtherZone )
+            {
+                nextZone = null;
+                isAdjacentZone = false;
+
+                return false;
+            }
+
+            bool shouldSelectAdjacentZone = UnityEngine.Random.value <
+                CHASE_AI_CONFIG.PatrolAdjacentZoneSelectionChance;
+
+            isAdjacentZone = shouldSelectAdjacentZone
+                ? hasAdjacentZone
+                : !hasOtherZone;
+
+            List<AIWorldZone> candidates = isAdjacentZone
+                ? ADJACENT_ZONE_CANDIDATES
+                : OTHER_ZONE_CANDIDATES;
+
+            nextZone = candidates[ UnityEngine.Random.Range(0 , candidates.Count) ];
+
+            return true;
+        }
+
+        private void BuildZoneCandidates(bool shouldAvoidRecentZones)
+        {
+            ADJACENT_ZONE_CANDIDATES.Clear();
+            OTHER_ZONE_CANDIDATES.Clear();
+
+            for ( int zoneIndex = 0; zoneIndex < _zones.Count; zoneIndex++ )
+            {
+                AIWorldZone zone = _zones[ zoneIndex ];
+
+                if ( zone == null ||
+                     zone == CurrentZone ||
+                     !zone.isActiveAndEnabled ||
+                     (shouldAvoidRecentZones && RECENT_ZONES.Contains(zone)) ||
+                     !HasActiveCoveragePoint(zone) )
+                {
+                    continue;
+                }
+
+                if ( CurrentZone.IsAdjacentTo(zone) )
+                {
+                    ADJACENT_ZONE_CANDIDATES.Add(zone);
+                }
+                else
+                {
+                    OTHER_ZONE_CANDIDATES.Add(zone);
+                }
+            }
+        }
+
+        private bool HasActiveCoveragePoint(AIWorldZone zone)
+        {
+            ZONE_POINT_BUFFER.Clear();
+            zone.CollectSearchPoints(AI_SEARCH_POINT_TYPE.COVERAGE , ZONE_POINT_BUFFER);
+
+            for ( int pointIndex = 0; pointIndex < ZONE_POINT_BUFFER.Count; pointIndex++ )
+            {
+                AISearchPoint searchPoint = ZONE_POINT_BUFFER[ pointIndex ];
+
+                if ( searchPoint != null && searchPoint.isActiveAndEnabled )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TrySetCurrentZone(AIWorldZone zone , Vector3 currentPosition)
+        {
+            CurrentZone = zone;
+            ZONE_PATROL_POINTS.Clear();
+            RECENT_POINT_INDICES.Clear();
+
+            CurrentZone.CollectSearchPoints(
+                AI_SEARCH_POINT_TYPE.COVERAGE ,
+                ZONE_PATROL_POINTS);
+
+            ZONE_PATROL_POINTS.RemoveAll(
+                searchPoint => searchPoint == null || !searchPoint.isActiveAndEnabled);
+
+            if ( ZONE_PATROL_POINTS.Count == 0 )
+            {
+                CurrentZone = null;
+
+                return false;
+            }
+
+            _currentPointIndex = FindNearestPointIndex(currentPosition);
+            _visitedPointCountInCurrentZone = 0;
+
+            int maximumPointVisitCount = Mathf.Min(
+                CHASE_AI_CONFIG.MaximumPatrolPointVisitCountPerZone ,
+                ZONE_PATROL_POINTS.Count);
+            int minimumPointVisitCount = Mathf.Min(
+                CHASE_AI_CONFIG.MinimumPatrolPointVisitCountPerZone ,
+                maximumPointVisitCount);
+
+            _targetPointVisitCountInCurrentZone = UnityEngine.Random.Range(
+                minimumPointVisitCount ,
+                maximumPointVisitCount + 1);
+
+            return true;
         }
 
         private int SelectNextPointIndex(Vector3 currentPosition)
@@ -238,6 +421,29 @@ namespace HideSeek.AI
             while ( RECENT_POINT_INDICES.Count > historyCapacity )
             {
                 RECENT_POINT_INDICES.RemoveAt(0);
+            }
+        }
+
+        private void RememberZone(AIWorldZone zone)
+        {
+            int historyCapacity = CHASE_AI_CONFIG.PatrolRecentZoneHistoryCapacity;
+
+            if ( historyCapacity <= 0 || zone == null )
+            {
+                if ( historyCapacity <= 0 )
+                {
+                    RECENT_ZONES.Clear();
+                }
+
+                return;
+            }
+
+            RECENT_ZONES.Remove(zone);
+            RECENT_ZONES.Add(zone);
+
+            while ( RECENT_ZONES.Count > historyCapacity )
+            {
+                RECENT_ZONES.RemoveAt(0);
             }
         }
 

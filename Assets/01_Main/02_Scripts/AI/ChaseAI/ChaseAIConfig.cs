@@ -130,6 +130,10 @@ namespace HideSeek.AI
         [Header("Patrol Selection")]
         [SerializeField, Min(0)] private int _patrolRecentPointHistoryCapacity = 2;
         [SerializeField, Range(0f, 1f)] private float _patrolRecentPointWeightMultiplier = 0.15f;
+        [SerializeField, Range(0f, 1f)] private float _patrolAdjacentZoneSelectionChance = 0.6f;
+        [SerializeField, Min(1)] private int _minimumPatrolPointVisitCountPerZone = 1;
+        [SerializeField, Min(1)] private int _maximumPatrolPointVisitCountPerZone = 3;
+        [SerializeField, Min(0)] private int _patrolRecentZoneHistoryCapacity = 2;
 
         [Header("Attack")]
         [SerializeField, Min(0f)] private float _attackRange = 1.5f;
@@ -210,6 +214,10 @@ namespace HideSeek.AI
         public float ChaseOcclusionPredictionDistance => _chaseOcclusionPredictionDistance;
         public int PatrolRecentPointHistoryCapacity => _patrolRecentPointHistoryCapacity;
         public float PatrolRecentPointWeightMultiplier => _patrolRecentPointWeightMultiplier;
+        public float PatrolAdjacentZoneSelectionChance => _patrolAdjacentZoneSelectionChance;
+        public int MinimumPatrolPointVisitCountPerZone => _minimumPatrolPointVisitCountPerZone;
+        public int MaximumPatrolPointVisitCountPerZone => _maximumPatrolPointVisitCountPerZone;
+        public int PatrolRecentZoneHistoryCapacity => _patrolRecentZoneHistoryCapacity;
         public float AttackRange => _attackRange;
 
         public float GetGeneratorAngerFloor(int completedGeneratorCount)
@@ -288,6 +296,12 @@ namespace HideSeek.AI
             _chaseOcclusionPredictionDistance = Mathf.Max(0f , _chaseOcclusionPredictionDistance);
             _patrolRecentPointHistoryCapacity = Mathf.Max(0 , _patrolRecentPointHistoryCapacity);
             _patrolRecentPointWeightMultiplier = Mathf.Clamp01(_patrolRecentPointWeightMultiplier);
+            _patrolAdjacentZoneSelectionChance = Mathf.Clamp01(_patrolAdjacentZoneSelectionChance);
+            _minimumPatrolPointVisitCountPerZone = Mathf.Max(1 , _minimumPatrolPointVisitCountPerZone);
+            _maximumPatrolPointVisitCountPerZone = Mathf.Max(
+                _minimumPatrolPointVisitCountPerZone ,
+                _maximumPatrolPointVisitCountPerZone);
+            _patrolRecentZoneHistoryCapacity = Mathf.Max(0 , _patrolRecentZoneHistoryCapacity);
             _attackRange = Mathf.Max(0f , _attackRange);
 
             if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )

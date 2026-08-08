@@ -99,4 +99,8 @@ MonoBehaviour:
   _chaseOcclusionPredictionDistance: 2
   _patrolRecentPointHistoryCapacity: 2
   _patrolRecentPointWeightMultiplier: 0.15
+  _patrolAdjacentZoneSelectionChance: 0.6
+  _minimumPatrolPointVisitCountPerZone: 1
+  _maximumPatrolPointVisitCountPerZone: 3
+  _patrolRecentZoneHistoryCapacity: 2
   _attackRange: 1.5
