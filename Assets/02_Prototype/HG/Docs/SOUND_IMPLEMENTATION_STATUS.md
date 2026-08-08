@@ -30,9 +30,11 @@ Pull Request: [#15 사운드 시스템 및 Master AI 기반 BGM 전환 추가](h
 
 - BGM 재생기와 상태 전환 로직 구현 완료
 - Master AI 이벤트 기반 BGM 상태 갱신 구현 완료
+- BGM 클립 네 상태 모두 연결 완료
 - 발전기 루프 및 이벤트 효과음 구현 완료, 3D 재생 문제 수정 완료
 - `Master / BGM / SFX` AudioMixer 그룹 구성 완료
 - Chase AI 효과음은 **다른 담당자가 구현**해 `dev`에서 합류했으나 클립과 믹서 그룹이 비어 있어 소리가 나지 않음
+- 오디오 임포트 설정이 아직 웹 빌드 기준이 아님
 
 아직 실제 게임 빌드 씬에는 사운드 시스템이 연결되지 않았다. 현재 상태는 **구조와 프리팹 구현 완료, 씬 통합 및 전체 효과음 구현 전**이다.
 
@@ -91,7 +93,7 @@ AudioSource 두 개를 교대로 사용해 교차 페이드한다.
 - `AudioClip`에 `null`을 전달하면 현재 BGM만 페이드 아웃한다
 - `loop`, `playOnAwake`, 초기 볼륨은 `SetUpSource`가 코드에서 맞춘다
 
-프리팹 검증 결과 두 AudioSource 모두 Spatial Blend 0, 출력 `BGM` 그룹, `playOnAwake` 꺼짐으로 정상이다. **ENDING 클립만 비어 있다.**
+프리팹 검증 결과 두 AudioSource 모두 Spatial Blend 0, 출력 `BGM` 그룹, `playOnAwake` 꺼짐으로 정상이다. 네 상태의 클립이 모두 연결되어 있다.
 
 ### 5.2 BGM 상태 결정
 
@@ -130,7 +132,7 @@ AudioSource 두 개를 교대로 사용해 교차 페이드한다.
 | `AMBIENT` | `Horror Elements/Ambient/Amb_Rumble.wav` | 연결됨 |
 | `TENSION` | `Horror Elements/Ambient/Amb_Burn.wav` | 연결됨 |
 | `CHASE` | `Horror Elements/Ambient/Amb_Run_2.wav` | 연결됨 |
-| `ENDING` | 없음 | **미연결** |
+| `ENDING` | `04_Resource/Sound/3-Dark Fantasy Studio- Killer escape.wav` | 연결됨 |
 
 ### 5.4 발전기 효과음
 
@@ -227,9 +229,9 @@ AudioSource 두 개를 교대로 사용해 교차 페이드한다.
 
 BGM Player가 씬에 없으므로 BGM 전환 로직이 실행되지 않는다. 씬 통합 일정과 무관하게 `AI_Prototype`에서 먼저 검증한다.
 
-### P0: ENDING 클립 누락
+### 해결됨: ENDING 클립 누락
 
-`BGM Player.prefab`의 `_endingClip`이 비어 있다. ENDING 전환 시 `Play(null)`이 호출되어 BGM이 정지한다.
+`fcf3f61`에서 `Killer escape.wav`를 연결했다. 클립 에셋과 프리팹 참조를 함께 커밋했다. 청취 검증은 아직 남아 있다.
 
 ### P0: ChaseAISound 미배선 (다른 담당자)
 
@@ -247,15 +249,20 @@ SAFE, 인접 Zone, 소음 조사, GlobalStress, 탈출 장치 조건, 전기 스
 
 빌드 타겟은 **WebGL**이다. `ProjectSettings.asset`에 WebGL 설정이 구성되어 있다 (`webGLInitialMemorySize: 32`, `webGLMaximumMemorySize: 2048`, `webGLMemoryGrowthMode: 2`).
 
-현재 BGM 3개는 모두 다음 설정이며 **플랫폼 오버라이드가 없다** (`platformSettingOverrides: {}`).
+현재 BGM 4개 모두 **플랫폼 오버라이드가 없다** (`platformSettingOverrides: {}`).
 
-| 클립 | 길이 | 원본 | 형식 |
-| --- | --- | --- | --- |
-| `Amb_Rumble` (AMBIENT) | 83초 | 14.0MB | 44.1kHz 스테레오 16bit |
-| `Amb_Burn` (TENSION) | 119초 | 20.1MB | 44.1kHz 스테레오 16bit |
-| `Amb_Run_2` (CHASE) | 32초 | 5.4MB | 44.1kHz 스테레오 16bit |
+| 클립 | 길이 | 원본 | 형식 | Preload |
+| --- | --- | --- | --- | --- |
+| `Amb_Rumble` (AMBIENT) | 83초 | 14.0MB | 44.1kHz 스테레오 16bit | 켜짐 |
+| `Amb_Burn` (TENSION) | 119초 | 20.1MB | 44.1kHz 스테레오 16bit | 켜짐 |
+| `Amb_Run_2` (CHASE) | 32초 | 5.4MB | 44.1kHz 스테레오 16bit | 켜짐 |
+| `Killer escape` (ENDING) | 59초 | 14.8MB | 44.1kHz 스테레오 **24bit** | 꺼짐 |
 
-공통 설정: `loadType: 0`(Decompress On Load), `compressionFormat: 1`(Vorbis), `quality: 1`, `preloadAudioData: 1`, `loadInBackground: 0`.
+합계 약 **54MB**다. 공통 설정은 `loadType: 0`(Decompress On Load), `compressionFormat: 1`(Vorbis), `quality: 1`, `loadInBackground: 0`이다.
+
+ENDING 클립만 24bit이고 나머지는 16bit다. **24bit는 웹 빌드에서 이점이 없다.** 최종 인코딩이 AAC라 비트 심도가 그대로 살아남지 않으며, 원본 용량만 16bit 대비 1.5배가 된다. 16bit로 다시 받거나 변환하는 편이 낫다.
+
+ENDING 클립은 `preloadAudioData`가 이미 꺼져 있다. 아래 권장과 같은 방향이므로 그대로 둔다.
 
 #### WebGL 제약
 
@@ -329,7 +336,7 @@ AudioMixer 파라미터는 노출되어 있으나 이를 적용·저장하는 �
 
 | 작업 | 산출물 | 선행 조건 |
 | --- | --- | --- |
-| ENDING 클립 할당 | `BGM Player.prefab` | 클립 확정 |
+| ENDING 클립 24bit → 16bit 변환 | 클립 에셋 | 웹 용량 상한 확정 |
 | 전기 스파크음 | `GeneratorSound.cs`, 프리팹 | **조건 확정 필요** (7.1) |
 | BGM Streaming 전환 | `.wav.meta` | Profiler 확인 |
 | 볼륨 적용 훅 | 신규 코드 | UI 담당과 인터페이스 합의 |
