@@ -3,39 +3,38 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
-public class MissionData
+public enum TUTORIAL_STEP_TYPE
 {
-    public MissionIndicatorData Indicator;
-    public MissionBase Behaviour;
+    DESCRIPTION,
+    MISSION
+}
+
+[System.Serializable]
+public class TutorialStepData
+{
+    public TUTORIAL_STEP_TYPE StepType;
+    public DescriptionData Description;
+    public MissionBase Mission;
 }
 
 public class TutorialMissionController : MonoBehaviour
 {
-    [SerializeField] private List<MissionIndicatorData> _missionLists;
+    [SerializeField] private PlayerController _playerController;
+    [SerializeField] private List<TutorialStepData> _tutorialSteps;
     [SerializeField] private MissionIndicator_View _missionIndicator;
-    [SerializeField] private List<MonoBehaviour> _missionBehaviours;
-
-    [SerializeField] private List<MissionData> _missions;
-    [SerializeField] private List<DescriptionData> _descriptions;
-
+    [SerializeField] private TutorialDescription _tutorialDescription;
     [SerializeField, Min(0f)] private float _completedIndicatorDelay = 0.5f;
 
-    private int _indicatorIndex;
-    private IMission _currentMission;
-    private Coroutine _nextMissionCor;
+    private int _stepIndex;
+    private MissionBase _currentMission;
+    private Coroutine _nextStepCor;
 
     public event Action AllMissionsCompleted;
 
     public void StartMissionFlow()
     {
-        _indicatorIndex = 0;
-        BeginCurrentMission();
-    }
-
-    public void ShowIndicator()
-    {
-        ShowCurrentIndicator();
+        _stepIndex = 0;
+        BeginCurrentStep();
     }
 
     public void CompleteCurrentMission()
@@ -43,40 +42,72 @@ public class TutorialMissionController : MonoBehaviour
         OnMissionClearActioned();
     }
 
-    private void BeginCurrentMission()
+    private void BeginCurrentStep()
     {
-        if (_missionLists == null || _indicatorIndex >= _missionLists.Count)
+        if (_tutorialSteps == null || _stepIndex >= _tutorialSteps.Count)
         {
             FinishMissionFlow();
             return;
         }
 
-        ShowCurrentIndicator();
-        BindCurrentMission();
-    }
-
-    private void ShowCurrentIndicator()
-    {
-        if (_missionIndicator == null || _missionLists == null || _indicatorIndex >= _missionLists.Count)
+        TutorialStepData stepData = _tutorialSteps[_stepIndex];
+        if (stepData == null)
+        {
+            BeginNextStep();
             return;
+        }
 
-        _missionIndicator.ShowIndicator(_missionLists[_indicatorIndex]);
+        Debug.Log(stepData.StepType);
+
+        switch (stepData.StepType)
+        {
+            case TUTORIAL_STEP_TYPE.DESCRIPTION:
+                BeginDescriptionStep(stepData.Description);
+                break;
+
+            case TUTORIAL_STEP_TYPE.MISSION:
+                BeginMissionStep(stepData.Mission);
+                break;
+        }
     }
 
-    private void BindCurrentMission()
+    private void BeginDescriptionStep(DescriptionData descriptionData)
     {
         UnbindCurrentMission();
 
-        MonoBehaviour missionBehaviour = GetMissionBehaviour(_indicatorIndex);
-        if (missionBehaviour == null)
-            return;
+        if (_missionIndicator != null)
+            _missionIndicator.HideIndicator();
 
-        _currentMission = missionBehaviour as IMission;
-        if (_currentMission == null)
+        if (_tutorialDescription == null || descriptionData == null)
         {
-            Debug.LogError($"[{nameof(TutorialMissionController)}] {missionBehaviour.name}은 {nameof(IMission)}을 구현해야 합니다.", missionBehaviour);
+            Debug.Log($"{_tutorialDescription} / {descriptionData}");
+            BeginNextStep();
             return;
         }
+
+        Cursor.lockState = CursorLockMode.None;
+        _playerController.State.SetActionState(PLAYER_ACTION_STATE.CATCHED);
+
+        _tutorialDescription.OnClickConfirm -= OnDescriptionConfirmActioned;
+        _tutorialDescription.OnClickConfirm += OnDescriptionConfirmActioned;
+        _tutorialDescription.ShowDescription(descriptionData);
+    }
+
+    private void BeginMissionStep(MissionBase mission)
+    {
+        UnbindCurrentDescription();
+        UnbindCurrentMission();
+
+        if (mission == null)
+        {
+            BeginNextStep();
+            return;
+        }
+
+        _currentMission = mission;
+
+        if (_missionIndicator != null)
+            _missionIndicator.ShowIndicator(_currentMission.IndicatorData);
 
         _currentMission.OnMissionClear -= OnMissionClearActioned;
         _currentMission.OnMissionClear += OnMissionClearActioned;
@@ -86,38 +117,44 @@ public class TutorialMissionController : MonoBehaviour
             countMission.OnCountChanged -= OnCountChangedActioned;
             countMission.OnCountChanged += OnCountChangedActioned;
         }
+
         _currentMission.BeginMission();
     }
 
-    private MonoBehaviour GetMissionBehaviour(int missionIndex)
+    private void OnDescriptionConfirmActioned()
     {
-        if (_missionBehaviours == null || missionIndex < 0 || missionIndex >= _missionBehaviours.Count)
-            return null;
+        Cursor.lockState = CursorLockMode.Locked;
+        _playerController.State.SetActionState(PLAYER_ACTION_STATE.IDLE);
 
-        return _missionBehaviours[missionIndex];
+        UnbindCurrentDescription();
+        BeginNextStep();
     }
 
     private void OnMissionClearActioned()
     {
-        if (_nextMissionCor != null)
+        if (_nextStepCor != null)
             return;
 
         if (_missionIndicator != null)
             _missionIndicator.SetCompleted(true);
 
-        _nextMissionCor = StartCoroutine(CoBeginNextMission_cor());
+        _nextStepCor = StartCoroutine(CoBeginNextStep_cor());
     }
 
-    private IEnumerator CoBeginNextMission_cor()
+    private IEnumerator CoBeginNextStep_cor()
     {
         yield return new WaitForSeconds(_completedIndicatorDelay);
 
         UnbindCurrentMission();
 
-        _indicatorIndex++;
-        _nextMissionCor = null;
+        _nextStepCor = null;
+        BeginNextStep();
+    }
 
-        BeginCurrentMission();
+    private void BeginNextStep()
+    {
+        _stepIndex++;
+        BeginCurrentStep();
     }
 
     private void OnCountChangedActioned(int currentCount, int targetCount)
@@ -128,12 +165,19 @@ public class TutorialMissionController : MonoBehaviour
 
     private void FinishMissionFlow()
     {
+        UnbindCurrentDescription();
         UnbindCurrentMission();
 
         if (_missionIndicator != null)
             _missionIndicator.HideIndicator();
 
         AllMissionsCompleted?.Invoke();
+    }
+
+    private void UnbindCurrentDescription()
+    {
+        if (_tutorialDescription != null)
+            _tutorialDescription.OnClickConfirm -= OnDescriptionConfirmActioned;
     }
 
     private void UnbindCurrentMission()
@@ -152,12 +196,13 @@ public class TutorialMissionController : MonoBehaviour
 
     private void OnDisable()
     {
-        if (_nextMissionCor != null)
+        if (_nextStepCor != null)
         {
-            StopCoroutine(_nextMissionCor);
-            _nextMissionCor = null;
+            StopCoroutine(_nextStepCor);
+            _nextStepCor = null;
         }
 
+        UnbindCurrentDescription();
         UnbindCurrentMission();
     }
 }

@@ -5,6 +5,9 @@ using UnityEngine.UI;
 
 public class TutorialDescription : MonoBehaviour, IDescription
 {
+    [SerializeField] private GameObject _obj;
+
+    [SerializeField] private TMP_Text _nameText;
     [SerializeField] private TMP_Text _descriptionText;
     [SerializeField] private Image _descriptionImage;
     [SerializeField] private Button _confirmButton;
@@ -16,15 +19,18 @@ public class TutorialDescription : MonoBehaviour, IDescription
         _confirmButton.onClick.AddListener(OnClickConfirmButton);
     }
 
-    public void ShowDescription(string description, Sprite descriptionSprite)
+    public void ShowDescription(DescriptionData data)
     {
-        _descriptionText.text = description;
-        _descriptionImage.sprite = descriptionSprite;
+        _nameText.text = data.Name;
+        _descriptionText.text = data.Description;
+        _descriptionImage.sprite = data.Sprite;
+
+        _obj.SetActive(true);
     }
 
     public void OnClickConfirmButton()
     {
         OnClickConfirm?.Invoke();
-        this.gameObject.SetActive(false);
+        _obj.SetActive(false);
     }
 }
