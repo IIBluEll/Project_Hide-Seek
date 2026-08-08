@@ -6,7 +6,6 @@ public class PlayerController : MonoBehaviour
     private readonly PlayerStateController _state = new PlayerStateController();
 
     [SerializeField] private PlayerInteractionController _interactController;
-
     [SerializeField] private PlayerAnimationController _animationController;
 
     [SerializeField] private CharacterRotationController _rotator;
@@ -22,8 +21,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private InteractViewer _interactionViewer;
     [SerializeField] private ThrowUIViewer _throwViewer;
     [SerializeField] private PlayerSprintStaminaViewer _sprintViewer;
-    public IStateService State => _state;
 
+    public IStateService State => _state;
     public IInputReader InputReader => _inputReader;
 
     private void Awake()
@@ -35,7 +34,7 @@ public class PlayerController : MonoBehaviour
         _camera.SetCameraHeight(_move.Posture);
         _camera.SetShakeIntensity(_move.Posture, _move.Locomotion);
 
-        _interact.Init(_state, _move, _rotator, _hand);
+        _interact.Init(_state, _move, _rotator, _hand, _camera);
 
         _rotator.Init(this.transform);
 
@@ -126,6 +125,7 @@ public class PlayerController : MonoBehaviour
         {
             _camera.SetCameraHeight(posture);
             _camera.SetShakeIntensity(posture, _move.Locomotion);
+            _footNoiseEmitter.UpdateFootSound(_move.Locomotion, posture);
         }
     }
     private void OnLocomotionChangedActioned(LOCOMOTION_STATE_ENUM locomotion, bool value)

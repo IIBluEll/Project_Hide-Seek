@@ -16,6 +16,7 @@ public class PlayerInteractionController : MonoBehaviour
     private PlayerHandController _hand;
     private MoveController _moveController;
     private CharacterRotationController _rotationController;
+    private PlayerCameraController _cameraController;
 
     private IInteractable _currentInteractable;
     private IInteractable _contextInteractable;
@@ -25,11 +26,17 @@ public class PlayerInteractionController : MonoBehaviour
     public event Action<string> OnInsightInteractEvent;
     public event Action OnOutsightInteractionEvent;
 
-    internal void Init(IStateService stat, MoveController move, CharacterRotationController rotator, PlayerHandController hand)
+    internal void Init(
+        IStateService stat,
+        MoveController move,
+        CharacterRotationController rotator,
+        PlayerHandController hand,
+        PlayerCameraController cameraController)
     {
         _moveController = move;
         _rotationController = rotator;
         _hand = hand;
+        _cameraController = cameraController;
         _stat = stat;
         _hand.OnAimStateChanged -= OnAimStateChangedActioned;
         _hand.OnAimStateChanged += OnAimStateChangedActioned;
@@ -113,6 +120,16 @@ public class PlayerInteractionController : MonoBehaviour
     {
         SetPosition(transform.position);
         SetRotation(transform.rotation.eulerAngles);
+    }
+
+    public void SetCameraPositionOverride(Transform cameraPositionOverride)
+    {
+        _cameraController?.SetCameraPositionOverride(cameraPositionOverride);
+    }
+
+    public void ClearCameraPositionOverride()
+    {
+        _cameraController?.ClearCameraPositionOverride();
     }
 
     public void EnterHide()

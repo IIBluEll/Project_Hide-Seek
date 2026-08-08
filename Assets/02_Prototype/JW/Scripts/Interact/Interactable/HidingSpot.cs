@@ -31,9 +31,15 @@ public class HidingSpot : MonoBehaviour, IInteractable
         Transform teleportPosition = _isInPlayer ? _exposePosition : _hidePosition;
 
         if (_isInPlayer)
+        {
             playerInteractor.ExitHide();
+            playerInteractor.ClearCameraPositionOverride();
+        }
         else
+        {
             playerInteractor.EnterHide();
+            playerInteractor.SetCameraPositionOverride(_hidePosition);
+        }
 
         playerInteractor.OnTeleport(teleportPosition);
 
@@ -58,6 +64,7 @@ public class HidingSpot : MonoBehaviour, IInteractable
             playerInteractor.EndTransition();
         });
     }
+
     private void SetHidePosture(PlayerInteractionController playerInteractor)
     {
         POSTURE_STATE_ENUM posture = _isInPlayer
