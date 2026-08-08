@@ -42,6 +42,12 @@ namespace HideSeek.Generators
 
         private void Awake()
         {
+            // 인스펙터 연결을 잊어도 같은 발전기 안에서 찾는다. 다른 발전기를 가리켜야 할 때만 인스펙터로 지정한다.
+            if (_generator == null)
+            {
+                _generator = GetComponentInParent<Generator>();
+            }
+
             if (_generator == null)
             {
                 Debug.LogError($"[{nameof(GeneratorSound)}] Generator 참조가 비어 있습니다.", this);
