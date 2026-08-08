@@ -14,6 +14,7 @@ public interface IInputReader
     event Action<bool> OnCancelAimEvent;
 }
 
+[RequireComponent(typeof(InputSystem))]
 public class PlayerInputReader : MonoBehaviour, IInputReader
 {
     public event Action<Vector2> OnMoveEvent;
@@ -24,7 +25,6 @@ public class PlayerInputReader : MonoBehaviour, IInputReader
     public event Action<bool> OnInteractionEvent;
     public event Action<bool> OnAttackEvent;
     public event Action<bool> OnCancelAimEvent;
-
 
     private void OnMove(InputValue value)
     {

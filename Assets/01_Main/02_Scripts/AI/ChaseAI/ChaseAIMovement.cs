@@ -35,6 +35,7 @@ namespace HideSeek.AI
 
         public Vector3 CurrentDestination => _currentDestination;
         public Vector3 Position => transform.position;
+        public Vector3 Forward => NormalizeHorizontalDirection(transform.forward);
 
         public bool HasDestination => _hasDestination;
         public int AreaMask => _agent != null ? _agent.areaMask : NavMesh.AllAreas;
@@ -47,12 +48,8 @@ namespace HideSeek.AI
             ApplyConfig();
         }
 
-        public CHASE_AI_MOVE_REQUEST_RESULT TrySetDestination(
-            Vector3 targetPosition ,
-            out Vector3 correctedDestination)
+        public CHASE_AI_MOVE_REQUEST_RESULT TrySetDestination(Vector3 targetPosition)
         {
-            correctedDestination = Vector3.zero;
-
             if ( _config == null )
             {
                 return CHASE_AI_MOVE_REQUEST_RESULT.CONFIG_NOT_ASSIGNED;
@@ -93,8 +90,7 @@ namespace HideSeek.AI
                 return CHASE_AI_MOVE_REQUEST_RESULT.PATH_NOT_COMPLETE;
             }
 
-            correctedDestination = navMeshHit.position;
-            _currentDestination = correctedDestination;
+            _currentDestination = navMeshHit.position;
             _hasDestination = true;
             _stuckTimer = 0f;
 
@@ -143,6 +139,40 @@ namespace HideSeek.AI
             }
 
             _agent.speed = Mathf.Max(0f , speed);
+        }
+
+        public void SetPaused(bool isPaused)
+        {
+            if ( _agent == null ||
+                !_agent.isActiveAndEnabled ||
+                !_agent.isOnNavMesh )
+            {
+                return;
+            }
+
+            _stuckTimer = 0f;
+            _agent.isStopped = isPaused || !_hasDestination;
+        }
+
+        public void RotateTowardsDirection(
+            Vector3 targetDirection ,
+            float rotationSpeed ,
+            float deltaTime)
+        {
+            Vector3 horizontalDirection = NormalizeHorizontalDirection(targetDirection);
+
+            if ( horizontalDirection == Vector3.zero )
+            {
+                return;
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(horizontalDirection , Vector3.up);
+            float maximumRotationDelta = Mathf.Max(0f , rotationSpeed) * Mathf.Max(0f , deltaTime);
+
+            transform.rotation = Quaternion.RotateTowards(
+                transform.rotation ,
+                targetRotation ,
+                maximumRotationDelta);
         }
 
         public CHASE_AI_MOVE_STATUS UpdateMovement(float deltaTime)
@@ -262,6 +292,15 @@ namespace HideSeek.AI
             Stop();
 
             return failureStatus;
+        }
+
+        private static Vector3 NormalizeHorizontalDirection(Vector3 direction)
+        {
+            direction.y = 0f;
+
+            return direction.sqrMagnitude > Mathf.Epsilon
+                ? direction.normalized
+                : Vector3.zero;
         }
 
         private void OnDrawGizmos()

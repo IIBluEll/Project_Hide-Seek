@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,6 +22,7 @@ namespace HideSeek.AI
 
         private readonly ChaseAIInvestigationContext INVESTIGATION_CONTEXT;
         private readonly ChaseAIEvidenceSelector EVIDENCE_SELECTOR;
+        private readonly ChaseAIAnger CHASE_AI_ANGER;
         private readonly ChaseAIChaseBehavior CHASE_BEHAVIOR;
         private readonly ChaseAISearchBehavior SEARCH_BEHAVIOR;
         private readonly ChaseAIPatrolRoute PATROL_ROUTE;
@@ -32,9 +34,15 @@ namespace HideSeek.AI
         private bool _isRetreatPending;
         private bool _hasRetreatFailed;
         private bool _hasPlayerCaughtRequest;
+        private bool _isReactingToVisualSuspicion;
+
+        public event Action<CHASE_AI_STATE , CHASE_AI_STATE> StateChanged;
 
         public Vector3 SearchCenterPosition => SEARCH_BEHAVIOR.SearchCenterPosition;
         public float CurrentSearchRadius => SEARCH_BEHAVIOR.CurrentSearchRadius;
+        public CHASE_AI_SEARCH_ACTION CurrentSearchAction => SEARCH_BEHAVIOR.CurrentSearchAction;
+        public float SearchActionProgress => SEARCH_BEHAVIOR.SearchActionProgress;
+        public float SearchActionRemainingTime => SEARCH_BEHAVIOR.SearchActionRemainingTime;
         public string ActiveInvestigationName => CurrentState == CHASE_AI_STATE.INVESTIGATE
             ? EVIDENCE_SELECTOR.ActiveInvestigationName
             : "NONE";
@@ -42,6 +50,35 @@ namespace HideSeek.AI
             ? SEARCH_BEHAVIOR.ActiveSearchContext
             : string.Empty;
         public bool IsRetreatPending => _isRetreatPending;
+        public bool IsReactingToVisualSuspicion => _isReactingToVisualSuspicion;
+        public bool HasActiveAudioInvestigation => EVIDENCE_SELECTOR.HasActiveAudioInvestigation;
+        public NOISE_TYPE ActiveAudioNoiseType => EVIDENCE_SELECTOR.ActiveAudioNoiseType;
+        public float ActiveAudioIntensity => EVIDENCE_SELECTOR.CurrentAudioIntensity;
+        public float LastAudioCandidateScore => EVIDENCE_SELECTOR.LastAudioCandidateScore;
+        public string LastAudioDecisionReason => EVIDENCE_SELECTOR.LastAudioDecisionReason;
+        public bool IsUsingEvidenceApproachSpeed => CurrentState switch
+        {
+            CHASE_AI_STATE.INVESTIGATE =>
+                EVIDENCE_SELECTOR.ActiveInvestigationType == CHASE_AI_EVIDENCE_TYPE.AUDIO,
+            CHASE_AI_STATE.SEARCH => SEARCH_BEHAVIOR.IsUsingEvidenceApproachSpeed,
+            _ => false
+        };
+        public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => CurrentState switch
+        {
+            CHASE_AI_STATE.INVESTIGATE => EVIDENCE_SELECTOR.ActiveInvestigationType,
+            CHASE_AI_STATE.SEARCH => SEARCH_BEHAVIOR.ActiveEvidenceType,
+            _ => CHASE_AI_EVIDENCE_TYPE.NONE
+        };
+
+        public float GetActiveAudioFreshness(float currentTime)
+        {
+            return EVIDENCE_SELECTOR.GetCurrentAudioFreshness(currentTime);
+        }
+
+        public float GetActiveAudioScore(float currentTime)
+        {
+            return EVIDENCE_SELECTOR.GetCurrentAudioScore(currentTime);
+        }
 
         public CHASE_AI_STATE CurrentState
         {
@@ -63,9 +100,10 @@ namespace HideSeek.AI
 
             INVESTIGATION_CONTEXT = new ChaseAIInvestigationContext(config);
             EVIDENCE_SELECTOR = new ChaseAIEvidenceSelector(config , memory , INVESTIGATION_CONTEXT);
-            CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger);
+            CHASE_AI_ANGER = chaseAIAnger;
+            CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger , memory);
             SEARCH_BEHAVIOR = new ChaseAISearchBehavior(config , movement , search , chaseAIAnger);
-            PATROL_ROUTE = new ChaseAIPatrolRoute(patrolPoints);
+            PATROL_ROUTE = new ChaseAIPatrolRoute(config , patrolPoints);
             PATROL_ROUTE.ConfigureZones(zones);
         }
 
@@ -74,7 +112,8 @@ namespace HideSeek.AI
             _movement.Stop();
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            SEARCH_BEHAVIOR.ResetHistory();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
@@ -83,6 +122,7 @@ namespace HideSeek.AI
             _isRetreatPending = false;
             _hasRetreatFailed = false;
             _hasPlayerCaughtRequest = false;
+            _isReactingToVisualSuspicion = false;
             _stateTimer = 0f;
 
             Debug.Log("[ChaseAIStateMachine] DORMANT 상태로 초기화되었습니다.");
@@ -200,6 +240,11 @@ namespace HideSeek.AI
                 ChangeState(CHASE_AI_STATE.CHASE , "Player visually confirmed");
             }
 
+            if ( UpdateVisualSuspicionResponse(deltaTime , visualObservation) )
+            {
+                return;
+            }
+
             switch ( CurrentState )
             {
                 case CHASE_AI_STATE.PATROL:
@@ -244,7 +289,9 @@ namespace HideSeek.AI
             return CurrentState == CHASE_AI_STATE.INVESTIGATE;
         }
 
-        public bool TryReceiveAudioEvidence(ChaseAIAudioObservation observation)
+        public bool TryReceiveAudioEvidence(
+            ChaseAIAudioObservation observation ,
+            float currentTime)
         {
             if ( CurrentState == CHASE_AI_STATE.CHASE ||
                 CurrentState == CHASE_AI_STATE.ATTACK ||
@@ -254,7 +301,7 @@ namespace HideSeek.AI
                 return false;
             }
 
-            if ( !EVIDENCE_SELECTOR.TryReceiveAudioEvidence(observation) )
+            if ( !EVIDENCE_SELECTOR.TryReceiveAudioEvidence(observation , currentTime) )
             {
                 return false;
             }
@@ -263,6 +310,14 @@ namespace HideSeek.AI
             {
                 _isWaiting = false;
                 _stateTimer = 0f;
+                ApplyInvestigationSpeed();
+
+                if ( !PrepareInvestigationSearch() )
+                {
+                    ChangeState(CHASE_AI_STATE.PATROL , "Updated audio search preparation failed");
+
+                    return false;
+                }
 
                 bool wasDestinationAccepted = RequestInvestigationDestination();
 
@@ -281,10 +336,17 @@ namespace HideSeek.AI
 
         public void Stop()
         {
+            if ( CurrentState != CHASE_AI_STATE.DORMANT )
+            {
+                ChangeState(CHASE_AI_STATE.DORMANT , "State machine stopped");
+
+                return;
+            }
+
             _movement.Stop();
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
             CurrentState = CHASE_AI_STATE.DORMANT;
@@ -293,7 +355,63 @@ namespace HideSeek.AI
             _isRetreatPending = false;
             _hasRetreatFailed = false;
             _hasPlayerCaughtRequest = false;
+            _isReactingToVisualSuspicion = false;
             _stateTimer = 0f;
+        }
+
+        private bool UpdateVisualSuspicionResponse(
+            float deltaTime ,
+            ChaseAIVisualObservation visualObservation)
+        {
+            bool canReact = CurrentState == CHASE_AI_STATE.PATROL ||
+                CurrentState == CHASE_AI_STATE.INVESTIGATE ||
+                CurrentState == CHASE_AI_STATE.SEARCH;
+            bool shouldReact = canReact &&
+                visualObservation.HasLineOfSight &&
+                visualObservation.State == CHASE_AI_VISUAL_STATE.SUSPICIOUS &&
+                visualObservation.DetectionRatio >= _config.VisualSuspicionReactionThreshold;
+
+            if ( !shouldReact )
+            {
+                StopVisualSuspicionResponse();
+
+                return false;
+            }
+
+            if ( !_isReactingToVisualSuspicion )
+            {
+                _isReactingToVisualSuspicion = true;
+
+                Debug.Log(
+                    $"[ChaseAIStateMachine] 시각 의심 반응 시작: " +
+                    $"State={CurrentState}, " +
+                    $"Detection={visualObservation.DetectionRatio:F2}");
+            }
+
+            _movement.SetPaused(true);
+
+            Vector3 directionToVisiblePosition =
+                visualObservation.VisiblePosition - _movement.Position;
+
+            _movement.RotateTowardsDirection(
+                directionToVisiblePosition ,
+                _config.VisualSuspicionRotationSpeed ,
+                deltaTime);
+
+            return true;
+        }
+
+        private void StopVisualSuspicionResponse()
+        {
+            if ( !_isReactingToVisualSuspicion )
+            {
+                return;
+            }
+
+            _isReactingToVisualSuspicion = false;
+            _movement.SetPaused(false);
+
+            Debug.Log("[ChaseAIStateMachine] 시각 의심 반응 종료");
         }
 
         private void UpdatePatrol(float deltaTime)
@@ -328,14 +446,10 @@ namespace HideSeek.AI
 
         private void UpdateInvestigate(float deltaTime)
         {
-            if ( _isWaiting )
+            if ( IsInsidePreparedSearchArea() )
             {
-                if ( !UpdateWaiting(deltaTime) )
-                {
-                    ChangeState(
-                        CHASE_AI_STATE.SEARCH ,
-                        $"{EVIDENCE_SELECTOR.ActiveInvestigationName} investigation completed");
-                }
+                StartPreparedInvestigationSearch(
+                    $"{EVIDENCE_SELECTOR.ActiveInvestigationName} search area entered");
 
                 return;
             }
@@ -345,7 +459,8 @@ namespace HideSeek.AI
             switch ( moveStatus )
             {
                 case CHASE_AI_MOVE_STATUS.ARRIVED:
-                    StartWaiting(_config.InvestigateWaitTime);
+                    StartPreparedInvestigationSearch(
+                        $"{EVIDENCE_SELECTOR.ActiveInvestigationName} center reached");
                     break;
 
                 case CHASE_AI_MOVE_STATUS.PATH_FAILED:
@@ -366,6 +481,11 @@ namespace HideSeek.AI
                 return;
             }
 
+            if ( CHASE_AI_ANGER.TickChaseBuildUp(deltaTime , visualObservation.HasLineOfSight) )
+            {
+                CHASE_BEHAVIOR.RefreshAngerEffect();
+            }
+
             CHASE_AI_CHASE_RESULT chaseResult = CHASE_BEHAVIOR.Tick(deltaTime , visualObservation);
 
             if ( chaseResult == CHASE_AI_CHASE_RESULT.RUNNING )
@@ -374,6 +494,19 @@ namespace HideSeek.AI
             }
 
             string reason = CHASE_BEHAVIOR.LastResultReason;
+
+            if ( chaseResult == CHASE_AI_CHASE_RESULT.TARGET_LOST )
+            {
+                float previousAnger = CHASE_AI_ANGER.CurrentAnger;
+
+                CHASE_AI_ANGER.IncreaseAnger(_config.AngerIncreaseOnChaseLost);
+
+                Debug.Log(
+                    $"[ChaseAIStateMachine] 추격 실패 Anger 증가: " +
+                    $"Previous={previousAnger:F1}, " +
+                    $"Current={CHASE_AI_ANGER.CurrentAnger:F1}, " +
+                    $"Floor={CHASE_AI_ANGER.AngerFloor:F1}");
+            }
 
             ChangeState(CHASE_AI_STATE.SEARCH , reason);
         }
@@ -429,6 +562,7 @@ namespace HideSeek.AI
 
             CHASE_AI_STATE previousState = CurrentState;
 
+            StopVisualSuspicionResponse();
             _movement.Stop();
             _isWaiting = false;
             _stateTimer = 0f;
@@ -446,6 +580,8 @@ namespace HideSeek.AI
             CurrentState = newState;
 
             Debug.Log($"[ChaseAIStateMachine] {previousState} → {newState}, Reason: {reason}");
+
+            StateChanged?.Invoke(previousState , newState);
 
             switch ( newState )
             {
@@ -483,7 +619,8 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            SEARCH_BEHAVIOR.ResetHistory();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
             PATROL_ROUTE.Clear();
 
             _retreatPosition = Vector3.zero;
@@ -496,7 +633,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
 
             _movement.SetSpeed(_config.WalkSpeed);
 
@@ -510,7 +647,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            EVIDENCE_SELECTOR.ClearInvestigations();
+            EVIDENCE_SELECTOR.ClearAllEvidence();
 
             _movement.SetSpeed(_config.WalkSpeed);
             PATROL_ROUTE.Refresh(_movement.Position);
@@ -535,7 +672,7 @@ namespace HideSeek.AI
         {
             CHASE_BEHAVIOR.Stop();
             SEARCH_BEHAVIOR.Stop();
-            _movement.SetSpeed(_config.WalkSpeed);
+            ApplyInvestigationSpeed();
 
             if ( !EVIDENCE_SELECTOR.TryGetInvestigationDestination(
                     out Vector3 investigationPosition ,
@@ -546,16 +683,37 @@ namespace HideSeek.AI
                 return;
             }
 
+            if ( !PrepareInvestigationSearch() )
+            {
+                ChangeState(CHASE_AI_STATE.PATROL , $"{context} search preparation failed");
+
+                return;
+            }
+
             if ( !RequestDestination(investigationPosition , context) )
             {
                 ChangeState(CHASE_AI_STATE.PATROL , $"{context} destination invalid");
             }
         }
 
+        private void ApplyInvestigationSpeed()
+        {
+            bool isAudioInvestigation =
+                EVIDENCE_SELECTOR.ActiveInvestigationType == CHASE_AI_EVIDENCE_TYPE.AUDIO;
+
+            float investigationSpeed = isAudioInvestigation
+                ? _config.EvidenceApproachSpeed
+                : _config.WalkSpeed;
+
+            _movement.SetSpeed(investigationSpeed);
+        }
+
         private void EnterChase()
         {
             SEARCH_BEHAVIOR.Stop();
             EVIDENCE_SELECTOR.ClearInvestigations();
+            CHASE_AI_ANGER.ResetCalmDecay();
+            CHASE_AI_ANGER.ResetChaseBuildUp();
             CHASE_BEHAVIOR.Begin();
         }
 
@@ -571,7 +729,13 @@ namespace HideSeek.AI
         private void EnterSearch()
         {
             CHASE_BEHAVIOR.Stop();
-            SEARCH_BEHAVIOR.Stop();
+
+            if ( SEARCH_BEHAVIOR.IsPrepared )
+            {
+                HandleSearchStatus(SEARCH_BEHAVIOR.BeginPrepared());
+
+                return;
+            }
 
             if ( !EVIDENCE_SELECTOR.TryCreateSearchRequest(Time.time , out ChaseAISearchRequest searchRequest) )
             {
@@ -589,6 +753,13 @@ namespace HideSeek.AI
         {
             if ( searchStatus == CHASE_AI_BEHAVIOR_STATUS.RUNNING )
             {
+                return;
+            }
+
+            if ( searchStatus == CHASE_AI_BEHAVIOR_STATUS.TARGET_FOUND )
+            {
+                ChangeState(CHASE_AI_STATE.ATTACK , "Player found during hiding spot inspection");
+
                 return;
             }
 
@@ -624,6 +795,50 @@ namespace HideSeek.AI
         private bool IsPlayerWithinAttackRange(ChaseAIVisualObservation visualObservation)
         {
             return visualObservation.CanAttackTarget;
+        }
+
+        private bool PrepareInvestigationSearch()
+        {
+            if ( !EVIDENCE_SELECTOR.TryCreateSearchRequest(
+                    Time.time ,
+                    out ChaseAISearchRequest searchRequest) )
+            {
+                return false;
+            }
+
+            return SEARCH_BEHAVIOR.Prepare(searchRequest);
+        }
+
+        private bool IsInsidePreparedSearchArea()
+        {
+            if ( !SEARCH_BEHAVIOR.IsPrepared )
+            {
+                return false;
+            }
+
+            float searchRadius = SEARCH_BEHAVIOR.CurrentSearchRadius;
+
+            if ( searchRadius <= 0f )
+            {
+                return false;
+            }
+
+            Vector3 offset = _movement.Position - SEARCH_BEHAVIOR.SearchCenterPosition;
+            offset.y = 0f;
+
+            return offset.sqrMagnitude <= searchRadius * searchRadius;
+        }
+
+        private void StartPreparedInvestigationSearch(string reason)
+        {
+            if ( !SEARCH_BEHAVIOR.IsPrepared )
+            {
+                ChangeState(CHASE_AI_STATE.PATROL , "Prepared investigation search was missing");
+
+                return;
+            }
+
+            ChangeState(CHASE_AI_STATE.SEARCH , reason);
         }
 
         private bool RequestInvestigationDestination()
@@ -664,9 +879,7 @@ namespace HideSeek.AI
 
         private bool RequestDestination(Vector3 position , string context)
         {
-            CHASE_AI_MOVE_REQUEST_RESULT result = _movement.TrySetDestination(
-                position ,
-                out Vector3 correctedDestination);
+            CHASE_AI_MOVE_REQUEST_RESULT result = _movement.TrySetDestination(position);
 
             if ( result == CHASE_AI_MOVE_REQUEST_RESULT.ACCEPTED )
             {
@@ -680,7 +893,7 @@ namespace HideSeek.AI
 
         private void AdvancePatrolPoint()
         {
-            PATROL_ROUTE.Advance();
+            PATROL_ROUTE.Advance(_movement.Position);
         }
 
         private void StartWaiting(float duration)

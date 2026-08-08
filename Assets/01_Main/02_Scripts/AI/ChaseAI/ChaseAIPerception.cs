@@ -1,4 +1,5 @@
 using System;
+using HideSeek.Gameplay;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -16,6 +17,7 @@ namespace HideSeek.AI
         public CHASE_AI_VISUAL_STATE State { get; }
         public Vector3 VisiblePosition { get; }
         public float DetectionRatio { get; }
+        public float DetectionSpeedMultiplier { get; }
         public bool CanAttackTarget { get; }
 
         public ChaseAIVisualObservation(
@@ -23,12 +25,14 @@ namespace HideSeek.AI
             CHASE_AI_VISUAL_STATE state ,
             Vector3 visiblePosition ,
             float detectionRatio ,
+            float detectionSpeedMultiplier ,
             bool canAttackTarget)
         {
             HasLineOfSight = hasLineOfSight;
             State = state;
             VisiblePosition = visiblePosition;
             DetectionRatio = detectionRatio;
+            DetectionSpeedMultiplier = detectionSpeedMultiplier;
             CanAttackTarget = canAttackTarget;
         }
     }
@@ -63,9 +67,15 @@ namespace HideSeek.AI
         [Header("Hearing")]
         [SerializeField] private Transform _hearingTransform;
 
+        private IPlayerVisibilityState _targetVisibilityState;
         public event Action<ChaseAIAudioObservation> NoiseDetected;
 
         private float _detectionRatio;
+
+        public bool HasTargetVisibilityState => _targetVisibilityState != null;
+        public bool IsTargetFullyHidden =>
+            _targetVisibilityState != null &&
+            _targetVisibilityState.IsFullyHidden;
 
         public ChaseAIVisualObservation CurrentObservation
         {
@@ -109,14 +119,17 @@ namespace HideSeek.AI
         public void SetTarget(Transform targetTransform)
         {
             _targetTransform = targetTransform;
+            _targetVisibilityState = FindTargetVisibilityState(targetTransform);
             ResetPerception();
         }
 
         public ChaseAIVisualObservation UpdatePerception(float deltaTime)
         {
-            bool hasLineOfSight = TryGetVisiblePosition(out Vector3 visiblePosition);
+            bool hasLineOfSight = TryGetVisiblePosition(
+                out Vector3 visiblePosition ,
+                out float detectionSpeedMultiplier);
 
-            UpdateDetectionRatio(hasLineOfSight , deltaTime);
+            UpdateDetectionRatio(hasLineOfSight , detectionSpeedMultiplier , deltaTime);
 
             CHASE_AI_VISUAL_STATE visualState = GetVisualState(hasLineOfSight);
             bool canAttackTarget = CanAttackTarget();
@@ -126,6 +139,7 @@ namespace HideSeek.AI
                 visualState ,
                 hasLineOfSight ? visiblePosition : Vector3.zero ,
                 _detectionRatio ,
+                hasLineOfSight ? detectionSpeedMultiplier : 0f ,
                 canAttackTarget);
 
             return CurrentObservation;
@@ -140,6 +154,7 @@ namespace HideSeek.AI
                 CHASE_AI_VISUAL_STATE.NONE ,
                 Vector3.zero ,
                 0f ,
+                0f ,
                 false);
         }
 
@@ -148,6 +163,11 @@ namespace HideSeek.AI
             if ( _config == null ||
                 _eyeTransform == null ||
                 _targetTransform == null )
+            {
+                return false;
+            }
+
+            if ( IsTargetFullyHidden )
             {
                 return false;
             }
@@ -180,11 +200,19 @@ namespace HideSeek.AI
             return !isBlocked;
         }
 
-        private bool TryGetVisiblePosition(out Vector3 visiblePosition)
+        private bool TryGetVisiblePosition(
+            out Vector3 visiblePosition ,
+            out float detectionSpeedMultiplier)
         {
             visiblePosition = Vector3.zero;
+            detectionSpeedMultiplier = 0f;
 
             if ( _config == null || _eyeTransform == null || _targetTransform == null )
+            {
+                return false;
+            }
+
+            if ( IsTargetFullyHidden )
             {
                 return false;
             }
@@ -202,6 +230,7 @@ namespace HideSeek.AI
             if ( distanceToTarget <= Mathf.Epsilon )
             {
                 visiblePosition = targetPosition;
+                detectionSpeedMultiplier = 1f;
                 return true;
             }
 
@@ -251,14 +280,24 @@ namespace HideSeek.AI
             }
 
             visiblePosition = targetPosition;
+            detectionSpeedMultiplier = CalculateDetectionSpeedMultiplier(
+                distanceToTarget ,
+                horizontalAngle ,
+                verticalAngle);
             return true;
         }
 
-        private void UpdateDetectionRatio(bool hasLineOfSight , float deltaTime)
+        private void UpdateDetectionRatio(
+            bool hasLineOfSight ,
+            float detectionSpeedMultiplier ,
+            float deltaTime)
         {
             if ( hasLineOfSight )
             {
-                float increaseAmount = deltaTime / _config.VisualConfirmTime;
+                float increaseAmount =
+                    deltaTime /
+                    _config.VisualConfirmTime *
+                    Mathf.Clamp01(detectionSpeedMultiplier);
 
                 _detectionRatio = Mathf.Clamp01(_detectionRatio + increaseAmount);
 
@@ -268,6 +307,51 @@ namespace HideSeek.AI
             float decreaseAmount = deltaTime / _config.VisualLoseTime;
 
             _detectionRatio = Mathf.Clamp01(_detectionRatio - decreaseAmount);
+        }
+
+        private float CalculateDetectionSpeedMultiplier(
+            float distanceToTarget ,
+            float horizontalAngle ,
+            float verticalAngle)
+        {
+            float distanceRatio = Mathf.Clamp01(distanceToTarget / _config.SightRange);
+            float halfHorizontalAngle = Mathf.Max(0.5f , _config.HorizontalSightAngle * 0.5f);
+            float halfVerticalAngle = Mathf.Max(0.5f , _config.VerticalSightAngle * 0.5f);
+            float horizontalPeripheralRatio = Mathf.Clamp01(Mathf.Abs(horizontalAngle) / halfHorizontalAngle);
+            float verticalPeripheralRatio = Mathf.Clamp01(Mathf.Abs(verticalAngle) / halfVerticalAngle);
+            float peripheralRatio = Mathf.Max(horizontalPeripheralRatio , verticalPeripheralRatio);
+
+            float distanceMultiplier = Mathf.Lerp(
+                1f ,
+                _config.MinimumDistanceDetectionMultiplier ,
+                distanceRatio);
+            float peripheralMultiplier = Mathf.Lerp(
+                1f ,
+                _config.MinimumPeripheralDetectionMultiplier ,
+                peripheralRatio);
+
+            return Mathf.Clamp01(distanceMultiplier * peripheralMultiplier);
+        }
+
+        private static IPlayerVisibilityState FindTargetVisibilityState(Transform targetTransform)
+        {
+            if ( targetTransform == null )
+            {
+                return null;
+            }
+
+            MonoBehaviour[] targetComponents =
+                targetTransform.GetComponentsInParent<MonoBehaviour>(true);
+
+            for ( int componentIndex = 0; componentIndex < targetComponents.Length; componentIndex++ )
+            {
+                if ( targetComponents[ componentIndex ] is IPlayerVisibilityState visibilityState )
+                {
+                    return visibilityState;
+                }
+            }
+
+            return null;
         }
 
         private CHASE_AI_VISUAL_STATE GetVisualState(bool hasLineOfSight)
@@ -339,7 +423,9 @@ namespace HideSeek.AI
                 return;
             }
 
-            bool hasLineOfSight = TryGetVisiblePosition(out Vector3 visiblePosition);
+            bool hasLineOfSight = TryGetVisiblePosition(
+                out Vector3 visiblePosition ,
+                out _);
 
             Gizmos.color = hasLineOfSight ? Color.green : Color.red;
 

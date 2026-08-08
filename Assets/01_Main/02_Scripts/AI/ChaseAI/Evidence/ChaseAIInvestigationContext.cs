@@ -12,23 +12,43 @@ namespace HideSeek.AI
         public float AudioSearchRadius { get; private set; }
         public float AudioSearchDuration { get; private set; }
         public float CurrentAudioIntensity { get; private set; }
+        public float CurrentAudioOccurredTime { get; private set; }
+        public float CurrentAudioEvidenceDuration { get; private set; }
+        public float CurrentAudioAcceptedTime { get; private set; }
+        public NOISE_TYPE CurrentAudioNoiseType { get; private set; }
+        public GameObject CurrentAudioSourceObj { get; private set; }
 
         public bool HasActiveDirectorInvestigation { get; private set; }
         public MasterAIHint ActiveDirectorHint { get; private set; }
+        public CHASE_AI_EVIDENCE_TYPE ActiveEvidenceType => HasActiveAudioInvestigation
+            ? CHASE_AI_EVIDENCE_TYPE.AUDIO
+            : HasActiveDirectorInvestigation
+                ? CHASE_AI_EVIDENCE_TYPE.DIRECTOR_HINT
+                : CHASE_AI_EVIDENCE_TYPE.NONE;
 
         public ChaseAIInvestigationContext(ChaseAIConfig chaseAIConfig)
         {
             CHASE_AI_CONFIG = chaseAIConfig != null ? chaseAIConfig : throw new ArgumentNullException(nameof(chaseAIConfig));
         }
 
-        public void SetAudioInvestigation(ChaseAIAudioObservation observation)
+        public void SetAudioInvestigation(
+            ChaseAIAudioObservation observation ,
+            float currentTime)
         {
             float intensity = Mathf.Clamp01(observation.PerceivedIntensity);
+            NoiseData noiseData = observation.NoiseData;
 
-            AudioSearchPosition = observation.NoiseData.Position;
+            AudioSearchPosition = noiseData.Position;
             AudioSearchRadius = Mathf.Lerp(CHASE_AI_CONFIG.MaxAudioSearchRadius , CHASE_AI_CONFIG.MinAudioSearchRadius , intensity);
             AudioSearchDuration = Mathf.Lerp(CHASE_AI_CONFIG.MinAudioSearchDuration , CHASE_AI_CONFIG.MaxAudioSearchDuration , intensity);
             CurrentAudioIntensity = intensity;
+            CurrentAudioOccurredTime = noiseData.OccurredTime;
+            CurrentAudioEvidenceDuration = intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold
+                ? CHASE_AI_CONFIG.StrongNoiseEvidenceDuration
+                : CHASE_AI_CONFIG.WeakNoiseEvidenceDuration;
+            CurrentAudioAcceptedTime = currentTime;
+            CurrentAudioNoiseType = noiseData.NoiseType;
+            CurrentAudioSourceObj = noiseData.SourceObj;
             HasActiveAudioInvestigation = true;
 
             ClearDirectorInvestigation();
@@ -46,6 +66,11 @@ namespace HideSeek.AI
             AudioSearchRadius = 0f;
             AudioSearchDuration = 0f;
             CurrentAudioIntensity = 0f;
+            CurrentAudioOccurredTime = 0f;
+            CurrentAudioEvidenceDuration = 0f;
+            CurrentAudioAcceptedTime = 0f;
+            CurrentAudioNoiseType = default;
+            CurrentAudioSourceObj = null;
             HasActiveAudioInvestigation = false;
         }
 

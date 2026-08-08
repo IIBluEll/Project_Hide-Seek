@@ -28,6 +28,7 @@ namespace HideSeek.AI
         [Header("Director Hint")]
         [SerializeField, Min(0f)] private float _hintRadius = 10f;
         [SerializeField, Range(0f, 1f)] private float _hintUrgency = 0.5f;
+        [Tooltip("Chase AI가 Hint를 수락하기 전까지의 유효시간입니다. 수락된 Hint 조사는 이동 중 만료되지 않습니다.")]
         [SerializeField, Min(0f)] private float _hintDuration = 5f;
         [SerializeField, Min(0.1f)] private float _hintNavMeshSampleRadius = 2f;
         [SerializeField, Min(1)] private int _hintPositionAttemptCount = 10;
