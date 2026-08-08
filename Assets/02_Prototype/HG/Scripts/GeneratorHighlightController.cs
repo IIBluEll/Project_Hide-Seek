@@ -27,7 +27,7 @@ namespace HideSeek.Generators
     /// 싱글톤이 아니다. 게임 1판 동안만 의미 있는 상태를 들고 있어 씬과 수명을 같이해야 한다.
     /// </summary>
     [DisallowMultipleComponent, DefaultExecutionOrder(-1)]
-    public sealed class GeneratorHighlightProvider : MonoBehaviour
+    public sealed class GeneratorHighlightController : MonoBehaviour
     {
         [Tooltip("등록된 모든 발전기가 이 머티리얼을 공유한다. HideSeek/GeneratorHighlight 셰이더를 쓰는 머티리얼을 할당한다.")]
         [SerializeField] private Material _highlightMaterial;
@@ -69,7 +69,7 @@ namespace HideSeek.Generators
 
             if (_highlightMaterial == null)
             {
-                Debug.LogError($"[{nameof(GeneratorHighlightProvider)}] 머티리얼이 비어 있어 발전기 표시가 동작하지 않습니다." , this);
+                Debug.LogError($"[{nameof(GeneratorHighlightController)}] 머티리얼이 비어 있어 발전기 표시가 동작하지 않습니다." , this);
             }
         }
 
@@ -193,7 +193,7 @@ namespace HideSeek.Generators
             GeneratorHighlight tHighlight = generator.GetComponentInChildren<GeneratorHighlight>(true);
             if (tHighlight == null)
             {
-                Debug.LogWarning($"[{nameof(GeneratorHighlightProvider)}] '{generator.name}'에 {nameof(GeneratorHighlight)}가 없어 위치 표시 대상에서 제외됩니다." , generator);
+                Debug.LogWarning($"[{nameof(GeneratorHighlightController)}] '{generator.name}'에 {nameof(GeneratorHighlight)}가 없어 위치 표시 대상에서 제외됩니다." , generator);
                 return;
             }
 

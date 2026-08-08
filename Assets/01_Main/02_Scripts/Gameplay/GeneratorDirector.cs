@@ -25,7 +25,7 @@ namespace HideSeek.Gameplay
     /// TODO: 난이도 선택이 생기면 Config를 인스펙터 고정값이 아니라 그쪽에서 받는다. GDD 12
     /// </summary>
     [DisallowMultipleComponent, DefaultExecutionOrder(-1)]
-    public sealed class GeneratorProvider : MonoBehaviour
+    public sealed class GeneratorDirector : MonoBehaviour
     {
         [Tooltip("활성화할 발전기 수를 여기서 받는다. 비워두면 Awake에서 씬을 검색한다.")]
         [SerializeField] private GameProgressProvider _gameProgressProvider;
@@ -41,22 +41,34 @@ namespace HideSeek.Gameplay
 
         public IReadOnlyList<GeneratorCandidatePoint> SelectedCandidates => LIST_SELECTED;
 
+#if UNITY_EDITOR
+        // 컴포넌트를 붙이는 순간 채워 둔다. 인스펙터에서 눈으로 확인할 수 있고,
+        // 값이 직렬화되어 있으면 Awake의 폴백 탐색도 돌지 않는다.
+        private void Reset()
+        {
+            _gameProgressProvider = FindFirstObjectByType<GameProgressProvider>();
+        }
+#endif
+
         private void Awake()
         {
+            // 프리팹을 씬에 끌어다 놓으면 Reset이 돌지 않으므로 여기서 한 번 더 받쳐준다.
             if (_gameProgressProvider == null)
             {
                 _gameProgressProvider = FindFirstObjectByType<GameProgressProvider>();
             }
 
+            WarnOnDuplicate();
+
             REGISTRY.Attach(OnGeneratorRegisteredActioned , OnGeneratorUnregisteredActioned);
 
             if (_generatorConfig == null)
             {
-                Debug.LogError($"[{nameof(GeneratorProvider)}] GeneratorConfig가 비어 있어 발전기가 동작하지 않습니다." , this);
+                Debug.LogError($"[{nameof(GeneratorDirector)}] GeneratorConfig가 비어 있어 발전기가 동작하지 않습니다." , this);
             }
         }
 
-        // 다른 Provider들이 Awake에서 구독을 마친 뒤에 켜야 등록을 놓치지 않는다.
+        // 다른 컴포넌트들이 Awake에서 구독을 마친 뒤에 켜야 등록을 놓치지 않는다.
         private void Start()
         {
             ActivateCandidates();
@@ -153,7 +165,7 @@ namespace HideSeek.Gameplay
                 return;
             }
 
-            Debug.LogWarning($"[{nameof(GeneratorProvider)}] 후보가 모자라 {requestedCount}개 중 {LIST_SELECTED.Count}개만 활성화했습니다. 클리어 조건을 실제 수에 맞춥니다. GDD 7.1은 후보를 5개 이상 두라고 정합니다." , this);
+            Debug.LogWarning($"[{nameof(GeneratorDirector)}] 후보가 모자라 {requestedCount}개 중 {LIST_SELECTED.Count}개만 활성화했습니다. 클리어 조건을 실제 수에 맞춥니다. GDD 7.1은 후보를 5개 이상 두라고 정합니다." , this);
 
             if (_gameProgressProvider != null)
             {
@@ -162,7 +174,23 @@ namespace HideSeek.Gameplay
         }
 
         /// <summary>
-        /// 마커가 없어 이 Provider의 관리 밖에 있는 발전기를 알린다.
+        /// 씬에 둘 이상 있으면 완료가 중복 집계된다. 필요 개수보다 적게 고쳐도 클리어되므로 하나만 둬야 한다.
+        /// GeneratorSystem 프리팹에 이 컴포넌트가 들어 있어 낱개로 놓인 것과 겹치기 쉽다.
+        /// DisallowMultipleComponent는 같은 오브젝트만 막아주므로 여기서 따로 확인한다.
+        /// </summary>
+        private void WarnOnDuplicate()
+        {
+            GeneratorDirector[] tArr_director = FindObjectsByType<GeneratorDirector>(FindObjectsSortMode.None);
+            if (tArr_director.Length <= 1)
+            {
+                return;
+            }
+
+            Debug.LogError($"[{nameof(GeneratorDirector)}] 씬에 {tArr_director.Length}개가 있습니다. 발전기 완료가 중복 집계되므로 하나만 남겨야 합니다." , this);
+        }
+
+        /// <summary>
+        /// 마커가 없어 이 Director의 관리 밖에 있는 발전기를 알린다.
         /// 튜토리얼처럼 일부러 제거한 경우도 있어 경고가 아니라 정보로 남긴다.
         /// 관리 밖 발전기도 완료하면 진행도에 집계되므로, 실수로 제거했다면 클리어 조건이 헐거워진다.
         /// </summary>
@@ -185,7 +213,7 @@ namespace HideSeek.Gameplay
                 return;
             }
 
-            Debug.Log($"[{nameof(GeneratorProvider)}] 후보 관리 밖에서 켜져 있는 발전기 {tUnmanagedCount}개를 찾았습니다. 의도한 예외가 아니면 {nameof(GeneratorCandidatePoint)}가 제거되지 않았는지 확인하세요." , this);
+            Debug.Log($"[{nameof(GeneratorDirector)}] 후보 관리 밖에서 켜져 있는 발전기 {tUnmanagedCount}개를 찾았습니다. 의도한 예외가 아니면 {nameof(GeneratorCandidatePoint)}가 제거되지 않았는지 확인하세요." , this);
         }
 
         private AIWorldZone ResolveZone(GeneratorCandidatePoint candidate , AIWorldZone[] arr_zone)
