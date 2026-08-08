@@ -96,7 +96,8 @@ namespace HideSeek.AI
             ChaseAISearch search ,
             ChaseAIAnger chaseAIAnger ,
             IReadOnlyList<Transform> patrolPoints ,
-            IReadOnlyList<AIWorldZone> zones)
+            IReadOnlyList<AIWorldZone> zones ,
+            Func<AIHidingSpot , bool> hidingSpotOccupancyEvaluator)
         {
             _config = config;
             _movement = movement;
@@ -105,7 +106,12 @@ namespace HideSeek.AI
             EVIDENCE_SELECTOR = new ChaseAIEvidenceSelector(config , memory , INVESTIGATION_CONTEXT);
             CHASE_AI_ANGER = chaseAIAnger;
             CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger , memory);
-            SEARCH_BEHAVIOR = new ChaseAISearchBehavior(config , movement , search , chaseAIAnger);
+            SEARCH_BEHAVIOR = new ChaseAISearchBehavior(
+                config ,
+                movement ,
+                search ,
+                chaseAIAnger ,
+                hidingSpotOccupancyEvaluator);
             PATROL_ROUTE = new ChaseAIPatrolRoute(config , patrolPoints);
             PATROL_ROUTE.ConfigureZones(zones);
         }

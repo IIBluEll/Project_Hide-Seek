@@ -74,6 +74,13 @@ namespace HideSeek.AI
                 return;
             }
 
+            if ( !_chaseAIController.ConfigureTarget(_playerTrans) )
+            {
+                Debug.LogError("[MasterAIProvider] 플레이어 상태 연결에 실패했습니다." , this);
+
+                return;
+            }
+
             try
             {
                 _zoneSelector = new MasterAIZoneSelector(_zones , _config);

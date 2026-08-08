@@ -17,6 +17,7 @@ namespace HideSeek.AI
         private readonly ChaseAIMovement CHASE_AI_MOVEMENT;
         private readonly ChaseAISearch CHASE_AI_SEARCH;
         private readonly ChaseAIAnger CHASE_AI_ANGER;
+        private readonly Func<AIHidingSpot , bool> HIDING_SPOT_OCCUPANCY_EVALUATOR;
 
         private Vector3 _searchCenterPosition;
         private float _currentSearchRadius;
@@ -53,12 +54,15 @@ namespace HideSeek.AI
             ChaseAIConfig chaseAIConfig ,
             ChaseAIMovement chaseAIMovement ,
             ChaseAISearch chaseAISearch ,
-            ChaseAIAnger chaseAIAnger)
+            ChaseAIAnger chaseAIAnger ,
+            Func<AIHidingSpot , bool> hidingSpotOccupancyEvaluator)
         {
             CHASE_AI_CONFIG = chaseAIConfig != null ? chaseAIConfig : throw new ArgumentNullException(nameof(chaseAIConfig));
             CHASE_AI_MOVEMENT = chaseAIMovement != null ? chaseAIMovement : throw new ArgumentNullException(nameof(chaseAIMovement));
             CHASE_AI_SEARCH = chaseAISearch != null ? chaseAISearch : throw new ArgumentNullException(nameof(chaseAISearch));
             CHASE_AI_ANGER = chaseAIAnger != null ? chaseAIAnger : throw new ArgumentNullException(nameof(chaseAIAnger));
+            HIDING_SPOT_OCCUPANCY_EVALUATOR = hidingSpotOccupancyEvaluator ??
+                throw new ArgumentNullException(nameof(hidingSpotOccupancyEvaluator));
         }
 
         public CHASE_AI_BEHAVIOR_STATUS Begin(ChaseAISearchRequest searchRequest)
@@ -442,7 +446,7 @@ namespace HideSeek.AI
                 return false;
             }
 
-            bool containsPlayer = hidingSpot.ContainsPlayer();
+            bool containsPlayer = HIDING_SPOT_OCCUPANCY_EVALUATOR.Invoke(hidingSpot);
 
             Debug.Log(
                 $"[ChaseAISearchBehavior] 은신처 조사 완료: " +
