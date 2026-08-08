@@ -6,6 +6,8 @@ namespace HideSeek.AI
 {
     public sealed class ChaseAIPatrolRoute
     {
+        private const int FAILED_ZONE_HISTORY_CAPACITY = 3;
+
         private readonly IReadOnlyList<Transform> FALLBACK_PATROL_POINTS;
         private readonly List<AISearchPoint> ZONE_PATROL_POINTS = new();
         private readonly List<AISearchPoint> ZONE_POINT_BUFFER = new();
@@ -13,6 +15,7 @@ namespace HideSeek.AI
         private readonly List<AIWorldZone> ADJACENT_ZONE_CANDIDATES = new();
         private readonly List<AIWorldZone> OTHER_ZONE_CANDIDATES = new();
         private readonly List<AIWorldZone> RECENT_ZONES = new();
+        private readonly List<AIWorldZone> FAILED_ZONES = new();
         private readonly ChaseAIConfig CHASE_AI_CONFIG;
 
         private IReadOnlyList<AIWorldZone> _zones = Array.Empty<AIWorldZone>();
@@ -51,6 +54,12 @@ namespace HideSeek.AI
 
             if ( containingZone == null )
             {
+                if ( TrySetNearestUsableZone(currentPosition , true) ||
+                     TrySetNearestUsableZone(currentPosition , false) )
+                {
+                    return;
+                }
+
                 _currentPointIndex = FindNearestFallbackPointIndex(currentPosition);
 
                 return;
@@ -105,7 +114,7 @@ namespace HideSeek.AI
             return true;
         }
 
-        public void Advance(Vector3 currentPosition , bool didReachPoint)
+        public void AdvanceAfterArrival(Vector3 currentPosition)
         {
             if ( PointCount == 0 )
             {
@@ -116,12 +125,10 @@ namespace HideSeek.AI
 
             if ( IsUsingZoneRoute )
             {
-                if ( didReachPoint )
-                {
-                    _visitedPointCountInCurrentZone++;
-                }
+                FAILED_ZONES.Remove(CurrentZone);
+                _visitedPointCountInCurrentZone++;
 
-                bool shouldSelectNewZone = !didReachPoint ||
+                bool shouldSelectNewZone =
                     _visitedPointCountInCurrentZone >= _targetPointVisitCountInCurrentZone;
 
                 if ( shouldSelectNewZone && TryMoveToNextZone(currentPosition) )
@@ -133,10 +140,38 @@ namespace HideSeek.AI
             _currentPointIndex = SelectNextPointIndex(currentPosition);
         }
 
+        public bool RecoverFromFailure(Vector3 currentPosition)
+        {
+            AIWorldZone failedZone = CurrentZone;
+
+            RememberFailedZone(failedZone);
+            ResetActiveRoute();
+
+            AIWorldZone containingZone = FindContainingZone(currentPosition);
+
+            if ( containingZone != null && TrySetCurrentZone(containingZone , currentPosition) )
+            {
+                TryMoveToNextZone(currentPosition);
+
+                return true;
+            }
+
+            if ( TrySetNearestUsableZone(currentPosition , true) ||
+                 TrySetNearestUsableZone(currentPosition , false) )
+            {
+                return true;
+            }
+
+            _currentPointIndex = FindNearestFallbackPointIndex(currentPosition);
+
+            return TryGetCurrentPoint(out _ , out _);
+        }
+
         public void Clear()
         {
             ResetActiveRoute();
             RECENT_ZONES.Clear();
+            FAILED_ZONES.Clear();
         }
 
         private void ResetActiveRoute()
@@ -187,11 +222,16 @@ namespace HideSeek.AI
             out AIWorldZone nextZone ,
             out bool isAdjacentZone)
         {
-            BuildZoneCandidates(true);
+            BuildZoneCandidates(true , true);
 
             if ( ADJACENT_ZONE_CANDIDATES.Count == 0 && OTHER_ZONE_CANDIDATES.Count == 0 )
             {
-                BuildZoneCandidates(false);
+                BuildZoneCandidates(false , true);
+            }
+
+            if ( ADJACENT_ZONE_CANDIDATES.Count == 0 && OTHER_ZONE_CANDIDATES.Count == 0 )
+            {
+                BuildZoneCandidates(false , false);
             }
 
             bool hasAdjacentZone = ADJACENT_ZONE_CANDIDATES.Count > 0;
@@ -221,7 +261,9 @@ namespace HideSeek.AI
             return true;
         }
 
-        private void BuildZoneCandidates(bool shouldAvoidRecentZones)
+        private void BuildZoneCandidates(
+            bool shouldAvoidRecentZones ,
+            bool shouldAvoidFailedZones)
         {
             ADJACENT_ZONE_CANDIDATES.Clear();
             OTHER_ZONE_CANDIDATES.Clear();
@@ -234,6 +276,7 @@ namespace HideSeek.AI
                      zone == CurrentZone ||
                      !zone.isActiveAndEnabled ||
                      (shouldAvoidRecentZones && RECENT_ZONES.Contains(zone)) ||
+                     (shouldAvoidFailedZones && FAILED_ZONES.Contains(zone)) ||
                      !HasActiveCoveragePoint(zone) )
                 {
                     continue;
@@ -248,6 +291,51 @@ namespace HideSeek.AI
                     OTHER_ZONE_CANDIDATES.Add(zone);
                 }
             }
+        }
+
+        private bool TrySetNearestUsableZone(
+            Vector3 currentPosition ,
+            bool shouldAvoidFailedZones)
+        {
+            AIWorldZone nearestZone = null;
+            float nearestSqrDistance = float.MaxValue;
+
+            for ( int zoneIndex = 0; zoneIndex < _zones.Count; zoneIndex++ )
+            {
+                AIWorldZone zone = _zones[ zoneIndex ];
+
+                if ( zone == null ||
+                     !zone.isActiveAndEnabled ||
+                     (shouldAvoidFailedZones && FAILED_ZONES.Contains(zone)) )
+                {
+                    continue;
+                }
+
+                ZONE_POINT_BUFFER.Clear();
+                zone.CollectSearchPoints(AI_SEARCH_POINT_TYPE.COVERAGE , ZONE_POINT_BUFFER);
+
+                for ( int pointIndex = 0; pointIndex < ZONE_POINT_BUFFER.Count; pointIndex++ )
+                {
+                    AISearchPoint searchPoint = ZONE_POINT_BUFFER[ pointIndex ];
+
+                    if ( searchPoint == null || !searchPoint.isActiveAndEnabled )
+                    {
+                        continue;
+                    }
+
+                    float sqrDistance = ( searchPoint.Position - currentPosition ).sqrMagnitude;
+
+                    if ( sqrDistance >= nearestSqrDistance )
+                    {
+                        continue;
+                    }
+
+                    nearestSqrDistance = sqrDistance;
+                    nearestZone = zone;
+                }
+            }
+
+            return nearestZone != null && TrySetCurrentZone(nearestZone , currentPosition);
         }
 
         private bool HasActiveCoveragePoint(AIWorldZone zone)
@@ -444,6 +532,22 @@ namespace HideSeek.AI
             while ( RECENT_ZONES.Count > historyCapacity )
             {
                 RECENT_ZONES.RemoveAt(0);
+            }
+        }
+
+        private void RememberFailedZone(AIWorldZone zone)
+        {
+            if ( zone == null )
+            {
+                return;
+            }
+
+            FAILED_ZONES.Remove(zone);
+            FAILED_ZONES.Add(zone);
+
+            while ( FAILED_ZONES.Count > FAILED_ZONE_HISTORY_CAPACITY )
+            {
+                FAILED_ZONES.RemoveAt(0);
             }
         }
 
