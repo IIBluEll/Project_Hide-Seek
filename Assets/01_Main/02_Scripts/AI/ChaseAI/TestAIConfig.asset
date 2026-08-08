@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc505ca9b9714344b91a2e6731a2b729, type: 3}
   m_Name: TestAIConfig
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIConfig
-  _walkSpeed: 5
-  _evidenceApproachSpeed: 6
+  _walkSpeed: 2.5
+  _evidenceApproachSpeed: 4
   _acceleration: 12
   _angularSpeed: 360
   _stoppingDistance: 0.2
@@ -84,8 +84,8 @@ MonoBehaviour:
   _visualHidingSpotInspectionChance: 0.65
   _strongAudioHidingSpotInspectionChance: 0.35
   _searchPointGenerationAttemptCountPerPoint: 10
-  _directionalSearchActionTimeMultiplier: 0.8
-  _areaSearchActionTimeMultiplier: 1
+  _directionalSearchActionTimeMultiplier: 1
+  _areaSearchActionTimeMultiplier: 1.2
   _hidingSpotSearchActionTimeMultiplier: 1.6
   _searchRotationSpeed: 120
   _areaSearchSweepAngle: 90

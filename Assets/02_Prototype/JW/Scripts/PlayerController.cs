@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IPlayerVisibilityState
 {
     private InteractPresenter _interactPresenter = new InteractPresenter();
     private readonly PlayerStateController _state = new PlayerStateController();
@@ -23,6 +23,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private ThrowUIViewer _throwViewer;
     [SerializeField] private PlayerSprintStaminaViewer _sprintViewer;
     public IStateService State => _state;
+    public bool IsFullyHidden => _state.IsFullyHidden;
 
     public IInputReader InputReader => _inputReader;
 
