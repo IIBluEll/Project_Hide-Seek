@@ -1,48 +1,43 @@
 # 사운드 구현 현황 및 작업 인수인계
 
-작성일: 2026-08-06
+작성일: 2026-08-08 (이전 판 2026-08-06 갱신)
 
 대상 Unity 버전: `6000.3.20f1`
 
 대상 브랜치: `SoundFeature`
 
-작성 기준 커밋: `99f6cfa` (`Master AI 이벤트 기반 BGM 전환 구조로 개선`)
+작성 기준 커밋: `8ea122c` (`발전기 - 효과음 Spatial Blend 3D 고정`)
 
 Pull Request: [#15 사운드 시스템 및 Master AI 기반 BGM 전환 추가](https://github.com/IIBluEll/Project_Hide-Seek/pull/15)
 
 ## 1. 문서 목적
 
-이 문서는 현재 사운드 구현 범위, 실제 씬 연결 상태, 기획서와의 차이, 확인된 문제와 다음 작업 순서를 기록한다.
+이 문서는 현재 사운드 구현 범위, 담당 경계, 실제 씬 연결 상태, 기획서와의 차이, 확인된 문제와 다음 작업 순서를 기록한다.
 
-다른 컴퓨터에서 작업을 재개할 때는 이 문서와 `GAME_DESIGN_DOCUMENT.md`의 14장을 먼저 확인한다. 이 문서의 내용은 `SoundFeature` 브랜치 기준이며, PR이 병합된 뒤에는 `dev`의 최신 상태와 다시 비교해야 한다.
+다른 컴퓨터에서 작업을 재개할 때는 이 문서와 `GAME_DESIGN_DOCUMENT.md`의 14장을 먼저 확인한다.
 
 ## 2. 현재 결론
 
-현재 사운드는 다음 단계까지 진행되었다.
+- BGM 재생기와 상태 전환 로직 구현 완료
+- Master AI 이벤트 기반 BGM 상태 갱신 구현 완료
+- 발전기 루프 및 이벤트 효과음 구현 완료, 3D 재생 문제 수정 완료
+- `Master / BGM / SFX` AudioMixer 그룹 구성 완료
+- Chase AI 효과음은 **다른 담당자가 구현**해 `dev`에서 합류했으나 클립과 믹서 그룹이 비어 있어 소리가 나지 않음
 
-- BGM 재생기와 상태 전환 로직 구현
-- Master AI 이벤트 기반 BGM 상태 갱신 구현
-- 발전기 루프 및 이벤트 효과음 구현
-- `Master / BGM / SFX` AudioMixer 그룹 구성
-- BGM 및 발전기 프리팹에 사용할 오디오 클립 연결
-
-아직 실제 게임 빌드 씬에는 사운드 시스템이 연결되지 않았다. 현재 상태는 **구조와 프리팹 구현 완료, 게임 씬 통합 및 전체 효과음 구현 전**으로 판단한다.
+아직 실제 게임 빌드 씬에는 사운드 시스템이 연결되지 않았다. 현재 상태는 **구조와 프리팹 구현 완료, 씬 통합 및 전체 효과음 구현 전**이다.
 
 ## 3. Git 및 PR 상태
-
-문서 작성 시점의 상태는 다음과 같다.
 
 | 항목 | 상태 |
 | --- | --- |
 | 로컬 브랜치 | `SoundFeature` |
 | 원격 브랜치 | `origin/SoundFeature`와 동기화 |
-| 작업 트리 | 변경 사항 없음 |
+| `origin/dev` 대비 | **0 behind / 9 ahead** (dev 통합 완료) |
 | PR | `SoundFeature` → `dev`, #15 열림 |
-| 병합 가능 여부 | `MERGEABLE` |
+| 병합 가능 여부 | `MERGEABLE` / `CLEAN` |
 | CI 검사 | 등록된 검사 없음 |
-| `origin/dev...HEAD` 변경량 | 235개 파일, 5,422줄 추가, 1,603줄 삭제 |
 
-사운드 관련 주요 커밋은 다음과 같다.
+주요 커밋:
 
 | 커밋 | 내용 |
 | --- | --- |
@@ -50,28 +45,45 @@ Pull Request: [#15 사운드 시스템 및 Master AI 기반 BGM 전환 추가](h
 | `95aefea` | AI 상태에 따른 BGM 전환과 BGM Player 추가 |
 | `fa9218c` | ENDING 상태와 게임 진행도 연동 추가 |
 | `99f6cfa` | Master AI 공용 이벤트 기반 구조로 변경 |
+| `69736bb` | `origin/dev` 병합 (충돌 0건, Chase AI 사운드 합류) |
+| `8ea122c` | 발전기 효과음 Spatial Blend 3D 고정 |
 
-## 4. 구현된 구조
+`69736bb` 병합은 충돌이 없었다. 두 브랜치가 수정한 파일 집합의 교집합이 0개였기 때문이다. 병합 후 `MasterAIProvider`가 의존하는 `ChaseAIController.StateChanged`, `RetreatFailed`, `CurrentState`와 `CHASE_AI_STATE` 7개 값이 모두 유지됨을 확인했다.
 
-### 4.1 BGM 재생
+## 4. 담당 경계
 
-주요 파일:
+사운드는 한 사람이 전부 맡지 않는다. 이 문서 작성자(형곤)의 담당 범위는 다음과 같다.
+
+| 영역 | 담당 | 비고 |
+| --- | --- | --- |
+| BGM 재생과 상태 전환 | 형곤 | |
+| 발전기 효과음 | 형곤 | 발전기 기능 담당이 함께 소유 |
+| AudioMixer 그룹 구성 | 형곤 | |
+| 플레이어와 Chase AI 거리 기반 심장 소리 | 형곤 | 미착수, 설계 논의 필요 |
+| Chase AI 효과음 | 다른 담당자 | `ChaseAISound.cs` |
+| 플레이어 효과음 | 다른 담당자 | |
+| 사운드 설정 UI와 저장 | UI 담당 | GDD 13.2, 아래 참고 |
+
+**볼륨 설정은 UI 담당 영역이다.** GDD 13.2 "설정"은 13장 "UI와 사용자 경험"에 속하며 사운드 항목으로 전체 볼륨, 배경 음악, 효과음 세 가지를 요구한다. 사운드 쪽 책임은 **설정 UI가 호출할 훅을 노출하는 것까지**이며, 설정 화면과 저장 데이터는 UI 담당이 소유한다. `GeneratorQteProvider`가 QTE 키를 UI 담당 키 설정 시스템으로 넘기기로 한 것과 같은 방식이다.
+
+## 5. 구현된 구조
+
+### 5.1 BGM 재생
 
 - `Assets/01_Main/02_Scripts/Sound/BgmPlayer.cs`
 - `Assets/01_Main/03_Prefabs/Sound/BGM Player.prefab`
 
-`BgmPlayer`는 AudioSource 두 개를 교대로 사용하여 곡을 교차 페이드한다.
+AudioSource 두 개를 교대로 사용해 교차 페이드한다.
 
-- 기본 페이드 시간: 2초
-- 기본 페이드 방식: Equal Power
-- BGM AudioSource: 2D
-- AudioMixer 출력 그룹: `BGM`
-- 실행 중 새로운 곡이 요청되거나 이전 곡으로 되돌아가는 경우 처리
-- `AudioClip`에 `null`을 전달하면 현재 BGM만 페이드 아웃
+- 기본 페이드 시간 2초, 기본 방식 Equal Power
+- BGM AudioSource는 2D, 출력은 `BGM` 그룹
+- 페이드 중 새 곡 요청과 이전 곡 복귀를 모두 처리한다
+- `AudioClip`에 `null`을 전달하면 현재 BGM만 페이드 아웃한다
+- `loop`, `playOnAwake`, 초기 볼륨은 `SetUpSource`가 코드에서 맞춘다
 
-### 4.2 BGM 상태 결정
+프리팹 검증 결과 두 AudioSource 모두 Spatial Blend 0, 출력 `BGM` 그룹, `playOnAwake` 꺼짐으로 정상이다. **ENDING 클립만 비어 있다.**
 
-주요 파일:
+### 5.2 BGM 상태 결정
 
 - `Assets/01_Main/02_Scripts/Integration/BgmStateConnector.cs`
 - `Assets/01_Main/02_Scripts/AI/MasterAI/MasterAIProvider.cs`
@@ -79,57 +91,45 @@ Pull Request: [#15 사운드 시스템 및 Master AI 기반 BGM 전환 추가](h
 
 `BgmStateConnector`는 Chase AI를 직접 참조하지 않고 `MasterAIProvider`를 AI 공용 접근점으로 사용한다.
 
-구독하는 이벤트:
-
-- `MasterAIProvider.ChaseStateChanged`
-- `MasterAIProvider.PlayerZoneChanged`
-- `GameProgressProvider.AllGeneratorsCompleted`
-- `GameProgressProvider.CompletedGeneratorCountChanged`
+구독 이벤트: `MasterAIProvider.ChaseStateChanged`, `MasterAIProvider.PlayerZoneChanged`, `GameProgressProvider.AllGeneratorsCompleted`, `GameProgressProvider.CompletedGeneratorCountChanged`.
 
 상태 변경 없이 AI가 Zone 경계를 통과하는 경우를 보완하기 위해 0.25초마다 AI 위치를 다시 판정한다.
 
-현재 상태 판정은 다음과 같다.
-
-| Master AI/Chase AI 조건 | BGM 상태 |
+| Chase AI 조건 | BGM 상태 |
 | --- | --- |
 | `CHASE`, `ATTACK` | `CHASE` |
 | `DORMANT`, `RETREAT` | `AMBIENT` |
-| `PATROL`, `INVESTIGATE`, `SEARCH`이면서 AI가 플레이어와 같은 Zone | `TENSION` |
-| 위 상태에서 AI가 다른 Zone | `AMBIENT` |
+| `PATROL`, `INVESTIGATE`, `SEARCH`이면서 플레이어와 같은 Zone | `TENSION` |
+| 위 상태에서 다른 Zone | `AMBIENT` |
 | 모든 발전기 완료 | `ENDING` 고정 |
 
 전환 규칙:
 
-- 긴장 상승은 단계를 건너뛸 수 있다. `AMBIENT → CHASE`가 가능하다.
-- 긴장 하강은 한 단계씩 처리한다.
-- `CHASE → TENSION → AMBIENT` 순서로 복귀한다.
-- `TENSION`은 최소 6초 유지한다.
-- `ENDING` 진입 후에는 AI 상태가 변해도 유지한다.
-- 같은 씬에서 진행도가 0으로 초기화되면 ENDING 고정을 해제하고 현재 AI 상태를 다시 반영한다.
+- 긴장 상승은 단계를 건너뛸 수 있다 (`AMBIENT → CHASE` 가능)
+- 긴장 하강은 한 단계씩 처리한다 (`CHASE → TENSION → AMBIENT`)
+- `TENSION`은 최소 6초 유지한다
+- `ENDING` 진입 후에는 AI 상태가 변해도 유지한다
+- 같은 씬에서 진행도가 0으로 초기화되면 ENDING 고정을 해제한다
 
-프리팹의 `MasterAIProvider`와 `GameProgressProvider` 참조는 비어 있다. 프리팹이 씬 오브젝트를 직접 참조할 수 없기 때문에 `Start()`에서 `FindFirstObjectByType`으로 찾는 구조다. 실제 씬에는 각 Provider가 하나씩 존재해야 한다.
+프리팹의 Provider 참조는 비어 있다. 프리팹이 씬 오브젝트를 참조할 수 없어 `Start()`에서 `FindFirstObjectByType`으로 찾는다. 씬에 각 Provider가 하나씩 있어야 한다. `AI_Prototype.unity`에는 두 Provider가 각각 1개씩 존재함을 확인했다.
 
-### 4.3 현재 BGM 클립 연결
+### 5.3 현재 BGM 클립 연결
 
-| 상태 | 연결된 클립 | 상태 |
+| 상태 | 클립 | 상태 |
 | --- | --- | --- |
 | `AMBIENT` | `Horror Elements/Ambient/Amb_Rumble.wav` | 연결됨 |
 | `TENSION` | `Horror Elements/Ambient/Amb_Burn.wav` | 연결됨 |
 | `CHASE` | `Horror Elements/Ambient/Amb_Run_2.wav` | 연결됨 |
-| `ENDING` | 없음 | 미연결 |
+| `ENDING` | 없음 | **미연결** |
 
-`ENDING` 클립이 비어 있으므로 현재 모든 발전기가 완료되면 ENDING 상태에는 진입하지만 기존 BGM이 페이드 아웃된 뒤 무음이 된다.
-
-### 4.4 발전기 효과음
-
-주요 파일:
+### 5.4 발전기 효과음
 
 - `Assets/01_Main/02_Scripts/Generator/GeneratorSound.cs`
 - `Assets/01_Main/03_Prefabs/Generator/Generator.prefab`
 
-`GeneratorSound`는 `Generator`가 사운드 시스템을 직접 알지 않도록 발전기 이벤트를 구독하는 어댑터다.
+`GeneratorSound`는 `Generator`가 사운드를 직접 알지 않도록 이벤트를 구독하는 어댑터다.
 
-| 발전기 이벤트/상태 | 동작 | 연결된 클립 |
+| 이벤트/상태 | 동작 | 클립 |
 | --- | --- | --- |
 | 비활성 상태 | 기계 루프 | `Small Machine.ogg` |
 | 수리 시작 | 수리 루프 | `Machine Bits 2.ogg` |
@@ -139,165 +139,207 @@ Pull Request: [#15 사운드 시스템 및 Master AI 기반 BGM 전환 추가](h
 | QTE 실패 | 단발음 | `Hit_Metal.wav` |
 | 발전기 완료 | 단발음 | `Misc_breath.wav` |
 
-발전기 루프와 단발음은 AudioMixer의 `SFX` 그룹으로 출력된다. 최대 감쇠 거리는 35m다.
+출력은 `SFX` 그룹, 최대 감쇠 거리 35m, Rolloff는 Linear다.
 
-### 4.5 AudioMixer
+**Spatial Blend는 `Awake`에서 두 AudioSource 모두 1로 강제한다.** 이전에는 인스펙터 값에 맡겼고 EventSource가 2D로 남아 QTE 판정음과 완료음이 거리와 무관하게 같은 크기로 들렸다. 프리팹 값도 3D로 고쳤으나, 값이 다시 틀어져도 재발하지 않도록 코드에서 보장한다.
 
-주요 파일:
+### 5.5 Chase AI 효과음 (다른 담당자)
+
+- `Assets/01_Main/02_Scripts/AI/ChaseAI/ChaseAISound.cs`
+
+`74f432b`에서 합류했다. 걷기·중간 뜀·전력질주별 발소리 묶음, 접촉음, 상태별 울음소리, Pitch 무작위화를 제공하며 3D 재생과 `SFX` 출력을 코드에서 보장한다. 설계 방향은 이 문서의 구조와 일치한다.
+
+**단, 현재 소리가 나지 않는다.** `AI_Prototype.unity`의 컴포넌트에서 `_outputMixerGroup`이 비어 있고 클립 배열 12개가 모두 비어 있다. `_chaseAIController`와 `_chaseAIAnimator` 참조는 정상이다. 클립 선정은 AI 연출 의도를 아는 담당자 몫이다.
+
+### 5.6 AudioMixer
 
 - `Assets/01_Main/04_Resource/Sound/AudioMixer.mixer`
 
-구성된 그룹과 노출 파라미터:
+| 그룹 | fileID | 노출 파라미터 |
+| --- | --- | --- |
+| `Master` | `24300002` | `MasterVolume` |
+| `BGM` | `-6546280980258379326` | `BgmVolume` |
+| `SFX` | `5812720547532978006` | `SfxVolume` |
 
-| 그룹 | 노출 파라미터 |
-| --- | --- |
-| `Master` | `MasterVolume` |
-| `BGM` | `BgmVolume` |
-| `SFX` | `SfxVolume` |
+에셋 GUID는 `7e32191a7ca4fd9499235a3620f0f980`이다. 파라미터를 설정 UI나 저장 데이터와 연결하는 코드는 아직 없다.
 
-현재 파라미터를 설정 UI 또는 저장 데이터와 연결하는 코드는 없다.
+## 6. 실제 씬 연결 상태
 
-## 5. 실제 씬 연결 상태
+빌드 설정에 등록된 씬은 `Assets/01_Main/01_Scene/SampleScene.unity` 하나다.
 
-빌드 설정에 등록된 씬은 다음 하나다.
+- `SampleScene`은 Main Camera, Directional Light, Global Volume만 있는 **사실상 빈 기본 씬**이다. AudioSource가 0개다.
+- `BGM Player.prefab`은 어떤 씬이나 프리팹에도 배치되어 있지 않다.
+- 플레이어는 `Assets/02_Prototype/JW/Scene/PlayerTestScene.unity`, Chase AI는 `Assets/01_Main/01_Scene/AI_Prototype.unity`에 있고 둘 다 빌드 미등록이다.
 
-- `Assets/01_Main/01_Scene/SampleScene.unity`
+따라서 현재 빌드를 실행해도 BGM과 발전기 효과음은 재생되지 않는다. 이는 사운드만의 문제가 아니라 프로젝트 전체의 씬 통합 문제다.
 
-확인 결과:
+**검증 방침:** 씬 통합은 다른 담당자의 작업이 끝나야 하므로, 사운드는 `AI_Prototype`에서 Play Mode로 검증만 하고 **씬 변경은 커밋하지 않는다.** 커밋 산출물은 프리팹과 코드로만 남긴다.
 
-- `BGM Player.prefab`은 현재 어떤 씬이나 다른 프리팹에도 배치되어 있지 않다.
-- `Generator.prefab`을 포함하는 `GeneratorTest.prefab`은 `Assets/02_Prototype/JW/Scene/PlayerTestScene.unity`에서만 사용된다.
-- `PlayerTestScene`은 빌드 설정에 등록되어 있지 않다.
-- `SampleScene`에는 BGM 또는 발전기 AudioSource가 없다.
+## 7. GDD와 현재 구현의 차이
 
-따라서 현재 빌드를 실행해도 이번 브랜치에서 구현한 BGM과 발전기 효과음은 재생되지 않는다.
-
-## 6. GDD와 현재 구현의 차이
-
-기획 기준은 `GAME_DESIGN_DOCUMENT.md` 14.1과 14.2다.
+기준은 `GAME_DESIGN_DOCUMENT.md` 14.1과 14.2다.
 
 | GDD 요구사항 | 현재 구현 | 후속 조치 |
 | --- | --- | --- |
-| `SAFE` 상태 | 상태 자체가 없음 | SAFE를 복구할지 현 4단계를 공식화할지 결정 |
+| `SAFE` 상태 | 상태 자체가 없음 | SAFE 복구 여부 또는 현 4단계 공식화 결정 |
 | TENSION: 같은 Zone 또는 인접 Zone | 같은 Zone만 판정 | 인접 Zone 포함 여부 확정 |
-| TENSION: 소음을 조사 중 | 조사 상태만으로는 켜지지 않음 | 위치 정보 노출 문제를 포함해 기획 확인 |
+| TENSION: 소음을 조사 중 | 조사 상태만으로는 켜지지 않음 | 위치 정보 노출 문제 포함해 기획 확인 |
 | AMBIENT: 긴장도가 낮음 | `GlobalStress` 미사용 | 사용할 값과 임계값 결정 |
 | ENDING: 발전기 완료 및 탈출 장치 활성화 | 발전기 완료 즉시 진입 | 탈출 장치 구현 후 이벤트 이동 여부 결정 |
 | 페이드 또는 레이어 전환 | 교차 페이드 구현 | 완료 |
 | 추격 종료 후 TENSION 경유 | 구현 | 완료 |
 
-코드 주석에는 2026-08-03 기획 확인을 거쳐 SAFE 제거와 ENDING 조건 변경을 결정했다고 기록되어 있다. 그러나 GDD가 갱신되지 않았으므로 병합 전 기획 기준을 하나로 통일해야 한다.
+코드 주석에는 2026-08-03 기획 확인으로 SAFE 제거와 ENDING 조건 변경을 결정했다고 기록되어 있으나 GDD가 갱신되지 않았다. 병합 전 기준을 하나로 통일해야 한다.
 
-## 7. GDD 필수 효과음 진행도
+### 7.1 전기 스파크 조건이 GDD 안에서 엇갈린다
+
+GDD가 전기 스파크를 세 곳에서 다르게 언급한다.
+
+| 위치 | 서술 | 함의 |
+| --- | --- | --- |
+| 7.4 QTE 규칙 | "실패 시 붉은 피드백, **스파크**, 큰 소음을 제공한다" | QTE **실패** 연출 |
+| 14.2 발전기 | "**완료음과 전기 스파크**" | **완료** 연출 |
+| 12장 환경 사운드 | "전기 스파크와 금속 충격" | **환경** 상시 앰비언스 |
+
+7.4는 스파크를 QTE 실패 피드백으로 정의하고, 14.2는 완료음과 한 줄에 묶어 완료 연출처럼 읽힌다. 현재 구현은 QTE 실패에 `Hit_Metal.wav` 단발음만 있고 스파크 전용 클립이나 연출은 없다.
+
+**작업 전에 어느 쪽인지 확정해야 한다.** 실패 연출이라면 기존 실패음을 스파크음으로 교체하거나 겹쳐 쓰는 문제이고, 완료 연출이라면 완료음에 추가하는 별개 작업이다. 환경 스파크는 위 둘과 무관한 환경 담당 항목이다.
+
+## 8. GDD 필수 효과음 진행도
 
 | 영역 | 요구사항 | 진행 상태 |
 | --- | --- | --- |
 | 플레이어 | 걷기, 달리기, 앉아서 이동 | 미구현 |
 | 플레이어 | 디코이 투척 | 미구현 |
 | 플레이어 | 상호작용 | 미구현 |
-| Chase AI | 발소리와 울음소리 | 미구현 |
-| Chase AI | 수색과 공격 | 미구현 |
+| Chase AI | 발소리와 울음소리 | 코드 구현, **클립 미배선** |
+| Chase AI | 수색과 공격 | 코드 구현, **클립 미배선** |
 | Chase AI | Vent 출입 | 미구현 |
 | 발전기 | 비활성 기계음과 수리음 | 구현 |
 | 발전기 | QTE 성공·실패 | 구현 |
 | 발전기 | 완료음 | 구현 |
-| 발전기 | 전기 스파크 | 별도 클립·연출 미구현 |
+| 발전기 | 전기 스파크 | 미구현, **조건 미확정** (7.1 참고) |
 | 환경 | 사이렌, 전기음, 환풍기 | 미구현 |
 | 환경 | 금속 충격, 문, 조명 점멸 | 미구현 |
 | 컷신 | 시작, 사망, 엔딩 사운드 연출 | 미구현 |
 
-메인 코드에서 실제 AudioSource를 사용하는 사운드 시스템은 현재 `BgmPlayer`와 `GeneratorSound`뿐이다. 프로토타입의 `ImpactNoiseEmitter`는 별도 테스트 코드다.
-
-## 8. 확인된 문제와 위험 요소
+## 9. 확인된 문제와 위험 요소
 
 ### P0: 씬 미배치
 
-BGM Player가 씬에 없으므로 BGM 전환 로직이 실행되지 않는다. 게임용 씬이 확정되면 BGM Player를 배치하고 Provider 자동 검색 결과를 확인해야 한다.
+BGM Player가 씬에 없으므로 BGM 전환 로직이 실행되지 않는다. 씬 통합 일정과 무관하게 `AI_Prototype`에서 먼저 검증한다.
 
 ### P0: ENDING 클립 누락
 
-`BGM Player.prefab`의 `_endingClip`이 비어 있다. ENDING 상태 전환 시 `Play(null)`이 호출되어 BGM이 정지한다.
+`BGM Player.prefab`의 `_endingClip`이 비어 있다. ENDING 전환 시 `Play(null)`이 호출되어 BGM이 정지한다.
 
-### P1: 발전기 단발 효과음의 3D 설정 불일치
+### P0: ChaseAISound 미배선 (다른 담당자)
 
-`GeneratorSound.cs` 주석은 두 AudioSource 모두 Spatial Blend 1을 요구한다. 그러나 프리팹 직렬화 값은 다음과 같다.
-
-- LoopSource: Spatial Blend 1
-- EventSource: Spatial Blend 0
-
-현재 설정에서는 QTE와 완료 단발음이 2D로 재생되어 맵 전체에서 같은 크기로 들릴 수 있다.
+`_outputMixerGroup`이 비어 있어 `SFX` 볼륨 제어 밖으로 빠지고, 클립 배열 12개가 비어 있어 실제 소리가 없다.
 
 ### P1: GDD와 상태 정의 불일치
 
-SAFE, 인접 Zone, 소음 조사, GlobalStress, 탈출 장치 조건을 기획과 다시 맞춰야 한다. 코드를 먼저 변경하기보다 GDD 갱신 여부를 먼저 결정한다.
+SAFE, 인접 Zone, 소음 조사, GlobalStress, 탈출 장치 조건, 전기 스파크 조건을 기획과 맞춰야 한다. 코드를 먼저 바꾸기보다 GDD 갱신 여부를 먼저 결정한다.
 
 ### P1: 필수 효과음 대부분 미구현
 
-플레이어, Chase AI, 환경 효과음과 컷신 사운드가 없다. 기능별 담당 코드가 제공하는 이벤트를 확인한 뒤 `Integration` 계층 또는 전용 사운드 컴포넌트에서 연결한다.
+플레이어, 환경 효과음과 컷신 사운드가 없다.
 
 ### P2: BGM 임포트 설정
 
-`BgmPlayer.cs`는 긴 곡의 Load Type을 Streaming으로 둘 것을 권장한다. 현재 AMBIENT, TENSION, CHASE WAV 클립은 `Decompress On Load`와 `Preload Audio Data`를 사용한다. 메모리 사용량과 전환 시 끊김을 Unity Profiler로 확인하고 Streaming 전환을 검토한다.
+BGM 3개 모두 Load Type이 `Decompress On Load`, `Preload Audio Data`가 켜져 있다.
 
-### P2: 볼륨 설정 경로 없음
+| 클립 | 길이 | 파일 | 형식 |
+| --- | --- | --- | --- |
+| `Amb_Rumble` (AMBIENT) | 83초 | 14.0MB | 44.1kHz 스테레오 16bit |
+| `Amb_Burn` (TENSION) | 119초 | 20.1MB | 44.1kHz 스테레오 16bit |
+| `Amb_Run_2` (CHASE) | 32초 | 5.4MB | 44.1kHz 스테레오 16bit |
 
-AudioMixer 파라미터는 노출되어 있지만 이를 조작하거나 저장하는 공용 사운드 설정 구조가 없다.
+`Decompress On Load`는 로드 시점에 압축을 풀어 **원본 PCM 크기 그대로 메모리에 상주**시킨다. 세 클립 합계 약 40MB가 씬 로드 시점부터 계속 점유된다. BGM은 길고 2D이며 동시에 최대 두 개만 울리므로 `Streaming`이 표준 선택이다. `Streaming`은 디스크에서 조금씩 읽어 메모리를 거의 쓰지 않는 대신 디스크 접근과 약간의 CPU를 쓴다. Profiler로 확인 후 전환한다.
+
+### P2: 볼륨 설정 훅 없음
+
+AudioMixer 파라미터는 노출되어 있으나 이를 적용·저장하는 코드가 없다. 설정 UI는 UI 담당 영역이므로 사운드 쪽은 훅만 제공한다 (4장 참고).
 
 ### P2: 에셋 및 PR 정리 필요
 
-- 오디오 파일 107개, 약 261MB가 추가되었다.
-- 실제 연결된 클립은 BGM 3개와 발전기 6개다.
-- 사용하지 않는 WAV/OGG 중복과 미사용 클립을 정리할지 검토한다.
-- `Assets/TutorialInfo`와 `Assets/Readme.asset` 삭제가 이번 PR에 포함되어 있으므로 의도한 정리인지 확인한다.
-- 에셋 `.meta`에는 Unity Asset Store의 productId와 packageName이 남아 있지만 GDD 16.3에서 요구하는 출처 URL, 제작자, 라이선스, 사용 날짜를 정리한 별도 목록은 없다.
+- 오디오 파일 107개, 약 261MB가 추가되었다
+- 실제 연결된 클립은 BGM 3개와 발전기 6개다
+- 미사용 WAV/OGG 중복 정리 여부를 검토한다
+- `.meta`에 Unity Asset Store productId와 packageName은 남아 있으나 GDD 16.3이 요구하는 출처 URL, 제작자, 라이선스, 사용 날짜 목록은 없다
 
-## 9. 검증 상태
+## 10. 발전기 QTE 검증 시 주의
+
+발전기 QTE 효과음을 확인할 때 다음을 알고 있어야 한다. 아래 내용은 다른 담당자 코드의 동작이다.
+
+`GeneratorQteProvider._qteInputSource`에는 `PlayerQTEInputSource`가 인스펙터로 주입된다. 이 컴포넌트는 `PlayerInputReader.OnJumpEvent`를 구독하므로 **QTE 키는 점프 키(Space)와 같다.**
+
+`GeneratorQteProvider`는 프리팹 안에 있고 `PlayerQTEInputSource`는 플레이어 오브젝트에 있어 **프리팹 에셋에서는 이 참조를 할당할 수 없다.** 씬 인스턴스에서만 할당된다. `PlayerTestScene`에는 이미 override로 연결되어 있으므로 QTE 검증은 그 씬에서 하는 것이 빠르다. 새로 구성한다면 `GeneratorTest.prefab`을 써야 한다. `Generator Provider.prefab`은 View 참조 두 개가 모두 비어 있어 `Awake`에서 오류가 난다.
+
+**점프 후 첫 QTE가 즉시 실패한다.** `PlayerQTEInputSource.IsQteKeyDown()`은 읽으면 소비되는 래치인데, 플래그는 QTE와 무관하게 Space를 누를 때마다 켜지고 `Generator`는 QTE 활성 중에만 이 값을 읽는다. 평소 점프로 켜진 플래그가 남아 있다가 QTE 첫 프레임에 소비되며, 그 시점의 인디케이터가 0이라 실패로 판정된다. 실패음만 계속 들린다면 사운드 배선이 아니라 이 문제다. 검증 시 수리 시작 전에 점프하지 않는다.
+
+`GeneratorQteProvider._qteKey`는 현재 동작하지 않는 필드다. `KeyboardInputSource` 생성이 주석 처리되어 이 값은 실제 키에도 UI 라벨에도 반영되지 않는다. 라벨은 `PlayerQTEInputSource.GetQteKeyLabel()`이 `"Space"`로 고정 반환한다.
+
+## 11. 남은 작업
+
+담당과 산출물 기준으로 나눈다.
+
+**형곤 담당 (커밋 산출물 있음)**
+
+| 작업 | 산출물 | 선행 조건 |
+| --- | --- | --- |
+| ENDING 클립 할당 | `BGM Player.prefab` | 클립 확정 |
+| 전기 스파크음 | `GeneratorSound.cs`, 프리팹 | **조건 확정 필요** (7.1) |
+| BGM Streaming 전환 | `.wav.meta` | Profiler 확인 |
+| 볼륨 적용 훅 | 신규 코드 | UI 담당과 인터페이스 합의 |
+| 심장 소리 | 신규 코드 | 설계 논의 |
+| GDD 14.1 정리 | `GAME_DESIGN_DOCUMENT.md` | 기획 확정 |
+
+**형곤 담당 (커밋 산출물 없음, 검증만)**
+
+- `AI_Prototype`에 BGM Player 배치 후 상태 전환 청취
+- 발전기 루프와 QTE 판정음 거리 감쇠 청취
+
+**다른 담당자**
+
+- 씬 통합
+- `ChaseAISound` 클립과 믹서 그룹 배선
+- 플레이어·환경·컷신 효과음
+- 사운드 설정 UI와 저장
+- QTE 입력 래치 문제 (10장)
+
+## 12. 검증 상태
 
 | 검증 항목 | 결과 |
 | --- | --- |
 | Git 작업 트리 | 깨끗함 |
-| 원격 브랜치 동기화 | 완료 |
-| PR 병합 가능 여부 | 가능 |
+| `origin/dev` 통합 | 완료, 충돌 0건 |
+| 병합 후 API 정합성 | 정적 확인 완료 |
+| PR 병합 가능 여부 | `MERGEABLE` / `CLEAN` |
 | BGM/발전기 직렬화 참조 확인 | 완료 |
 | 빌드 씬 배치 확인 | 미배치 확인 |
 | 사운드 자동화 테스트 | 없음 |
-| PR CI | 없음 |
-| Unity Play Mode 청취 테스트 | 미완료 |
-| 전체 Unity 빌드 | 미완료 |
+| Unity Editor 컴파일 확인 | **미완료** |
+| Unity Play Mode 청취 테스트 | **미완료** |
+| 전체 Unity 빌드 | **미완료** |
 
-독립 `dotnet build Assembly-CSharp.csproj`는 Unity가 생성한 프로젝트에서 `UnityEngine.UI`와 `UnityEditor.UI` 참조를 찾지 못해 실패했다. 이는 사운드 코드 자체의 컴파일 오류를 증명하지 않으며 Unity Editor 컴파일을 대체할 수 없다.
+독립 `dotnet build Assembly-CSharp.csproj`는 Unity가 생성한 프로젝트에서 `UnityEngine.UI` 참조를 찾지 못해 실패한다. 이는 환경 문제이며 사운드 코드의 컴파일 가능 여부를 증명하지도, 반증하지도 않는다. Unity Editor 컴파일을 대체할 수 없다.
 
-Unity 배치 실행은 라이선스 클라이언트 재연결 문제로 전체 검증을 완료하지 못했다. 다음 작업자는 Unity Editor에서 Console 오류, Play Mode 전환, 실제 청취를 반드시 확인해야 한다.
+`69736bb` 병합으로 `AI_AnimCtrl.controller`, 애니메이션 3종, `TagManager.asset`이 함께 들어왔다. Editor Console에 애니메이션 관련 경고가 보인다면 사운드 변경이 아니라 이쪽일 가능성이 높다.
 
-## 10. 권장 작업 순서
-
-1. 기획 담당자와 GDD/현재 BGM 상태 차이를 확정한다.
-2. 사용할 게임 씬에 `BGM Player.prefab`을 배치한다.
-3. 씬에 `MasterAIProvider`와 `GameProgressProvider`가 각각 하나씩 존재하는지 확인한다.
-4. ENDING BGM 클립을 선정하고 프리팹에 할당한다.
-5. AMBIENT, TENSION, CHASE, ENDING 전환을 Play Mode에서 순서대로 검증한다.
-6. 발전기 EventSource의 Spatial Blend를 3D로 수정하고 거리 감쇠를 청취 검증한다.
-7. 플레이어, Chase AI, 환경 순서로 필수 효과음을 구현한다.
-8. AudioMixer 볼륨을 설정 UI 및 저장 데이터에 연결한다.
-9. BGM Streaming 설정과 오디오 에셋 용량을 최적화한다.
-10. 에셋 라이선스 목록과 최소 Play Mode 테스트를 추가한다.
-
-## 11. 다른 컴퓨터에서 작업 재개
-
-저장소를 받은 뒤 다음 순서로 확인한다.
+## 13. 작업 재개 방법
 
 ```powershell
 git fetch origin
 git switch SoundFeature
 git pull --ff-only origin SoundFeature
 git status --short --branch
-git log -5 --oneline
 gh pr view 15
 ```
 
-그다음 Unity Hub에서 프로젝트를 Unity `6000.3.20f1`로 연다.
+Unity Hub에서 Unity `6000.3.20f1`로 연다.
 
-작업 전 확인 문서:
+확인 문서:
 
 1. `GAME_DESIGN_DOCUMENT.md` 14장과 16.3
 2. 이 문서
@@ -305,29 +347,22 @@ gh pr view 15
 4. `Assets/01_Main/02_Scripts/Sound/BgmPlayer.cs`
 5. `Assets/01_Main/02_Scripts/Generator/GeneratorSound.cs`
 
-씬 배치 여부 확인 명령:
+배치 확인 명령:
 
 ```powershell
-# BGM Player 프리팹 GUID가 씬/프리팹에서 사용되는지 확인
 rg -n -F "48733292fc74a6a4cbcd7b26e02428af" Assets -g "*.unity" -g "*.prefab"
-
-# GeneratorTest 프리팹 GUID가 사용되는 씬 확인
 rg -n -F "ad63486779c723d46b952640bdae360c" Assets -g "*.unity" -g "*.prefab"
 ```
 
-PR이 이미 병합되었거나 `dev`가 변경되었다면 현재 브랜치에 바로 추가 작업하지 말고 먼저 PR 상태와 `origin/dev`의 최신 커밋을 확인한다.
+## 14. 완료 조건
 
-## 12. 완료 조건
-
-사운드 기능은 최소한 다음 조건을 만족해야 완료로 판단할 수 있다.
-
-- 빌드 대상 게임 씬에서 BGM이 실제 재생된다.
-- AMBIENT, TENSION, CHASE, ENDING 전환 조건이 확정된 GDD와 일치한다.
-- ENDING BGM이 무음으로 끝나지 않는다.
-- 추격 종료 시 TENSION을 거쳐 AMBIENT로 복귀한다.
-- 발전기 루프, QTE 성공·실패, 완료음이 거리 감쇠와 함께 정상 재생된다.
-- GDD 14.2의 플레이어, Chase AI, 발전기, 환경 필수 효과음이 연결된다.
-- Master/BGM/SFX 볼륨을 설정 화면에서 조절하고 저장할 수 있다.
-- Unity Editor Console에 관련 오류가 없다.
-- Play Mode 또는 자동화 테스트로 주요 상태 전환을 재현한 기록이 있다.
-- 사용한 외부 오디오 에셋의 출처와 라이선스가 문서화되어 있다.
+- 빌드 대상 게임 씬에서 BGM이 실제 재생된다
+- AMBIENT, TENSION, CHASE, ENDING 전환 조건이 확정된 GDD와 일치한다
+- ENDING BGM이 무음으로 끝나지 않는다
+- 추격 종료 시 TENSION을 거쳐 AMBIENT로 복귀한다
+- 발전기 루프, QTE 성공·실패, 완료음이 거리 감쇠와 함께 정상 재생된다
+- GDD 14.2의 플레이어, Chase AI, 발전기, 환경 필수 효과음이 연결된다
+- Master/BGM/SFX 볼륨을 설정 화면에서 조절하고 저장할 수 있다
+- Unity Editor Console에 관련 오류가 없다
+- Play Mode 또는 자동화 테스트로 주요 상태 전환을 재현한 기록이 있다
+- 사용한 외부 오디오 에셋의 출처와 라이선스가 문서화되어 있다
