@@ -1997,7 +1997,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3445133661593418476}
   - component: {fileID: 1493096940065361358}
-  m_Layer: 7
+  m_Layer: 31
   m_Name: SM_Chr_SpaceSoldier_Head_Male_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2746,7 +2746,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 119
+    m_Bits: 247
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -3908,7 +3908,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5942737371569885275}
   - component: {fileID: 6087326096320820795}
-  m_Layer: 7
+  m_Layer: 31
   m_Name: SM_Chr_SpaceSoldier_Male_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
