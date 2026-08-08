@@ -67,11 +67,25 @@ namespace HideSeek.Generators
             Finish(QTE_RESULT.FAILURE);
         }
 
-        // 판정 없이 중단한다. 작업 취소나 수리 완료 시 사용한다.
+        // 판정 없이 중단한다. 수리 완료처럼 판정이 의미 없는 경우에 사용한다.
         public void Cancel()
         {
             IsActive = false;
             Indicator01 = 0f;
+        }
+
+        /// <summary>
+        /// 진행 중이던 판정을 실패로 끝낸다. 진행 중이 아니면 아무것도 하지 않는다.
+        /// 수리를 중단해 QTE 판정을 회피하는 것을 막는다.
+        /// </summary>
+        public void CancelAsFailure()
+        {
+            if (IsActive == false)
+            {
+                return;
+            }
+
+            Finish(QTE_RESULT.FAILURE);
         }
 
         private void Finish(QTE_RESULT result)
