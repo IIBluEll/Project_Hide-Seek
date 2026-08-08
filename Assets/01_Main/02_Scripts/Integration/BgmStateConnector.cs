@@ -28,20 +28,14 @@ namespace HideSeek.Integration
     /// Director 힌트는 부정확한 Zone을 가리키므로(GDD 9.4), 조사 중이라는 이유로 긴장을 켜면
     /// 맵 반대편을 뒤지는 동안에도 음악이 유지되어 위치 정보를 주지 못한다. GDD 3.1
     ///
-    /// 기획서와 다른 점이 두 가지 있다. 2026-08-03 기획 확인을 거쳐 결정했으나 GDD는 아직 갱신하지 않았다.
-    /// - GDD 14.1의 SAFE를 쓰지 않는다. AMBIENT, TENSION과 조건이 겹쳐 세 단계로 줄였다.
-    /// - GDD 14.1은 ENDING 조건을 "모든 발전기 완료 + 탈출 장치 활성화"로 정의하지만, 탈출 장치가 없으므로
-    ///   발전기 완료 시점에 바로 진입한다. 탈출 장치가 생기면 조건을 옮길지 다시 확인한다.
-    ///
-    /// Chase 상태와 플레이어 Zone 변경은 MasterAIProvider 이벤트로 즉시 재계산한다.
-    /// AI가 상태 변경 없이 Zone 경계를 통과하는 경우를 위해 0.25초 주기 위치 재계산도 유지한다.
-    /// TODO: 인접 Zone까지 포함할지는 회의에서 확정한다. GDD 14.1은 인접 Zone도 조건에 넣고 있다.
-    /// TODO: GDD 14.1의 AMBIENT 조건에 있는 "긴장도가 낮은"을 반영하지 않았다.
-    ///       MasterAIProvider.GlobalStress를 쓸지와 임계값은 회의에서 확정한다.
+    /// 상태 정의가 GDD 14.1과 다섯 군데 어긋나 있다(SAFE, 인접 Zone, 소음 조사, GlobalStress, ENDING 조건).
+    /// 항목별 근거와 수정 제안은 Docs/GDD_SOUND_CHANGE_REQUESTS.md에 있고 회의 안건 A-1에서 확정한다.
+    /// 확정 전까지 이 파일의 판정 기준을 임의로 바꾸지 않는다.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BgmStateConnector : MonoBehaviour
     {
+        // 상태 변경 없이 AI가 Zone 경계를 넘는 경우는 이벤트로 잡히지 않아 주기적으로 다시 판정한다.
         private const float AI_ZONE_CHECK_INTERVAL = 0.25f;
 
         [Header("참조")]
@@ -257,9 +251,6 @@ namespace HideSeek.Integration
             ReevaluateState();
         }
 
-        /// <summary>
-        /// MasterAIProvider가 중계하는 현재 Chase AI 상태와 위치로 목표 단계를 정한다.
-        /// </summary>
         private BGM_STATE ResolveTargetState()
         {
             if (_masterAIProvider == null)
