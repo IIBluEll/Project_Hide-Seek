@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -11,18 +10,17 @@ namespace HideSeek.Generators
     /// 원본 Renderer의 머티리얼은 건드리지 않는다. 같은 메시를 쓰는 표시 전용 오브젝트를 자식으로 만들어 켜고 끄므로
     /// 원본의 머티리얼 교체나 셰이더 설정과 충돌하지 않는다.
     ///
-    /// 언제 표시할지는 이 컴포넌트가 판단하지 않는다. <see cref="Generator"/>와 같은 방식으로
-    /// <see cref="Enabled"/>, <see cref="Disabled"/>만 알리고, 표시를 관리하는 쪽이
+    /// 언제 표시할지는 이 컴포넌트가 판단하지 않는다. 표시를 관리하는 쪽이
     /// <see cref="SetMaterial"/>과 <see cref="SetVisible"/>을 호출한다. 그 상대가 누구인지는 알지 않는다.
+    ///
+    /// 자기 존재를 알리지 않는다. 관리하는 쪽이 <see cref="Generator"/>를 등록할 때 같은 오브젝트에서 이 컴포넌트를
+    /// 찾아간다. 발전기 1기당 등록 경로가 하나여야 어느 발전기의 실루엣인지 알 수 있기 때문이다.
     ///
     /// 머티리얼도 인스펙터에 두지 않는다. 모든 발전기가 같은 색을 쓰므로 등록하는 쪽이 하나를 넣어준다.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class GeneratorHighlight : MonoBehaviour
     {
-        public static event Action<GeneratorHighlight> Enabled;
-        public static event Action<GeneratorHighlight> Disabled;
-
         [Tooltip("비워 두면 이 오브젝트와 자식의 MeshRenderer, SkinnedMeshRenderer를 모두 찾아 쓴다. 일부만 표시하려면 직접 지정한다.")]
         [SerializeField] private Renderer[] _sourceRenderers;
 
@@ -36,17 +34,10 @@ namespace HideSeek.Generators
 
         public bool IsVisible => _isVisible;
 
-        private void OnEnable()
-        {
-            Enabled?.Invoke(this);
-        }
-
         private void OnDisable()
         {
             // 컴포넌트만 꺼지면 실루엣은 계속 보인다. 다시 켜질 때 관리하는 쪽이 현재 상태를 다시 넣어준다.
             SetVisible(false);
-
-            Disabled?.Invoke(this);
         }
 
         private void OnDestroy()

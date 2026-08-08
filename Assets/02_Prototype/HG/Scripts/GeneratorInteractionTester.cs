@@ -15,6 +15,15 @@ namespace HideSeek.Generators
         [SerializeField] private Generator _generator;
         [SerializeField] private Key _repairKey = Key.E;
 
+        private void Awake()
+        {
+            // 인스펙터 연결을 잊어도 같은 발전기 안에서 찾는다. 다른 발전기를 가리켜야 할 때만 인스펙터로 지정한다.
+            if (_generator == null)
+            {
+                _generator = GetComponentInParent<Generator>();
+            }
+        }
+
         private void Update()
         {
             if (_generator == null)
