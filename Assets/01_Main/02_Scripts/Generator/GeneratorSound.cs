@@ -11,12 +11,10 @@ namespace HideSeek.Generators
     /// Spatial Blend는 Awake에서 3D로 맞춘다. 인스펙터에 맡겼더니 EventSource가 2D로 남아
     /// QTE 판정음과 완료음이 맵 어디서나 같은 크기로 들렸다.
     ///
-    /// 인스펙터 설정 기준
-    /// - Volume Rolloff는 Linear나 Custom을 쓴다. 기본값인 Logarithmic은 Max Distance를 넘어도
-    ///   볼륨이 0이 되지 않아, 멀리 있는 발전기까지 계속 재생 대상으로 남는다.
-    /// - Output에 SFX 믹서 그룹을 직접 연결한다.
+    /// 인스펙터: Output에 SFX 믹서 그룹, Volume Rolloff는 Linear나 Custom.
+    /// Logarithmic은 Max Distance를 넘어도 볼륨이 0이 되지 않아 먼 발전기까지 재생 대상으로 남는다.
     ///
-    /// TODO: 사운드 공용 구조가 만들어지면 믹서 그룹 연결과 볼륨 적용을 그쪽으로 옮긴다.
+    /// TODO: 볼륨 설정 훅은 UI 담당 설정 시스템과 인터페이스를 합의한 뒤 연결한다. 회의 안건 B-1
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class GeneratorSound : MonoBehaviour

@@ -13,18 +13,14 @@ namespace HideSeek.Sound
     }
 
     /// <summary>
-    /// AudioSource 두 개를 번갈아 쓰며 배경 음악을 교차 페이드한다.
-    /// GDD 14.1이 "즉시 교체하지 않고 페이드로 전환"을 요구한다.
+    /// AudioSource 두 개를 번갈아 쓰며 배경 음악을 교차 페이드한다. GDD 14.1
     ///
     /// 페이드 중에 다른 곡을 요청해도 현재 볼륨에서 이어서 전환한다.
     /// A에서 B로 가는 도중 다시 A를 요청하면 남아 있는 A 소리를 그대로 살려 되돌린다.
     ///
-    /// 인스펙터 설정 기준
-    /// - 두 AudioSource 모두 Spatial Blend는 0(2D)으로 둔다. BGM은 위치가 없다.
-    /// - Output에 BGM 믹서 그룹을 연결한다.
-    /// - 긴 곡이라면 클립의 Load Type을 Streaming으로 둔다. 교차 페이드 중에는 두 개가 동시에 열린다.
-    ///
-    /// TODO: 사운드 공용 구조가 만들어지면 믹서 그룹 연결을 그쪽으로 옮긴다.
+    /// 인스펙터: 두 AudioSource 모두 Spatial Blend 0(2D), Output은 BGM 믹서 그룹.
+    /// 교차 페이드 중에는 클립 두 개가 동시에 열리므로 임포트 설정이 메모리에 그대로 영향을 준다.
+    /// 웹 빌드는 Streaming을 못 쓴다. 권장값은 Docs/SOUND_IMPLEMENTATION_STATUS.md 참고.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BgmPlayer : MonoBehaviour
