@@ -12,7 +12,7 @@ namespace HideSeek.AI
     public sealed class AIHidingSpot : MonoBehaviour
     {
         private const int MAX_OVERLAP_COUNT = 16;
-        private const float MINIMUM_OCCUPANCY_SIZE = 0.1f;
+        private const float MINIMUM_OCCUPANCY_SIZE = 0.001f;
 
         private static readonly Collider[] OVERLAP_RESULTS = new Collider[MAX_OVERLAP_COUNT];
 
