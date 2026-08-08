@@ -59,6 +59,7 @@ namespace HideSeek.AI
 
                 STRING_BUILDER.AppendLine(
                     $"Hint=Zone {currentHint.TargetZoneId}  " +
+                    $"Status={(MASTER_AI_PROVIDER.IsCurrentHintAccepted ? "ACCEPTED" : "PENDING")}  " +
                     $"Radius={currentHint.SearchRadius:F1}  " +
                     $"Urgency={currentHint.Urgency:F2}  " +
                     $"Remain={remainingTime:F1}s");
@@ -82,7 +83,12 @@ namespace HideSeek.AI
             STRING_BUILDER.AppendLine(
                 $"Visual={chaseSnapshot.VisualState}  " +
                 $"LOS={chaseSnapshot.HasLineOfSight}  " +
-                $"Detection={chaseSnapshot.DetectionRatio:P0}");
+                $"SuspicionReaction={chaseSnapshot.IsReactingToVisualSuspicion}  " +
+                $"Detection={chaseSnapshot.DetectionRatio:P0}  " +
+                $"Gain=x{chaseSnapshot.DetectionSpeedMultiplier:F2}");
+            STRING_BUILDER.AppendLine(
+                $"VisibilityContract={chaseSnapshot.HasTargetVisibilityState}  " +
+                $"FullyHidden={chaseSnapshot.IsTargetFullyHidden}");
         }
 
         private void AppendEvidenceData(ChaseAIDebugSnapshot chaseSnapshot)
@@ -114,6 +120,19 @@ namespace HideSeek.AI
             {
                 STRING_BUILDER.AppendLine("Audio=NONE");
             }
+
+            if ( chaseSnapshot.HasActiveAudioInvestigation )
+            {
+                STRING_BUILDER.AppendLine(
+                    $"AudioPriority={chaseSnapshot.ActiveAudioNoiseType}  " +
+                    $"Intensity={chaseSnapshot.ActiveAudioIntensity:F2}  " +
+                    $"Freshness={chaseSnapshot.ActiveAudioFreshness:F2}  " +
+                    $"Score={chaseSnapshot.ActiveAudioScore:F2}");
+            }
+
+            STRING_BUILDER.AppendLine(
+                $"AudioDecision={chaseSnapshot.LastAudioDecisionReason}  " +
+                $"CandidateScore={chaseSnapshot.LastAudioCandidateScore:F2}");
         }
 
         private void AppendSearchData(ChaseAIDebugSnapshot chaseSnapshot)
@@ -137,6 +156,15 @@ namespace HideSeek.AI
                 $"Search={chaseSnapshot.ActiveSearchContext}  " +
                 $"Point={displayedPointIndex}/{chaseSnapshot.SearchPointCount}  " +
                 $"Source={chaseSnapshot.CurrentSearchPointSource}");
+            STRING_BUILDER.AppendLine(
+                $"Action={chaseSnapshot.CurrentSearchAction}  " +
+                $"Progress={chaseSnapshot.SearchActionProgress:P0}  " +
+                $"Remain={chaseSnapshot.SearchActionRemainingTime:F1}s");
+            STRING_BUILDER.AppendLine(
+                $"HidingCandidate={chaseSnapshot.HidingSpotCandidateName}  " +
+                $"Chance={chaseSnapshot.HidingSpotInspectionChance:P0}  " +
+                $"Roll={FormatInspectionRoll(chaseSnapshot.HidingSpotInspectionRoll)}  " +
+                $"Selected={chaseSnapshot.WasHidingSpotSelected}");
             STRING_BUILDER.AppendLine(
                 $"Zone={chaseSnapshot.ActiveSearchZoneName}  " +
                 $"Restricted={chaseSnapshot.IsSearchZoneRestricted}");
@@ -176,6 +204,13 @@ namespace HideSeek.AI
         private static string FormatVector(Vector3 position)
         {
             return $"({position.x:F1}, {position.y:F1}, {position.z:F1})";
+        }
+
+        private static string FormatInspectionRoll(float inspectionRoll)
+        {
+            return inspectionRoll >= 0f
+                ? inspectionRoll.ToString("F2")
+                : "NONE";
         }
     }
 }

@@ -5,8 +5,6 @@ namespace HideSeek.AI
 {
     public sealed class ChaseAIEvidenceSelector
     {
-        private const float AUDIO_REPLACEMENT_TOLERANCE = 0.05f;
-
         private readonly ChaseAIConfig CHASE_AI_CONFIG;
         private readonly ChaseAIMemory CHASE_AI_MEMORY;
         private readonly ChaseAIInvestigationContext INVESTIGATION_CONTEXT;
@@ -14,6 +12,12 @@ namespace HideSeek.AI
         public string ActiveInvestigationName => INVESTIGATION_CONTEXT.HasActiveAudioInvestigation
             ? "Audio evidence"
             : "Director hint";
+        public CHASE_AI_EVIDENCE_TYPE ActiveInvestigationType => INVESTIGATION_CONTEXT.ActiveEvidenceType;
+        public bool HasActiveAudioInvestigation => INVESTIGATION_CONTEXT.HasActiveAudioInvestigation;
+        public NOISE_TYPE ActiveAudioNoiseType => INVESTIGATION_CONTEXT.CurrentAudioNoiseType;
+        public float CurrentAudioIntensity => INVESTIGATION_CONTEXT.CurrentAudioIntensity;
+        public float LastAudioCandidateScore { get; private set; }
+        public string LastAudioDecisionReason { get; private set; } = "NONE";
 
         public ChaseAIEvidenceSelector(
             ChaseAIConfig chaseAIConfig ,
@@ -32,48 +36,135 @@ namespace HideSeek.AI
                 return false;
             }
 
-            bool hasHigherPriorityEvidence =
-                INVESTIGATION_CONTEXT.HasActiveAudioInvestigation ||
-                CHASE_AI_MEMORY.HasValidVisualEvidence(currentTime) ||
-                CHASE_AI_MEMORY.HasValidAudioEvidence(currentTime);
-
-            if ( hasHigherPriorityEvidence )
-            {
-                return false;
-            }
-
             INVESTIGATION_CONTEXT.SetDirectorInvestigation(directorHint);
 
             return true;
         }
 
-        public bool TryReceiveAudioEvidence(ChaseAIAudioObservation observation)
+        public bool TryReceiveAudioEvidence(
+            ChaseAIAudioObservation observation ,
+            float currentTime)
         {
             float newIntensity = Mathf.Clamp01(observation.PerceivedIntensity);
+            float newEvidenceDuration = ResolveAudioEvidenceDuration(newIntensity);
+            float newFreshness = CalculateFreshness(
+                observation.NoiseData.OccurredTime ,
+                newEvidenceDuration ,
+                currentTime);
+            float newScore = CalculateAudioScore(
+                newIntensity ,
+                observation.NoiseData.NoiseType ,
+                newFreshness);
 
-            bool canReplaceEvidence =
-                !INVESTIGATION_CONTEXT.HasActiveAudioInvestigation ||
-                newIntensity + AUDIO_REPLACEMENT_TOLERANCE >= INVESTIGATION_CONTEXT.CurrentAudioIntensity;
+            LastAudioCandidateScore = newScore;
 
-            if ( !canReplaceEvidence )
+            if ( !INVESTIGATION_CONTEXT.HasActiveAudioInvestigation )
             {
-                Debug.Log(
-                    $"[ChaseAIStateMachine] 약한 소음 무시: " +
-                    $"Current={INVESTIGATION_CONTEXT.CurrentAudioIntensity:F2}, " +
-                    $"New={newIntensity:F2}");
-
-                return false;
+                return AcceptAudioEvidence(
+                    observation ,
+                    currentTime ,
+                    newScore ,
+                    "ACCEPTED_NO_ACTIVE_AUDIO");
             }
 
-            INVESTIGATION_CONTEXT.SetAudioInvestigation(observation);
+            float currentScore = GetCurrentAudioScore(currentTime);
+            bool hasScoreAdvantage =
+                newScore >= currentScore + CHASE_AI_CONFIG.AudioEvidenceReplacementMargin;
+            bool isSameSource = IsSameAudioSource(observation.NoiseData);
 
-            Debug.Log(
-                $"[ChaseAIStateMachine] 청각 증거 적용: " +
-                $"Intensity={INVESTIGATION_CONTEXT.CurrentAudioIntensity:F2}, " +
-                $"Radius={INVESTIGATION_CONTEXT.AudioSearchRadius:F1}, " +
-                $"Duration={INVESTIGATION_CONTEXT.AudioSearchDuration:F1}");
+            if ( isSameSource )
+            {
+                float newBaseScore = CalculateAudioScore(
+                    newIntensity ,
+                    observation.NoiseData.NoiseType ,
+                    1f);
+                float currentBaseScore = CalculateAudioScore(
+                    INVESTIGATION_CONTEXT.CurrentAudioIntensity ,
+                    INVESTIGATION_CONTEXT.CurrentAudioNoiseType ,
+                    1f);
+                bool isSameSourceStronger =
+                    newBaseScore >= currentBaseScore + CHASE_AI_CONFIG.AudioEvidenceReplacementMargin;
 
-            return true;
+                if ( isSameSourceStronger )
+                {
+                    return AcceptAudioEvidence(
+                        observation ,
+                        currentTime ,
+                        newScore ,
+                        "ACCEPTED_SAME_SOURCE_STRONGER");
+                }
+
+                float timeSinceAccepted =
+                    Mathf.Max(0f , currentTime - INVESTIGATION_CONTEXT.CurrentAudioAcceptedTime);
+
+                if ( timeSinceAccepted < CHASE_AI_CONFIG.SameSourceRetargetInterval )
+                {
+                    return RejectAudioEvidence(
+                        newScore ,
+                        currentScore ,
+                        "REJECTED_SAME_SOURCE_COOLDOWN");
+                }
+
+                Vector3 positionOffset =
+                    observation.NoiseData.Position - INVESTIGATION_CONTEXT.AudioSearchPosition;
+                positionOffset.y = 0f;
+
+                float retargetDistance = CHASE_AI_CONFIG.SameSourceRetargetDistance;
+
+                if ( positionOffset.sqrMagnitude < retargetDistance * retargetDistance )
+                {
+                    return RejectAudioEvidence(
+                        newScore ,
+                        currentScore ,
+                        "REJECTED_SAME_SOURCE_POSITION_UNCHANGED");
+                }
+
+                return AcceptAudioEvidence(
+                    observation ,
+                    currentTime ,
+                    newScore ,
+                    "ACCEPTED_SAME_SOURCE_MOVED");
+            }
+
+            if ( !hasScoreAdvantage )
+            {
+                return RejectAudioEvidence(
+                    newScore ,
+                    currentScore ,
+                    "REJECTED_LOWER_PRIORITY");
+            }
+
+            return AcceptAudioEvidence(
+                observation ,
+                currentTime ,
+                newScore ,
+                "ACCEPTED_HIGHER_PRIORITY");
+        }
+
+        public float GetCurrentAudioFreshness(float currentTime)
+        {
+            if ( !INVESTIGATION_CONTEXT.HasActiveAudioInvestigation )
+            {
+                return 0f;
+            }
+
+            return CalculateFreshness(
+                INVESTIGATION_CONTEXT.CurrentAudioOccurredTime ,
+                INVESTIGATION_CONTEXT.CurrentAudioEvidenceDuration ,
+                currentTime);
+        }
+
+        public float GetCurrentAudioScore(float currentTime)
+        {
+            if ( !INVESTIGATION_CONTEXT.HasActiveAudioInvestigation )
+            {
+                return 0f;
+            }
+
+            return CalculateAudioScore(
+                INVESTIGATION_CONTEXT.CurrentAudioIntensity ,
+                INVESTIGATION_CONTEXT.CurrentAudioNoiseType ,
+                GetCurrentAudioFreshness(currentTime));
         }
 
         public bool TryGetInvestigationDestination(
@@ -107,7 +198,7 @@ namespace HideSeek.AI
             if ( INVESTIGATION_CONTEXT.HasActiveAudioInvestigation )
             {
                 Debug.Log(
-                    $"[ChaseAIStateMachine] 청각 수색 시작: " +
+                    $"[ChaseAIEvidenceSelector] Audio search prepared: " +
                     $"Position={INVESTIGATION_CONTEXT.AudioSearchPosition}, " +
                     $"Radius={INVESTIGATION_CONTEXT.AudioSearchRadius:F1}, " +
                     $"Duration={INVESTIGATION_CONTEXT.AudioSearchDuration:F1}");
@@ -117,10 +208,11 @@ namespace HideSeek.AI
                     Vector3.zero ,
                     INVESTIGATION_CONTEXT.AudioSearchRadius ,
                     INVESTIGATION_CONTEXT.AudioSearchDuration ,
-                    false ,
                     1f ,
                     "Audio search center" ,
-                    INVESTIGATION_CONTEXT.CurrentAudioIntensity >= CHASE_AI_CONFIG.StrongNoiseThreshold);
+                    CHASE_AI_EVIDENCE_TYPE.AUDIO ,
+                    INVESTIGATION_CONTEXT.CurrentAudioIntensity >= CHASE_AI_CONFIG.StrongNoiseThreshold ,
+                    ResolveAudioHidingSpotInspectionChance(INVESTIGATION_CONTEXT.CurrentAudioIntensity));
 
                 return true;
             }
@@ -132,10 +224,11 @@ namespace HideSeek.AI
                     CHASE_AI_MEMORY.LastSeenMovementDirection ,
                     CHASE_AI_CONFIG.VisualSearchRadius ,
                     CHASE_AI_CONFIG.SearchWaitTime ,
-                    true ,
                     1f ,
                     "Last seen position" ,
-                    true);
+                    CHASE_AI_EVIDENCE_TYPE.VISUAL ,
+                    true ,
+                    CHASE_AI_CONFIG.VisualHidingSpotInspectionChance);
 
                 return true;
             }
@@ -151,10 +244,11 @@ namespace HideSeek.AI
                     Vector3.zero ,
                     searchRadius ,
                     searchDuration ,
-                    true ,
                     1f ,
                     "Last heard position" ,
-                    intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold);
+                    CHASE_AI_EVIDENCE_TYPE.AUDIO ,
+                    intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold ,
+                    ResolveAudioHidingSpotInspectionChance(intensity));
 
                 return true;
             }
@@ -163,20 +257,8 @@ namespace HideSeek.AI
             {
                 MasterAIHint directorHint = INVESTIGATION_CONTEXT.ActiveDirectorHint;
 
-                if ( !directorHint.IsValid(currentTime) )
-                {
-                    Debug.Log(
-                        $"[ChaseAIStateMachine] 만료된 Director Hint 수색 생략: " +
-                        $"Zone={directorHint.TargetZoneId}");
-
-                    INVESTIGATION_CONTEXT.ClearDirectorInvestigation();
-                    searchRequest = default;
-
-                    return false;
-                }
-
                 Debug.Log(
-                    $"[ChaseAIStateMachine] Director Hint 수색 시작: " +
+                    $"[ChaseAIEvidenceSelector] Director hint search prepared: " +
                     $"Zone={directorHint.TargetZoneId}, " +
                     $"Position={directorHint.SearchAnchorPosition}, " +
                     $"Radius={directorHint.SearchRadius:F1}, " +
@@ -187,10 +269,11 @@ namespace HideSeek.AI
                     Vector3.zero ,
                     directorHint.SearchRadius ,
                     CHASE_AI_CONFIG.SearchWaitTime ,
-                    false ,
                     CHASE_AI_CONFIG.DirectorHintAngerInfluence ,
                     "Director hint search center" ,
+                    CHASE_AI_EVIDENCE_TYPE.DIRECTOR_HINT ,
                     false ,
+                    0f ,
                     directorHint.TargetZoneId ,
                     true);
 
@@ -202,19 +285,102 @@ namespace HideSeek.AI
             return false;
         }
 
-        public void ClearAudioInvestigation()
-        {
-            INVESTIGATION_CONTEXT.ClearAudioInvestigation();
-        }
-
-        public void ClearDirectorInvestigation()
-        {
-            INVESTIGATION_CONTEXT.ClearDirectorInvestigation();
-        }
-
         public void ClearInvestigations()
         {
             INVESTIGATION_CONTEXT.Clear();
+        }
+
+        public void ClearAllEvidence()
+        {
+            INVESTIGATION_CONTEXT.Clear();
+            CHASE_AI_MEMORY.Clear();
+            LastAudioCandidateScore = 0f;
+            LastAudioDecisionReason = "NONE";
+        }
+
+        private bool AcceptAudioEvidence(
+            ChaseAIAudioObservation observation ,
+            float currentTime ,
+            float newScore ,
+            string decisionReason)
+        {
+            INVESTIGATION_CONTEXT.SetAudioInvestigation(observation , currentTime);
+            LastAudioDecisionReason = decisionReason;
+
+            Debug.Log(
+                $"[ChaseAIEvidenceSelector] Audio evidence accepted: " +
+                $"Type={observation.NoiseData.NoiseType}, " +
+                $"Intensity={INVESTIGATION_CONTEXT.CurrentAudioIntensity:F2}, " +
+                $"Score={newScore:F2}, " +
+                $"Reason={decisionReason}");
+
+            return true;
+        }
+
+        private bool RejectAudioEvidence(
+            float newScore ,
+            float currentScore ,
+            string decisionReason)
+        {
+            LastAudioDecisionReason = decisionReason;
+
+            Debug.Log(
+                $"[ChaseAIEvidenceSelector] Audio evidence rejected: " +
+                $"CurrentScore={currentScore:F2}, " +
+                $"CandidateScore={newScore:F2}, " +
+                $"Reason={decisionReason}");
+
+            return false;
+        }
+
+        private bool IsSameAudioSource(NoiseData noiseData)
+        {
+            return INVESTIGATION_CONTEXT.CurrentAudioSourceObj != null &&
+                noiseData.SourceObj == INVESTIGATION_CONTEXT.CurrentAudioSourceObj &&
+                noiseData.NoiseType == INVESTIGATION_CONTEXT.CurrentAudioNoiseType;
+        }
+
+        private float CalculateAudioScore(
+            float intensity ,
+            NOISE_TYPE noiseType ,
+            float freshness)
+        {
+            return Mathf.Clamp01(intensity) *
+                CHASE_AI_CONFIG.GetNoisePriorityWeight(noiseType) *
+                Mathf.Clamp01(freshness);
+        }
+
+        private float CalculateFreshness(
+            float occurredTime ,
+            float evidenceDuration ,
+            float currentTime)
+        {
+            if ( evidenceDuration <= Mathf.Epsilon )
+            {
+                return CHASE_AI_CONFIG.MinimumAudioFreshnessMultiplier;
+            }
+
+            float evidenceAge = Mathf.Max(0f , currentTime - occurredTime);
+            float ageRatio = Mathf.Clamp01(evidenceAge / evidenceDuration);
+
+            return Mathf.Lerp(
+                1f ,
+                CHASE_AI_CONFIG.MinimumAudioFreshnessMultiplier ,
+                ageRatio);
+        }
+
+        private float ResolveAudioEvidenceDuration(float intensity)
+        {
+            return intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold
+                ? CHASE_AI_CONFIG.StrongNoiseEvidenceDuration
+                : CHASE_AI_CONFIG.WeakNoiseEvidenceDuration;
+        }
+
+        private float ResolveAudioHidingSpotInspectionChance(float intensity)
+        {
+            return intensity >= CHASE_AI_CONFIG.StrongNoiseThreshold
+                ? CHASE_AI_CONFIG.StrongAudioHidingSpotInspectionChance
+                : 0f;
         }
     }
 }

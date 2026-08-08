@@ -13,7 +13,11 @@ namespace HideSeek.AI
             MASTER_AI_CONFIG = masterAIConfig != null ? masterAIConfig : throw new ArgumentNullException(nameof(masterAIConfig));
         }
 
-        public bool TryCreateHint(AIWorldZone targetZone , float currentTime , out MasterAIHint hint)
+        public bool TryCreateHint(
+            AIWorldZone targetZone ,
+            float currentTime ,
+            int areaMask ,
+            out MasterAIHint hint)
         {
             hint = default;
 
@@ -22,7 +26,7 @@ namespace HideSeek.AI
                 return false;
             }
 
-            if ( !TryFindNavMeshPosition(targetZone , out Vector3 searchAnchorPosition) )
+            if ( !TryFindNavMeshPosition(targetZone , areaMask , out Vector3 searchAnchorPosition) )
             {
                 return false;
             }
@@ -37,17 +41,20 @@ namespace HideSeek.AI
             return true;
         }
 
-        private bool TryFindNavMeshPosition(AIWorldZone targetZone , out Vector3 navMeshPosition)
+        private bool TryFindNavMeshPosition(
+            AIWorldZone targetZone ,
+            int areaMask ,
+            out Vector3 navMeshPosition)
         {
             for ( int attemptIndex = 0; attemptIndex < MASTER_AI_CONFIG.HintPositionAttemptCount; attemptIndex++ )
             {
                 Vector3 candidatePosition = targetZone.GetRandomWorldPosition();
 
                 bool wasSampled = NavMesh.SamplePosition(
-            candidatePosition ,
-            out NavMeshHit navMeshHit ,
-            MASTER_AI_CONFIG.HintNavMeshSampleRadius ,
-            NavMesh.AllAreas);
+                    candidatePosition ,
+                    out NavMeshHit navMeshHit ,
+                    MASTER_AI_CONFIG.HintNavMeshSampleRadius ,
+                    areaMask);
 
                 if ( !wasSampled || !targetZone.Contains(navMeshHit.position) )
                 {

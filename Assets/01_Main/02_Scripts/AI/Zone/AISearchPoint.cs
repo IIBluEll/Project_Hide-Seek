@@ -12,9 +12,21 @@ namespace HideSeek.AI
     public sealed class AISearchPoint : MonoBehaviour
     {
         [SerializeField] private AI_SEARCH_POINT_TYPE _pointType = AI_SEARCH_POINT_TYPE.COVERAGE;
+        [SerializeField] private AIHidingSpot _hidingSpot;
 
         public AI_SEARCH_POINT_TYPE PointType => _pointType;
-        public Vector3 Position => transform.position;
+        public AIHidingSpot HidingSpot => _hidingSpot;
+        public Vector3 Position => _pointType == AI_SEARCH_POINT_TYPE.HIDING_SPOT && _hidingSpot != null
+            ? _hidingSpot.InspectionPosition
+            : transform.position;
+
+        private void OnValidate()
+        {
+            if ( _pointType == AI_SEARCH_POINT_TYPE.HIDING_SPOT && _hidingSpot == null )
+            {
+                TryGetComponent(out _hidingSpot);
+            }
+        }
 
         private void OnDrawGizmos()
         {

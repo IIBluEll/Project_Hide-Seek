@@ -39,7 +39,7 @@ namespace HideSeek.AI
             SetGlobalStress(GlobalStress - amount);
         }
 
-        public void SetGlobalStress(float value)
+        private void SetGlobalStress(float value)
         {
             GlobalStress = Mathf.Clamp(value , 0f , MASTER_AI_CONFIG.MaximumGlobalStress);
         }
