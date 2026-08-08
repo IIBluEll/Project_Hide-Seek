@@ -8,8 +8,10 @@ namespace HideSeek.Generators
     /// AudioSource를 둘로 나눈 이유는 감쇠 거리와 볼륨을 따로 주기 위해서다.
     /// 기계음은 가까이서만 들리고 QTE 실패음은 더 멀리 퍼져야 한다. GDD 6.2
     ///
+    /// Spatial Blend는 Awake에서 3D로 맞춘다. 인스펙터에 맡겼더니 EventSource가 2D로 남아
+    /// QTE 판정음과 완료음이 맵 어디서나 같은 크기로 들렸다.
+    ///
     /// 인스펙터 설정 기준
-    /// - 두 AudioSource 모두 Spatial Blend를 1로 둔다. 기본값 0이면 맵 어디서나 같은 크기로 들린다.
     /// - Volume Rolloff는 Linear나 Custom을 쓴다. 기본값인 Logarithmic은 Max Distance를 넘어도
     ///   볼륨이 0이 되지 않아, 멀리 있는 발전기까지 계속 재생 대상으로 남는다.
     /// - Output에 SFX 믹서 그룹을 직접 연결한다.
@@ -52,11 +54,13 @@ namespace HideSeek.Generators
             {
                 _loopSource.loop = true;
                 _loopSource.playOnAwake = false;
+                _loopSource.spatialBlend = 1f;
             }
 
             if (_eventSource != null)
             {
                 _eventSource.playOnAwake = false;
+                _eventSource.spatialBlend = 1f;
             }
         }
 
