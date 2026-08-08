@@ -71,6 +71,30 @@ GDD가 세 곳에서 다르게 말한다.
 
 ---
 
+## A-4. 레거시 Input 때문에 프로젝트가 실행되지 않는다
+
+**사운드 담당 영역이 아니다.** 사운드 검증 중에 발견해 옮겨 적는다. 결정은 에셋을 도입한 담당자들이 한다.
+
+**결정할 것:** `activeInputHandler`를 `Both`로 확정할지, 레거시 `Input` 사용처를 없앨지.
+
+프로젝트의 Active Input Handling은 `Input System Package`인데 레거시 `UnityEngine.Input`을 쓰는 코드가 남아 있어 컴파일이 실패한다. **`.asmdef`가 UniTask 외에 없어 `05_Assets`의 에셋 팩 스크립트까지 전부 `Assembly-CSharp` 하나로 함께 컴파일되므로, 한 줄만 남아 있어도 어셈블리 전체가 실패하고 아무것도 실행되지 않는다.**
+
+| 사용처 | 내용 | 도입 |
+| --- | --- | --- |
+| `AI/Debug/AIDebugPresenterHost.cs:45` | `Input.GetKeyDown`, 디버그 패널 토글 (팀 코드, 유일) | `bf747f3` |
+| `05_Assets/CleanFlatUI` | ContextMenu 3개, Tooltip 2개, WindowResize의 `Input.mousePosition` | `4ef59e0` |
+| `05_Assets/Flooded_Grounds` | FPSController, ExampleWheelController의 `Input.GetAxis`, `GetKey` | `d823d28` |
+
+**선택지**
+
+1. `activeInputHandler`를 `Both`로 확정하고 커밋한다. 가장 간단하지만 프로젝트 전역 결정이다
+2. 쓰지 않는 에셋 팩 스크립트를 삭제한다. `Flooded_Grounds`의 FPSController와 ExampleWheel은 데모 코드이며 프로젝트에 자체 `PlayerController`가 있다. CleanFlatUI 쪽은 해당 UI 프리팹을 실제로 쓰는지 확인이 필요하다
+3. 에셋 팩을 `.asmdef`로 분리해 격리한다. 외부 코드를 고치지 않아도 되지만 손이 많이 간다
+
+**현재 상태:** 로컬에서 `activeInputHandler`를 `Both`로 바꿔 실행만 시키고 있으며 **커밋하지 않았다.** 저장소 값은 여전히 `Input System Package`이므로 다른 작업자도 같은 문제를 겪는다.
+
+---
+
 ## B-1. 볼륨 설정 인터페이스
 
 **결정할 것:** 사운드 측이 노출할 훅의 형태와, 설정 값 저장 주체.
@@ -130,6 +154,7 @@ QTE 효과음을 검증할 때 실패음만 계속 들린다면 사운드 배선
 | A-1 BGM 상태 정의 | | | |
 | A-2 전기 스파크 조건 | | | |
 | A-3 웹 오디오 예산 | | | |
+| A-4 레거시 Input | | | |
 | B-1 볼륨 설정 인터페이스 | | | |
 | B-2 ChaseAISound 배선 | | | |
 | B-3 씬 통합 일정 | | | |
