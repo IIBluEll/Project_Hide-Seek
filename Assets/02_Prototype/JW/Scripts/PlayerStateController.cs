@@ -28,7 +28,8 @@ public enum PLAYER_ACTION_STATE
     IDLE,
     TRANSITION,
     AIMING,
-    REPAIRING_GENERATOR
+    REPAIRING_GENERATOR,
+    CATCHED
 }
 
 public class PlayerStateController : IStateService, IPlayerVisibilityState

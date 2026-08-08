@@ -3,11 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public class MissionData
+{
+    public MissionIndicatorData Indicator;
+    public MissionBase Behaviour;
+}
+
 public class TutorialMissionController : MonoBehaviour
 {
     [SerializeField] private List<MissionIndicatorData> _missionLists;
     [SerializeField] private MissionIndicator_View _missionIndicator;
     [SerializeField] private List<MonoBehaviour> _missionBehaviours;
+
+    [SerializeField] private List<MissionData> _missions;
+    [SerializeField] private List<DescriptionData> _descriptions;
+
     [SerializeField, Min(0f)] private float _completedIndicatorDelay = 0.5f;
 
     private int _indicatorIndex;
@@ -40,7 +51,6 @@ public class TutorialMissionController : MonoBehaviour
             return;
         }
 
-        Debug.Log("SS");
         ShowCurrentIndicator();
         BindCurrentMission();
     }
@@ -57,13 +67,9 @@ public class TutorialMissionController : MonoBehaviour
     {
         UnbindCurrentMission();
 
-        Debug.Log("11");
-
         MonoBehaviour missionBehaviour = GetMissionBehaviour(_indicatorIndex);
         if (missionBehaviour == null)
             return;
-
-        Debug.Log("22");
 
         _currentMission = missionBehaviour as IMission;
         if (_currentMission == null)
@@ -71,8 +77,6 @@ public class TutorialMissionController : MonoBehaviour
             Debug.LogError($"[{nameof(TutorialMissionController)}] {missionBehaviour.name}은 {nameof(IMission)}을 구현해야 합니다.", missionBehaviour);
             return;
         }
-
-        Debug.Log("33");
 
         _currentMission.OnMissionClear -= OnMissionClearActioned;
         _currentMission.OnMissionClear += OnMissionClearActioned;
@@ -82,17 +86,11 @@ public class TutorialMissionController : MonoBehaviour
             countMission.OnCountChanged -= OnCountChangedActioned;
             countMission.OnCountChanged += OnCountChangedActioned;
         }
-
-        Debug.Log(_currentMission);
         _currentMission.BeginMission();
     }
 
     private MonoBehaviour GetMissionBehaviour(int missionIndex)
     {
-        Debug.Log(_missionBehaviours == null);
-        Debug.Log(missionIndex < 0);
-        Debug.Log(missionIndex >= _missionBehaviours.Count);
-
         if (_missionBehaviours == null || missionIndex < 0 || missionIndex >= _missionBehaviours.Count)
             return null;
 

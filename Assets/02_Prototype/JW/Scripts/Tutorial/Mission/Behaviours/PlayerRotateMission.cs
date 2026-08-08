@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class PlayerRotateMission : TutorialMission
+public class PlayerRotateMission : MissionBase
 {
     [SerializeField] private PlayerController _playerController;
     private IInputReader _inputReader;

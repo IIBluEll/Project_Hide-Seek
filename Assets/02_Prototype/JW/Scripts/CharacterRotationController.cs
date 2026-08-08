@@ -4,9 +4,14 @@ using UnityEngine.InputSystem;
 public class CharacterRotationController : MonoBehaviour
 {
     private Transform _playerBody;
-    [SerializeField] private float _mouseSensitive;
+    private float _mouseSensitive;
 
     private float _yaw;
+
+    private void Awake()
+    {
+        _mouseSensitive = PlayerPrefs.GetFloat(HashKey.YAW_SENSITIVE, ConstValue.YAW_SENSITIVE_DEFAULT);
+    }
 
     public void Init(Transform body)
     {

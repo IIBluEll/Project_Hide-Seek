@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public abstract class TutorialMission : MonoBehaviour, IMission
+public abstract class MissionBase : MonoBehaviour, IMission
 {
     private bool _isRunning;
     private bool _isCleared;
