@@ -430,7 +430,7 @@ namespace HideSeek.AI
                     break;
 
                 case CHASE_AI_MOVE_STATUS.ARRIVED:
-                    AdvancePatrolPoint();
+                    AdvancePatrolPoint(true);
                     StartWaiting(_config.PatrolWaitTime);
                     break;
 
@@ -438,7 +438,7 @@ namespace HideSeek.AI
                 case CHASE_AI_MOVE_STATUS.STUCK:
                     Debug.LogWarning($"[ChaseAIStateMachine] 순찰 이동 실패: {moveStatus}");
 
-                    AdvancePatrolPoint();
+                    AdvancePatrolPoint(false);
                     StartWaiting(_config.PatrolWaitTime);
                     break;
             }
@@ -891,9 +891,9 @@ namespace HideSeek.AI
             return false;
         }
 
-        private void AdvancePatrolPoint()
+        private void AdvancePatrolPoint(bool didReachPoint = false)
         {
-            PATROL_ROUTE.Advance(_movement.Position);
+            PATROL_ROUTE.Advance(_movement.Position , didReachPoint);
         }
 
         private void StartWaiting(float duration)
