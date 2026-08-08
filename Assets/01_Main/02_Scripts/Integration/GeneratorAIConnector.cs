@@ -13,6 +13,7 @@ namespace HideSeek.Integration
     /// 전역 객체 참조를 발전기마다 들고 있으면 후보 지점 활성화(GDD 7.1) 구조에서 배선할 수 없다.
     /// </summary>
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(Generator))]
     public sealed class GeneratorAIConnector : MonoBehaviour
     {
         [Header("참조")]
@@ -28,16 +29,16 @@ namespace HideSeek.Integration
 #if UNITY_EDITOR
         private void Reset()
         {
-            _generator = GetComponentInParent<Generator>();
+            _generator = GetComponent<Generator>();
         }
 #endif
 
         private void Awake()
         {
-            // 인스펙터 연결을 잊어도 같은 발전기 안에서 찾는다. 다른 발전기를 가리켜야 할 때만 인스펙터로 지정한다.
+            // RequireComponent가 같은 오브젝트의 Generator를 보장하므로 인스펙터 연결을 잊어도 찾는다.
             if (_generator == null)
             {
-                _generator = GetComponentInParent<Generator>();
+                _generator = GetComponent<Generator>();
             }
         }
 

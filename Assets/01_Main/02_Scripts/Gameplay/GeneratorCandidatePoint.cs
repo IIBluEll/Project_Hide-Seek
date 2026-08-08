@@ -1,4 +1,5 @@
 using HideSeek.AI;
+using HideSeek.Generators;
 using UnityEngine;
 
 namespace HideSeek.Gameplay
@@ -20,6 +21,7 @@ namespace HideSeek.Gameplay
     ///       시작·탈출 지점 시스템이 생기면 여기에 판정 근거를 추가한다.
     /// </summary>
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(Generator))]
     public sealed class GeneratorCandidatePoint : MonoBehaviour
     {
         [Tooltip("같은 Zone에 발전기가 몰리는 것을 막는 데 쓴다. 비워 두면 위치로 자동 판별한다. GDD 7.1")]
