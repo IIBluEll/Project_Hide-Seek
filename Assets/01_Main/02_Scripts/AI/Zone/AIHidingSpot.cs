@@ -11,54 +11,36 @@ namespace HideSeek.AI
     [DisallowMultipleComponent]
     public sealed class AIHidingSpot : MonoBehaviour
     {
-        private const int MAX_OVERLAP_COUNT = 16;
         private const float MINIMUM_OCCUPANCY_SIZE = 0.001f;
-
-        private static readonly Collider[] OVERLAP_RESULTS = new Collider[MAX_OVERLAP_COUNT];
 
         [SerializeField] private AI_HIDING_SPOT_TYPE _hidingSpotType = AI_HIDING_SPOT_TYPE.DESK;
         [SerializeField] private Transform _inspectionTrans;
         [SerializeField] private Vector3 _occupancyCenterOffset = Vector3.up;
         [SerializeField] private Vector3 _occupancySize = new(2f , 2f , 2f);
-        [SerializeField] private LayerMask _playerLayerMask = ~0;
 
         public AI_HIDING_SPOT_TYPE HidingSpotType => _hidingSpotType;
         public Vector3 InspectionPosition => _inspectionTrans != null
             ? _inspectionTrans.position
             : transform.position;
 
-        public bool ContainsPlayer()
+        public bool ContainsPlayer(
+            Transform playerTrans ,
+            global::IPlayerVisibilityState playerVisibilityState)
         {
-            Vector3 worldCenter = transform.TransformPoint(_occupancyCenterOffset);
-            Vector3 worldSize = GetWorldOccupancySize();
-
-            int overlapCount = Physics.OverlapBoxNonAlloc(
-                worldCenter ,
-                worldSize * 0.5f ,
-                OVERLAP_RESULTS ,
-                transform.rotation ,
-                _playerLayerMask ,
-                QueryTriggerInteraction.Collide);
-
-            for ( int overlapIndex = 0; overlapIndex < overlapCount; overlapIndex++ )
+            if ( playerTrans == null ||
+                 playerVisibilityState == null ||
+                 !playerVisibilityState.IsFullyHidden )
             {
-                Collider overlapCollider = OVERLAP_RESULTS[ overlapIndex ];
-
-                if ( overlapCollider == null )
-                {
-                    continue;
-                }
-
-                Transform overlapTrans = overlapCollider.transform;
-
-                if ( overlapCollider.CompareTag("Player") ||
-                     (overlapTrans.root != overlapTrans && overlapTrans.root.CompareTag("Player")) )
-                {
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            Vector3 localPlayerPosition = transform.InverseTransformPoint(playerTrans.position);
+            Vector3 localOffset = localPlayerPosition - _occupancyCenterOffset;
+            Vector3 halfOccupancySize = _occupancySize * 0.5f;
+
+            return Mathf.Abs(localOffset.x) <= halfOccupancySize.x &&
+                Mathf.Abs(localOffset.y) <= halfOccupancySize.y &&
+                Mathf.Abs(localOffset.z) <= halfOccupancySize.z;
         }
 
         private Vector3 GetWorldOccupancySize()
