@@ -17,6 +17,7 @@ namespace HideSeek.Generators
     /// TODO: 볼륨 설정 훅은 UI 담당 설정 시스템과 인터페이스를 합의한 뒤 연결한다. 회의 안건 B-1
     /// </summary>
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(Generator))]
     public sealed class GeneratorSound : MonoBehaviour
     {
         [SerializeField] private Generator _generator;
@@ -40,8 +41,22 @@ namespace HideSeek.Generators
         [SerializeField] private AudioClip _qteFailureClip;
         [SerializeField] private AudioClip _completedClip;
 
+#if UNITY_EDITOR
+        private void Reset()
+        {
+            _generator = GetComponent<Generator>();
+        }
+#endif
+
         private void Awake()
         {
+            // RequireComponent가 같은 오브젝트의 Generator를 보장하므로 인스펙터 연결을 잊어도 찾는다.
+            if (_generator == null)
+            {
+                _generator = GetComponent<Generator>();
+            }
+
+            // RequireComponent 도입 이전에 만들어진 오브젝트를 위해 남겨 둔다.
             if (_generator == null)
             {
                 Debug.LogError($"[{nameof(GeneratorSound)}] Generator 참조가 비어 있습니다.", this);
