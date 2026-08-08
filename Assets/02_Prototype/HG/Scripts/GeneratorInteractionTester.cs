@@ -10,10 +10,27 @@ namespace HideSeek.Generators
     /// <see cref="Generator.TryBeginRepair"/>와 <see cref="Generator.CancelRepair"/>를 직접 호출한다.
     /// </summary>
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(Generator))]
     public sealed class GeneratorInteractionTester : MonoBehaviour
     {
         [SerializeField] private Generator _generator;
         [SerializeField] private Key _repairKey = Key.E;
+
+#if UNITY_EDITOR
+        private void Reset()
+        {
+            _generator = GetComponent<Generator>();
+        }
+#endif
+
+        private void Awake()
+        {
+            // RequireComponent가 같은 오브젝트의 Generator를 보장하므로 인스펙터 연결을 잊어도 찾는다.
+            if (_generator == null)
+            {
+                _generator = GetComponent<Generator>();
+            }
+        }
 
         private void Update()
         {
