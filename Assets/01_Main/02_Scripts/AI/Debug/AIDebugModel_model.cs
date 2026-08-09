@@ -85,6 +85,7 @@ namespace HideSeek.AI
 
             STRING_BUILDER.AppendLine("<b>[DIRECTOR]</b>");
             STRING_BUILDER.AppendLine(
+                $"Lifecycle={(MASTER_AI_PROVIDER.IsGameplayStarted ? "STARTED" : "WAITING")}  " +
                 $"State={MASTER_AI_PROVIDER.CurrentState}  " +
                 $"Stress={MASTER_AI_PROVIDER.GlobalStress:F1} ({MASTER_AI_PROVIDER.GlobalStressRatio:P0})");
             STRING_BUILDER.AppendLine(
