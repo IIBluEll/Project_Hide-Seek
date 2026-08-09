@@ -45,7 +45,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e53741fb662e764aadd76adbed2badd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.MasterAIProvider
-  _config: {fileID: 11400000, guid: a5de8fbdef683bd438e1b4c4ac21f3b2, type: 2}
   _chaseAIController: {fileID: 0}
   _playerTrans: {fileID: 0}
   _zones:
@@ -62,6 +61,12 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  _easyMasterConfig: {fileID: 11400000, guid: 44864884727b72049bcdd3dbc2502732, type: 2}
+  _normalMasterConfig: {fileID: 11400000, guid: 206605ef9a484944e8295354b90c4684, type: 2}
+  _hardMasterConfig: {fileID: 11400000, guid: 7de307ab85126b74a91813f224950c0a, type: 2}
+  _easyChaseConfig: {fileID: 11400000, guid: 7e2b0fb4732f12a408d7feb64ef98207, type: 2}
+  _normalChaseConfig: {fileID: 11400000, guid: 2d874513d5c8e3247b81a5ed983c6b44, type: 2}
+  _hardChaseConfig: {fileID: 11400000, guid: 492a9533516d63844b7323f51c26e3bd, type: 2}
   _startGameplayAutomaticallyForDebug: 0
   _enableDebugLog: 1
   _debugLogInterval: 2

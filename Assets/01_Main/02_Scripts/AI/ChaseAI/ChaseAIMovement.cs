@@ -48,6 +48,25 @@ namespace HideSeek.AI
             ApplyConfig();
         }
 
+        public bool ConfigureConfig(ChaseAIConfig chaseAIConfig)
+        {
+            if ( chaseAIConfig == null )
+            {
+                Debug.LogError("[ChaseAIMovement] 적용할 ChaseAIConfig가 없습니다." , this);
+
+                return false;
+            }
+
+            _config = chaseAIConfig;
+
+            if ( _agent != null )
+            {
+                ApplyConfig();
+            }
+
+            return true;
+        }
+
         public CHASE_AI_MOVE_REQUEST_RESULT TrySetDestination(Vector3 targetPosition)
         {
             if ( _config == null )

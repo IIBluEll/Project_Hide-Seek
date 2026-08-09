@@ -115,6 +115,21 @@ namespace HideSeek.AI
             NoiseProvider.NoiseEmitted -= OnNoiseEmitted;
         }
 
+        public bool ConfigureConfig(ChaseAIConfig chaseAIConfig)
+        {
+            if ( chaseAIConfig == null )
+            {
+                Debug.LogError("[ChaseAIPerception] 적용할 ChaseAIConfig가 없습니다." , this);
+
+                return false;
+            }
+
+            _config = chaseAIConfig;
+            ResetPerception();
+
+            return true;
+        }
+
         public void SetTarget(Transform targetTransform)
         {
             _targetTransform = targetTransform;

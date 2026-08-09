@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using HideSeek.Common;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -7,11 +8,18 @@ namespace HideSeek.AI
     public sealed class MasterAIProvider : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private MasterAIConfig _config;
         [SerializeField] private ChaseAIController _chaseAIController;
         [SerializeField] private Transform _playerTrans;
         [SerializeField] private List<AIWorldZone> _zones = new();
         [SerializeField] private List<AIVentPoint> _vents = new();
+
+        [Header("Difficulty Configs")]
+        [SerializeField] private MasterAIConfig _easyMasterConfig;
+        [SerializeField] private MasterAIConfig _normalMasterConfig;
+        [SerializeField] private MasterAIConfig _hardMasterConfig;
+        [SerializeField] private ChaseAIConfig _easyChaseConfig;
+        [SerializeField] private ChaseAIConfig _normalChaseConfig;
+        [SerializeField] private ChaseAIConfig _hardChaseConfig;
 
         [Header("Gameplay Lifecycle")]
         [SerializeField] private bool _startGameplayAutomaticallyForDebug;
@@ -20,6 +28,7 @@ namespace HideSeek.AI
         [SerializeField] private bool _enableDebugLog = true;
         [SerializeField, Min(0.1f)] private float _debugLogInterval = 1f;
 
+        private MasterAIConfig _config;
         private MasterAIDirector _director;
         private MasterAIZoneSelector _zoneSelector;
         private MasterAIVentSelector _ventSelector;
@@ -52,6 +61,7 @@ namespace HideSeek.AI
         public AIWorldZone TargetZone => _targetZone;
         public AIVentPoint CurrentVent => _currentVent;
         public bool IsGameplayStarted => _isGameplayStarted;
+        public GAME_DIFFICULTY SelectedDifficulty { get; private set; } = DifficultyProvider.DEFAULT_DIFFICULTY;
 
         public float GlobalStress => _director != null ? _director.GlobalStress : 0f;
         public float GlobalStressRatio => _director != null ? _director.GlobalStressRatio : 0f;
@@ -71,6 +81,11 @@ namespace HideSeek.AI
             currentHint = _currentHint;
 
             return true;
+        }
+
+        private void Awake()
+        {
+            ApplySelectedDifficulty();
         }
 
         [ContextMenu("Start Gameplay")]
@@ -184,6 +199,58 @@ namespace HideSeek.AI
             UpdatePlayerZone();
 
             Debug.Log("[MasterAIProvider] 게임플레이 시작: Director 타이머와 GlobalStress를 0부터 진행합니다." , this);
+        }
+
+        private void ApplySelectedDifficulty()
+        {
+            SelectedDifficulty = DifficultyProvider.Current;
+
+            ResolveDifficultyConfigs(
+                SelectedDifficulty ,
+                out MasterAIConfig masterAIConfig ,
+                out ChaseAIConfig chaseAIConfig);
+
+            if ( masterAIConfig == null || chaseAIConfig == null )
+            {
+                Debug.LogError($"[MasterAIProvider] {SelectedDifficulty} 난이도의 AI Config가 없습니다." , this);
+
+                return;
+            }
+
+            if ( _chaseAIController == null || !_chaseAIController.ConfigureConfig(chaseAIConfig) )
+            {
+                Debug.LogError($"[MasterAIProvider] {SelectedDifficulty} Chase AI Config 적용에 실패했습니다." , this);
+
+                return;
+            }
+
+            _config = masterAIConfig;
+
+            Debug.Log($"[MasterAIProvider] 난이도 Config 적용: {SelectedDifficulty}, Master={masterAIConfig.name}, Chase={chaseAIConfig.name}" , this);
+        }
+
+        private void ResolveDifficultyConfigs(
+            GAME_DIFFICULTY difficulty ,
+            out MasterAIConfig masterAIConfig ,
+            out ChaseAIConfig chaseAIConfig)
+        {
+            switch ( difficulty )
+            {
+                case GAME_DIFFICULTY.EASY:
+                    masterAIConfig = _easyMasterConfig;
+                    chaseAIConfig = _easyChaseConfig;
+                    break;
+
+                case GAME_DIFFICULTY.HARD:
+                    masterAIConfig = _hardMasterConfig;
+                    chaseAIConfig = _hardChaseConfig;
+                    break;
+
+                default:
+                    masterAIConfig = _normalMasterConfig;
+                    chaseAIConfig = _normalChaseConfig;
+                    break;
+            }
         }
 
         private void OnEnable()
