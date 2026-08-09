@@ -1,0 +1,685 @@
+﻿using System;
+using System.Collections.Generic;
+using HideSeek.Common;
+using UnityEngine;
+
+namespace HideSeek.AI
+{
+    public sealed class MasterAIProvider : MonoBehaviour
+    {
+        [Header("References")]
+        [SerializeField] private ChaseAIController _chaseAIController;
+        [SerializeField] private Transform _playerTrans;
+        [SerializeField] private List<AIWorldZone> _zones = new();
+        [SerializeField] private List<AIVentPoint> _vents = new();
+
+        [Header("Difficulty Configs")]
+        [SerializeField] private MasterAIConfig _easyMasterConfig;
+        [SerializeField] private MasterAIConfig _normalMasterConfig;
+        [SerializeField] private MasterAIConfig _hardMasterConfig;
+        [SerializeField] private ChaseAIConfig _easyChaseConfig;
+        [SerializeField] private ChaseAIConfig _normalChaseConfig;
+        [SerializeField] private ChaseAIConfig _hardChaseConfig;
+
+        [Header("Gameplay Lifecycle")]
+        [SerializeField] private bool _startGameplayAutomaticallyForDebug;
+
+        [Header("Debug")]
+        [SerializeField] private bool _enableDebugLog = true;
+        [SerializeField, Min(0.1f)] private float _debugLogInterval = 1f;
+
+        private MasterAIConfig _config;
+        private MasterAIDirector _director;
+        private MasterAIZoneSelector _zoneSelector;
+        private MasterAIVentSelector _ventSelector;
+        private MasterAIHintGenerator _hintGenerator;
+        private AIWorldZone _currentPlayerZone;
+        private AIWorldZone _targetZone;
+        private AIVentPoint _currentVent;
+        private MasterAIHint _currentHint;
+
+        private CHASE_AI_STATE _previousChaseAIState;
+
+        private float _debugLogTimer;
+        private bool _isInitialized;
+        private bool _isGameplayStartRequested;
+        private bool _isGameplayStarted;
+        private bool _hasCurrentHint;
+        private bool _isCurrentHintAccepted;
+        private bool _wasInitialDormantStateApplied;
+
+        public event Action<CHASE_AI_STATE , CHASE_AI_STATE> ChaseStateChanged;
+        public event Action PlayerCaught;
+        public event Action<AIWorldZone> PlayerZoneChanged;
+
+        public MASTER_AI_STATE CurrentState => _director != null ? _director.CurrentState : MASTER_AI_STATE.DORMANT;
+        public CHASE_AI_STATE CurrentChaseState => _chaseAIController != null
+            ? _chaseAIController.CurrentState
+            : CHASE_AI_STATE.DORMANT;
+        public ChaseAIController ChaseAIController => _chaseAIController;
+        public AIWorldZone CurrentPlayerZone => _currentPlayerZone;
+        public AIWorldZone TargetZone => _targetZone;
+        public AIVentPoint CurrentVent => _currentVent;
+        public bool IsGameplayStarted => _isGameplayStarted;
+        public GAME_DIFFICULTY SelectedDifficulty { get; private set; } = DifficultyProvider.DEFAULT_DIFFICULTY;
+
+        public float GlobalStress => _director != null ? _director.GlobalStress : 0f;
+        public float GlobalStressRatio => _director != null ? _director.GlobalStressRatio : 0f;
+        public bool HasCurrentHint => _hasCurrentHint &&
+            (_isCurrentHintAccepted || _currentHint.IsValid(Time.time));
+        public bool IsCurrentHintAccepted => _hasCurrentHint && _isCurrentHintAccepted;
+
+        public bool TryGetCurrentHint(out MasterAIHint currentHint)
+        {
+            if ( !HasCurrentHint )
+            {
+                currentHint = default;
+
+                return false;
+            }
+
+            currentHint = _currentHint;
+
+            return true;
+        }
+
+        private void Awake()
+        {
+            ApplySelectedDifficulty();
+        }
+
+        [ContextMenu("Start Gameplay")]
+        public void StartGameplay()
+        {
+            if ( !Application.isPlaying )
+            {
+                Debug.LogWarning("[MasterAIProvider] StartGameplay은 Play Mode에서만 호출할 수 있습니다." , this);
+
+                return;
+            }
+
+            if ( _isGameplayStarted || _isGameplayStartRequested )
+            {
+                return;
+            }
+
+            _isGameplayStartRequested = true;
+
+            TryStartGameplay();
+        }
+
+        [ContextMenu("Stop Gameplay")]
+        public void StopGameplay()
+        {
+            _isGameplayStartRequested = false;
+            _isGameplayStarted = false;
+
+            ClearDirectorHint();
+            _targetZone = null;
+            _currentVent = null;
+            _previousChaseAIState = CHASE_AI_STATE.DORMANT;
+
+            _director?.Reset();
+
+            if ( _chaseAIController != null )
+            {
+                _chaseAIController.gameObject.SetActive(false);
+            }
+
+            Debug.Log("[MasterAIProvider] 게임플레이 종료: Director와 Chase AI를 정지합니다." , this);
+        }
+
+        private void Start()
+        {
+            if ( !ValidateReferences() )
+            {
+                return;
+            }
+
+            if ( !_chaseAIController.ConfigureTarget(_playerTrans) )
+            {
+                Debug.LogError("[MasterAIProvider] 플레이어 상태 연결에 실패했습니다." , this);
+
+                return;
+            }
+
+            try
+            {
+                _zoneSelector = new MasterAIZoneSelector(_zones , _config);
+                _ventSelector = new MasterAIVentSelector(_vents);
+                _chaseAIController.ConfigureZones(_zones);
+            }
+            catch ( ArgumentException exception )
+            {
+                Debug.LogError($"[MasterAIProvider] AI 공간 데이터 초기화 실패: {exception.Message}" , this);
+
+                return;
+            }
+
+            _director = new MasterAIDirector(_config);
+            _hintGenerator = new MasterAIHintGenerator(_config);
+            _previousChaseAIState = _chaseAIController.CurrentState;
+            _isInitialized = true;
+
+            UpdatePlayerZone();
+
+            if ( _startGameplayAutomaticallyForDebug )
+            {
+                StartGameplay();
+            }
+
+            TryStartGameplay();
+
+            if ( !_isGameplayStarted )
+            {
+                Debug.Log("[MasterAIProvider] 초기화 완료: Director=DORMANT, StartGameplay() 호출 대기" , this);
+            }
+        }
+
+        private void Update()
+        {
+            if ( !_isInitialized )
+            {
+                return;
+            }
+
+            ApplyInitialDormantState();
+
+            if ( !_isGameplayStarted )
+            {
+                return;
+            }
+
+            UpdatePlayerZone();
+            UpdateDirectorHint();
+
+            float distanceToPlayer = Vector3.Distance(_chaseAIController.transform.position , _playerTrans.position);
+            MASTER_AI_COMMAND command = _director.Tick(Time.deltaTime , _chaseAIController.CurrentState , distanceToPlayer);
+
+            ProcessCommand(command);
+            UpdateChaseStateNotification();
+            UpdateDebugLog(Time.deltaTime , distanceToPlayer);
+        }
+
+        private void TryStartGameplay()
+        {
+            if ( !_isInitialized || !_isGameplayStartRequested || _isGameplayStarted )
+            {
+                return;
+            }
+
+            _director.Reset();
+            ClearDirectorHint();
+
+            _targetZone = null;
+            _currentVent = null;
+            _previousChaseAIState = _chaseAIController.CurrentState;
+            _debugLogTimer = 0f;
+            _isGameplayStarted = true;
+
+            UpdatePlayerZone();
+
+            Debug.Log("[MasterAIProvider] 게임플레이 시작: Director 타이머와 GlobalStress를 0부터 진행합니다." , this);
+        }
+
+        private void ApplySelectedDifficulty()
+        {
+            SelectedDifficulty = DifficultyProvider.Current;
+
+            ResolveDifficultyConfigs(
+                SelectedDifficulty ,
+                out MasterAIConfig masterAIConfig ,
+                out ChaseAIConfig chaseAIConfig);
+
+            if ( masterAIConfig == null || chaseAIConfig == null )
+            {
+                Debug.LogError($"[MasterAIProvider] {SelectedDifficulty} 난이도의 AI Config가 없습니다." , this);
+
+                return;
+            }
+
+            if ( _chaseAIController == null || !_chaseAIController.ConfigureConfig(chaseAIConfig) )
+            {
+                Debug.LogError($"[MasterAIProvider] {SelectedDifficulty} Chase AI Config 적용에 실패했습니다." , this);
+
+                return;
+            }
+
+            _config = masterAIConfig;
+
+            Debug.Log($"[MasterAIProvider] 난이도 Config 적용: {SelectedDifficulty}, Master={masterAIConfig.name}, Chase={chaseAIConfig.name}" , this);
+        }
+
+        private void ResolveDifficultyConfigs(
+            GAME_DIFFICULTY difficulty ,
+            out MasterAIConfig masterAIConfig ,
+            out ChaseAIConfig chaseAIConfig)
+        {
+            switch ( difficulty )
+            {
+                case GAME_DIFFICULTY.EASY:
+                    masterAIConfig = _easyMasterConfig;
+                    chaseAIConfig = _easyChaseConfig;
+                    break;
+
+                case GAME_DIFFICULTY.HARD:
+                    masterAIConfig = _hardMasterConfig;
+                    chaseAIConfig = _hardChaseConfig;
+                    break;
+
+                default:
+                    masterAIConfig = _normalMasterConfig;
+                    chaseAIConfig = _normalChaseConfig;
+                    break;
+            }
+        }
+
+        private void OnEnable()
+        {
+            if ( _chaseAIController == null )
+            {
+                return;
+            }
+
+            _chaseAIController.StateChanged -= OnChaseAIStateChangedActioned;
+            _chaseAIController.StateChanged += OnChaseAIStateChangedActioned;
+
+            _chaseAIController.PlayerCaught -= OnPlayerCaughtActioned;
+            _chaseAIController.PlayerCaught += OnPlayerCaughtActioned;
+
+            _chaseAIController.RetreatFailed -= OnChaseAIRetreatFailed;
+            _chaseAIController.RetreatFailed += OnChaseAIRetreatFailed;
+        }
+
+        private void OnDisable()
+        {
+            if ( _chaseAIController != null )
+            {
+                _chaseAIController.StateChanged -= OnChaseAIStateChangedActioned;
+                _chaseAIController.PlayerCaught -= OnPlayerCaughtActioned;
+                _chaseAIController.RetreatFailed -= OnChaseAIRetreatFailed;
+            }
+        }
+
+        private void UpdatePlayerZone()
+        {
+            Vector3 playerPosition = _playerTrans.position;
+
+            if ( _currentPlayerZone != null && _currentPlayerZone.Contains(playerPosition) )
+            {
+                return;
+            }
+
+            _zoneSelector.TryGetContainingZone(playerPosition , out AIWorldZone containingZone);
+
+            if ( containingZone == _currentPlayerZone )
+            {
+                return;
+            }
+
+            _currentPlayerZone = containingZone;
+            PlayerZoneChanged?.Invoke(_currentPlayerZone);
+
+            if ( _currentPlayerZone == null )
+            {
+                Debug.LogWarning("[MasterAIProvider] 플레이어가 어떤 Zone에도 포함되지 않습니다." , this);
+
+                return;
+            }
+
+            Debug.Log($"[MasterAIProvider] Player Zone 변경: ID={_currentPlayerZone.ZoneId}, Name={_currentPlayerZone.DisplayName}" , this);
+        }
+
+        private void OnChaseAIStateChangedActioned(
+            CHASE_AI_STATE previousState ,
+            CHASE_AI_STATE currentState)
+        {
+            ChaseStateChanged?.Invoke(previousState , currentState);
+        }
+
+        private void OnPlayerCaughtActioned()
+        {
+            PlayerCaught?.Invoke();
+        }
+
+        private void OnChaseAIRetreatFailed()
+        {
+            if ( _director == null )
+            {
+                return;
+            }
+
+            _currentVent = null;
+            _director.NotifyRetreatFailed();
+
+            Debug.LogWarning($"[MasterAIProvider] Chase AI 이탈 실패 통보 수신: {_config.RetreatRetryDelay:F1}초 후 재시도" , this);
+        }
+
+        private void ProcessCommand(MASTER_AI_COMMAND command)
+        {
+            switch ( command )
+            {
+                case MASTER_AI_COMMAND.ACTIVATE:
+                    ProcessActivationCommand();
+                    break;
+
+                case MASTER_AI_COMMAND.RETREAT:
+                    ProcessRetreatCommand();
+                    break;
+
+                case MASTER_AI_COMMAND.DIRECTOR_HINT:
+                    ProcessDirectorHintCommand();
+                    break;
+            }
+        }
+
+        private void ProcessDirectorHintCommand()
+        {
+            if ( !TrySelectTargetZone() )
+            {
+                return;
+            }
+
+            GenerateDirectorHint();
+        }
+
+        private bool TrySelectTargetZone()
+        {
+            _targetZone = null;
+
+            bool wasSelected = _zoneSelector.TrySelectTargetZone(_currentPlayerZone , out AIWorldZone selectedZone , out MASTER_AI_ZONE_RELATION relation);
+
+            if ( !wasSelected )
+            {
+                Debug.LogWarning("[MasterAIProvider] 목표 Zone을 선택할 수 없습니다." , this);
+
+                return false;
+            }
+
+            _targetZone = selectedZone;
+
+            Debug.Log($"[MasterAIProvider] Target Zone 선택: ID={_targetZone.ZoneId}, Name={_targetZone.DisplayName}, Relation={relation}" , this);
+
+            return true;
+        }
+
+        private void ProcessActivationCommand()
+        {
+            _currentVent = null;
+
+            bool wasSelected = _ventSelector.TrySelectActivationVent(
+                _currentPlayerZone ,
+                _playerTrans.position ,
+                _chaseAIController.NavMeshSampleRadius ,
+                _chaseAIController.AreaMask ,
+                out AIVentPoint selectedVent ,
+                out Vector3 activationPosition);
+
+            if ( !wasSelected )
+            {
+                _director.NotifyChaseAIDormant();
+
+                Debug.LogWarning("[MasterAIProvider] 플레이어 Zone과 인접하지 않은 출현 Vent를 선택할 수 없습니다." , this);
+
+                return;
+            }
+
+            _chaseAIController.gameObject.SetActive(true);
+
+            bool wasActivated = _chaseAIController.RequestActivation(activationPosition);
+
+            if ( !wasActivated )
+            {
+                _director.NotifyChaseAIDormant();
+                _chaseAIController.gameObject.SetActive(false);
+
+                Debug.LogWarning($"[MasterAIProvider] Chase AI Vent 출현 요청에 실패했습니다: Vent={selectedVent.name}" , this);
+
+                return;
+            }
+
+            _currentVent = selectedVent;
+
+            Debug.Log($"[MasterAIProvider] Chase AI Vent 출현 요청 성공: Vent={_currentVent.name}, Zone={_currentVent.Zone.DisplayName}" , this);
+
+            if ( TrySelectTargetZone() )
+            {
+                GenerateDirectorHint();
+            }
+        }
+
+        private void ProcessRetreatCommand()
+        {
+            _currentVent = null;
+
+            bool wasSelected = _ventSelector.TrySelectRetreatVent(
+                _currentPlayerZone ,
+                _chaseAIController.transform.position ,
+                _chaseAIController.NavMeshSampleRadius ,
+                _chaseAIController.AreaMask ,
+                out AIVentPoint selectedVent ,
+                out Vector3 retreatPosition);
+
+            if ( !wasSelected )
+            {
+                _director.NotifyRetreatFailed();
+
+                Debug.LogWarning($"[MasterAIProvider] 플레이어 Zone과 인접하지 않으면서 도달 가능한 Vent가 없습니다: {_config.RetreatRetryDelay:F1}초 후 재시도" , this);
+
+                return;
+            }
+
+            bool wasAccepted = _chaseAIController.RequestRetreat(retreatPosition);
+
+            if ( !wasAccepted )
+            {
+                _director.NotifyRetreatFailed();
+
+                Debug.LogWarning($"[MasterAIProvider] Chase AI Vent 이탈 요청이 거부되었습니다: Vent={selectedVent.name}" , this);
+
+                return;
+            }
+
+            _currentVent = selectedVent;
+
+            Debug.Log($"[MasterAIProvider] Chase AI Vent 이탈 요청 전달 성공: Vent={_currentVent.name}, Zone={_currentVent.Zone.DisplayName}, State={_chaseAIController.CurrentState}, RetreatPending={_chaseAIController.IsRetreatPending}" , this);
+        }
+
+        private void UpdateChaseStateNotification()
+        {
+            CHASE_AI_STATE currentState = _chaseAIController.CurrentState;
+
+            if ( _previousChaseAIState != CHASE_AI_STATE.DORMANT && currentState == CHASE_AI_STATE.DORMANT )
+            {
+                _director.NotifyChaseAIDormant();
+
+                ClearDirectorHint();
+                _targetZone = null;
+
+                Debug.Log($"[MasterAIProvider] Chase AI Vent 이탈 완료: Vent={GetCurrentVentName()}, Director=DORMANT" , this);
+
+                _chaseAIController.gameObject.SetActive(false);
+            }
+
+            _previousChaseAIState = currentState;
+        }
+
+        private void UpdateDebugLog(float deltaTime , float distanceToPlayer)
+        {
+#if !UNITY_EDITOR
+            if ( !Debug.isDebugBuild )
+            {
+                return;
+            }
+#endif
+
+            if ( !_enableDebugLog )
+            {
+                return;
+            }
+
+            _debugLogTimer -= deltaTime;
+
+            if ( _debugLogTimer > 0f )
+            {
+                return;
+            }
+
+            _debugLogTimer = _debugLogInterval;
+
+            string currentZoneName = _currentPlayerZone != null ? _currentPlayerZone.DisplayName : "NONE";
+            string targetZoneName = _targetZone != null ? _targetZone.DisplayName : "NONE";
+
+            Debug.Log($"[MasterAIProvider] Director={_director.CurrentState}, GlobalStress={_director.GlobalStress:F1}/{_config.MaximumGlobalStress:F1}, Chase={_chaseAIController.CurrentState}, RetreatPending={_chaseAIController.IsRetreatPending}, PlayerZone={currentZoneName}, TargetZone={targetZoneName}, Vent={GetCurrentVentName()}, Distance={distanceToPlayer:F1}" , this);
+        }
+
+        private void ApplyInitialDormantState()
+        {
+            if ( _wasInitialDormantStateApplied || !_chaseAIController.IsInitialized )
+            {
+                return;
+            }
+
+            _wasInitialDormantStateApplied = true;
+
+            if ( _chaseAIController.CurrentState == CHASE_AI_STATE.DORMANT )
+            {
+                _chaseAIController.gameObject.SetActive(false);
+            }
+        }
+
+        private string GetCurrentVentName()
+        {
+            return _currentVent != null ? _currentVent.name : "NONE";
+        }
+
+        private void GenerateDirectorHint()
+        {
+            if ( _targetZone == null || _hintGenerator == null )
+            {
+                return;
+            }
+
+            bool wasCreated = _hintGenerator.TryCreateHint(
+                _targetZone ,
+                Time.time ,
+                _chaseAIController.AreaMask ,
+                out MasterAIHint createdHint);
+
+            if ( !wasCreated )
+            {
+                ClearDirectorHint();
+
+                Debug.LogWarning($"[MasterAIProvider] Director Hint 생성 실패: Zone={_targetZone.DisplayName} 내부에서 NavMesh 위치를 찾지 못했습니다." , this);
+
+                return;
+            }
+
+            _currentHint = createdHint;
+            _hasCurrentHint = true;
+
+            bool wasAccepted = _chaseAIController.TryReceiveDirectorHint(_currentHint);
+            _isCurrentHintAccepted = wasAccepted;
+
+            if ( wasAccepted )
+            {
+                Debug.Log("[MasterAIProvider] Director Hint 전달 성공" , this);
+            }
+            else
+            {
+                Debug.LogWarning($"[MasterAIProvider] Director Hint 전달 거부: ChaseState={_chaseAIController.CurrentState}" , this);
+            }
+
+            Debug.Log($"[MasterAIProvider] Director Hint 생성: Zone={_currentHint.TargetZoneId}, Anchor={_currentHint.SearchAnchorPosition}, Radius={_currentHint.SearchRadius:F1}, Urgency={_currentHint.Urgency:F2}, Duration={_currentHint.ExpireTime - Time.time:F1}" , this);
+
+            if ( !wasAccepted )
+            {
+                ClearDirectorHint();
+            }
+        }
+
+        private void UpdateDirectorHint()
+        {
+            if ( !_hasCurrentHint )
+            {
+                return;
+            }
+
+            if ( _isCurrentHintAccepted )
+            {
+                if ( _chaseAIController.ActiveEvidenceType == CHASE_AI_EVIDENCE_TYPE.DIRECTOR_HINT )
+                {
+                    return;
+                }
+
+                Debug.Log($"[MasterAIProvider] 수락된 Director Hint 조사 종료: Zone={_currentHint.TargetZoneId}" , this);
+                ClearDirectorHint();
+
+                return;
+            }
+
+            if ( _currentHint.IsValid(Time.time) )
+            {
+                return;
+            }
+
+            Debug.Log($"[MasterAIProvider] Director Hint 만료: Zone={_currentHint.TargetZoneId}" , this);
+
+            ClearDirectorHint();
+        }
+
+        private void ClearDirectorHint()
+        {
+            _currentHint = default;
+            _hasCurrentHint = false;
+            _isCurrentHintAccepted = false;
+        }
+
+        private bool ValidateReferences()
+        {
+            if ( _config == null )
+            {
+                Debug.LogError("[MasterAIProvider] MasterAIConfig가 없습니다." , this);
+
+                return false;
+            }
+
+            if ( _chaseAIController == null )
+            {
+                Debug.LogError("[MasterAIProvider] ChaseAIController가 없습니다." , this);
+
+                return false;
+            }
+
+            if ( _playerTrans == null )
+            {
+                Debug.LogError("[MasterAIProvider] Player Transform이 없습니다." , this);
+
+                return false;
+            }
+
+            if ( _chaseAIController.gameObject == gameObject )
+            {
+                Debug.LogError("[MasterAIProvider] Chase AI와 Master AI는 서로 다른 GameObject에 있어야 합니다." , this);
+
+                return false;
+            }
+
+            if ( _zones == null || _zones.Count == 0 )
+            {
+                Debug.LogError("[MasterAIProvider] Zone 목록이 없습니다." , this);
+
+                return false;
+            }
+
+            if ( _vents == null || _vents.Count == 0 )
+            {
+                Debug.LogError("[MasterAIProvider] Vent 목록이 없습니다." , this);
+
+                return false;
+            }
+
+            return true;
+        }
+    }
+}

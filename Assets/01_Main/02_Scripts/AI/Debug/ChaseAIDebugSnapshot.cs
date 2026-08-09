@@ -1,0 +1,155 @@
+using UnityEngine;
+
+namespace HideSeek.AI
+{
+    public readonly struct ChaseAIDebugSnapshot
+    {
+        public bool IsInitialized { get; }
+        public CHASE_AI_STATE State { get; }
+        public bool IsRetreatPending { get; }
+        public bool IsReactingToVisualSuspicion { get; }
+
+        public CHASE_AI_VISUAL_STATE VisualState { get; }
+        public bool HasLineOfSight { get; }
+        public bool HasTargetVisibilityState { get; }
+        public bool IsTargetFullyHidden { get; }
+        public float DetectionRatio { get; }
+        public float DetectionSpeedMultiplier { get; }
+
+        public bool HasVisualMemory { get; }
+        public Vector3 VisualMemoryPosition { get; }
+        public float VisualMemoryStrength { get; }
+        public float VisualMemoryRemainingTime { get; }
+
+        public bool HasAudioMemory { get; }
+        public Vector3 AudioMemoryPosition { get; }
+        public float AudioMemoryStrength { get; }
+        public float AudioMemoryRemainingTime { get; }
+        public NOISE_TYPE LastNoiseType { get; }
+        public bool HasActiveAudioInvestigation { get; }
+        public NOISE_TYPE ActiveAudioNoiseType { get; }
+        public float ActiveAudioIntensity { get; }
+        public float ActiveAudioFreshness { get; }
+        public float ActiveAudioScore { get; }
+        public float LastAudioCandidateScore { get; }
+        public string LastAudioDecisionReason { get; }
+
+        public string ActiveInvestigationName { get; }
+        public string ActiveSearchContext { get; }
+        public string ActiveSearchZoneName { get; }
+        public bool IsSearchZoneRestricted { get; }
+        public int CurrentSearchPointIndex { get; }
+        public int SearchPointCount { get; }
+        public string CurrentSearchPointSource { get; }
+        public CHASE_AI_SEARCH_ACTION CurrentSearchAction { get; }
+        public float SearchActionProgress { get; }
+        public float SearchActionRemainingTime { get; }
+        public string HidingSpotCandidateName { get; }
+        public float HidingSpotInspectionChance { get; }
+        public float HidingSpotInspectionRoll { get; }
+        public bool WasHidingSpotSelected { get; }
+
+        public float CurrentAnger { get; }
+        public float AngerFloor { get; }
+        public int CompletedGeneratorCount { get; }
+        public float ChaseSpeedMultiplier { get; }
+        public float SearchRadiusMultiplier { get; }
+        public int AngerSearchPointCount { get; }
+
+        public ChaseAIDebugSnapshot(
+            bool isInitialized ,
+            CHASE_AI_STATE state ,
+            bool isRetreatPending ,
+            bool isReactingToVisualSuspicion ,
+            CHASE_AI_VISUAL_STATE visualState ,
+            bool hasLineOfSight ,
+            bool hasTargetVisibilityState ,
+            bool isTargetFullyHidden ,
+            float detectionRatio ,
+            float detectionSpeedMultiplier ,
+            bool hasVisualMemory ,
+            Vector3 visualMemoryPosition ,
+            float visualMemoryStrength ,
+            float visualMemoryRemainingTime ,
+            bool hasAudioMemory ,
+            Vector3 audioMemoryPosition ,
+            float audioMemoryStrength ,
+            float audioMemoryRemainingTime ,
+            NOISE_TYPE lastNoiseType ,
+            bool hasActiveAudioInvestigation ,
+            NOISE_TYPE activeAudioNoiseType ,
+            float activeAudioIntensity ,
+            float activeAudioFreshness ,
+            float activeAudioScore ,
+            float lastAudioCandidateScore ,
+            string lastAudioDecisionReason ,
+            string activeInvestigationName ,
+            string activeSearchContext ,
+            string activeSearchZoneName ,
+            bool isSearchZoneRestricted ,
+            int currentSearchPointIndex ,
+            int searchPointCount ,
+            string currentSearchPointSource ,
+            CHASE_AI_SEARCH_ACTION currentSearchAction ,
+            float searchActionProgress ,
+            float searchActionRemainingTime ,
+            string hidingSpotCandidateName ,
+            float hidingSpotInspectionChance ,
+            float hidingSpotInspectionRoll ,
+            bool wasHidingSpotSelected ,
+            float currentAnger ,
+            float angerFloor ,
+            int completedGeneratorCount ,
+            float chaseSpeedMultiplier ,
+            float searchRadiusMultiplier ,
+            int angerSearchPointCount)
+        {
+            IsInitialized = isInitialized;
+            State = state;
+            IsRetreatPending = isRetreatPending;
+            IsReactingToVisualSuspicion = isReactingToVisualSuspicion;
+            VisualState = visualState;
+            HasLineOfSight = hasLineOfSight;
+            HasTargetVisibilityState = hasTargetVisibilityState;
+            IsTargetFullyHidden = isTargetFullyHidden;
+            DetectionRatio = detectionRatio;
+            DetectionSpeedMultiplier = detectionSpeedMultiplier;
+            HasVisualMemory = hasVisualMemory;
+            VisualMemoryPosition = visualMemoryPosition;
+            VisualMemoryStrength = visualMemoryStrength;
+            VisualMemoryRemainingTime = visualMemoryRemainingTime;
+            HasAudioMemory = hasAudioMemory;
+            AudioMemoryPosition = audioMemoryPosition;
+            AudioMemoryStrength = audioMemoryStrength;
+            AudioMemoryRemainingTime = audioMemoryRemainingTime;
+            LastNoiseType = lastNoiseType;
+            HasActiveAudioInvestigation = hasActiveAudioInvestigation;
+            ActiveAudioNoiseType = activeAudioNoiseType;
+            ActiveAudioIntensity = activeAudioIntensity;
+            ActiveAudioFreshness = activeAudioFreshness;
+            ActiveAudioScore = activeAudioScore;
+            LastAudioCandidateScore = lastAudioCandidateScore;
+            LastAudioDecisionReason = lastAudioDecisionReason;
+            ActiveInvestigationName = activeInvestigationName;
+            ActiveSearchContext = activeSearchContext;
+            ActiveSearchZoneName = activeSearchZoneName;
+            IsSearchZoneRestricted = isSearchZoneRestricted;
+            CurrentSearchPointIndex = currentSearchPointIndex;
+            SearchPointCount = searchPointCount;
+            CurrentSearchPointSource = currentSearchPointSource;
+            CurrentSearchAction = currentSearchAction;
+            SearchActionProgress = searchActionProgress;
+            SearchActionRemainingTime = searchActionRemainingTime;
+            HidingSpotCandidateName = hidingSpotCandidateName;
+            HidingSpotInspectionChance = hidingSpotInspectionChance;
+            HidingSpotInspectionRoll = hidingSpotInspectionRoll;
+            WasHidingSpotSelected = wasHidingSpotSelected;
+            CurrentAnger = currentAnger;
+            AngerFloor = angerFloor;
+            CompletedGeneratorCount = completedGeneratorCount;
+            ChaseSpeedMultiplier = chaseSpeedMultiplier;
+            SearchRadiusMultiplier = searchRadiusMultiplier;
+            AngerSearchPointCount = angerSearchPointCount;
+        }
+    }
+}

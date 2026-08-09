@@ -1,0 +1,323 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace HideSeek.AI
+{
+    [Serializable]
+    public struct ChaseAINoisePrioritySetting
+    {
+        [SerializeField] private NOISE_TYPE _noiseType;
+        [SerializeField, Min(0f)] private float _weight;
+
+        public NOISE_TYPE NoiseType => _noiseType;
+        public float Weight => Mathf.Max(0f , _weight);
+
+        public ChaseAINoisePrioritySetting(NOISE_TYPE noiseType , float weight)
+        {
+            _noiseType = noiseType;
+            _weight = Mathf.Max(0f , weight);
+        }
+    }
+
+    [CreateAssetMenu(fileName = "ChaseAIConfig" , menuName = "HideSeek/AI/Chase AI Config")]
+    public sealed class ChaseAIConfig : ScriptableObject
+    {
+        [Header("Movement")]
+        [SerializeField, Min(0f)] private float _walkSpeed = 3.5f;
+        [SerializeField, Min(0f)] private float _evidenceApproachSpeed = 4.5f;
+        [SerializeField, Min(0f)] private float _acceleration = 12f;
+        [SerializeField, Min(0f)] private float _angularSpeed = 360f;
+        [SerializeField, Min(0f)] private float _stoppingDistance = 0.2f;
+
+        [Header("NavMesh Validation")]
+        [SerializeField, Min(0.1f)] private float _sampleRadius = 2f;
+        [SerializeField, Min(0f)] private float _arrivalTolerance = 0.1f;
+        [SerializeField, Min(0f)] private float _arrivalVelocityThreshold = 0.05f;
+
+        [Header("Stuck Detection")]
+        [SerializeField, Min(0f)] private float _stuckVelocityThreshold = 0.05f;
+        [SerializeField, Min(0.1f)] private float _stuckTimeLimit = 2f;
+
+        [Header("Visual Perception")]
+        [SerializeField, Min(0.1f)] private float _sightRange = 15f;
+        [SerializeField, Range(1f, 360f)] private float _horizontalSightAngle = 100f;
+        [SerializeField, Range(1f, 180f)] private float _verticalSightAngle = 60f;
+        [SerializeField, Min(0.01f)] private float _visualConfirmTime = 0.8f;
+        [SerializeField, Min(0.01f)] private float _visualLoseTime = 0.3f;
+        [SerializeField, Range(0.1f, 1f)] private float _minimumDistanceDetectionMultiplier = 0.45f;
+        [SerializeField, Range(0.1f, 1f)] private float _minimumPeripheralDetectionMultiplier = 0.55f;
+
+        [Header("Visual Suspicion Response")]
+        [SerializeField, Range(0f, 1f)] private float _visualSuspicionReactionThreshold = 0.35f;
+        [SerializeField, Min(0f)] private float _visualSuspicionRotationSpeed = 240f;
+
+        [Header("Memory")]
+        [SerializeField, Min(0.1f)] private float _visualEvidenceDuration = 10f;
+        [SerializeField, Min(0.1f)] private float _weakNoiseEvidenceDuration = 4f;
+        [SerializeField, Min(0.1f)] private float _strongNoiseEvidenceDuration = 8f;
+        [SerializeField, Min(0f)] private float _strongNoiseThreshold = 0.5f;
+
+        [Header("Anger")]
+        [SerializeField, Min(1f)] private float _maximumAnger = 100f;
+        [SerializeField] private List<float> _generatorAngerFloors = new() { 0f , 20f , 40f , 60f };
+        [SerializeField, Min(0f)] private float _angerChaseBuildUpDelay = 2f;
+        [SerializeField, Min(0f)] private float _angerIncreasePerChaseSecond = 4f;
+        [SerializeField, Min(0f)] private float _angerIncreaseOnChaseLost = 10f;
+        [SerializeField, Min(0f)] private float _angerCalmDelay = 5f;
+        [SerializeField, Min(0f)] private float _angerDecreasePerSecond = 2f;
+        [SerializeField, Min(1f)] private float _maximumAngerChaseSpeedMultiplier = 1.15f;
+        [SerializeField, Min(1f)] private float _maximumAngerSearchRadiusMultiplier = 1.25f;
+        [SerializeField, Min(1)] private int _minimumAngerSearchPointCount = 2;
+        [SerializeField, Min(1)] private int _maximumAngerSearchPointCount = 4;
+        [SerializeField, Range(0f, 1f)] private float _directorHintAngerInfluence = 0.5f;
+
+        [Header("Audio Search")]
+        [SerializeField, Min(0f)] private float _minAudioSearchRadius = 2f;
+        [SerializeField, Min(0f)] private float _maxAudioSearchRadius = 8f;
+        [SerializeField, Min(0f)] private float _minAudioSearchDuration = 2f;
+        [SerializeField, Min(0f)] private float _maxAudioSearchDuration = 8f;
+
+        [Header("Audio Evidence Priority")]
+        [SerializeField] private List<ChaseAINoisePrioritySetting> _noisePrioritySettings = new()
+        {
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.FOOTSTEP , 1f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.RUN , 1.05f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.DECOY , 1.1f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.GENERATOR , 1.1f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.QTE_FAILURE , 1.2f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.DOOR , 1.05f) ,
+            new ChaseAINoisePrioritySetting(NOISE_TYPE.ENVIRONMENT , 0.5f)
+        };
+        [SerializeField, Range(0f, 1f)] private float _minimumAudioFreshnessMultiplier = 0.6f;
+        [SerializeField, Min(0f)] private float _audioEvidenceReplacementMargin = 0.1f;
+        [SerializeField, Min(0f)] private float _sameSourceRetargetInterval = 0.4f;
+        [SerializeField, Min(0f)] private float _sameSourceRetargetDistance = 0.75f;
+
+        [Header("Search")]
+        [SerializeField, Min(0f)] private float _visualSearchRadius = 5f;
+        [SerializeField, Min(0f)] private float _lastSeenPredictionDistance = 3f;
+        [SerializeField, Range(0f, 1f)] private float _directionalSearchPointRatio = 0.65f;
+        [SerializeField, Range(0f, 1f)] private float _zoneCoverageSearchPointRatio = 0.3f;
+        [SerializeField, Range(0f, 180f)] private float _directionalSearchAngle = 120f;
+        [SerializeField, Min(0f)] private float _minimumSearchPointDistance = 1.5f;
+        [SerializeField, Min(0f)] private float _hidingSpotEvidenceDistance = 2.5f;
+        [SerializeField, Range(0f, 1f)] private float _visualHidingSpotInspectionChance = 0.65f;
+        [SerializeField, Range(0f, 1f)] private float _strongAudioHidingSpotInspectionChance = 0.35f;
+        [SerializeField, Min(1)] private int _searchPointGenerationAttemptCountPerPoint = 10;
+
+        [Header("Search Action")]
+        [SerializeField, Min(0f)] private float _directionalSearchActionTimeMultiplier = 0.8f;
+        [SerializeField, Min(0f)] private float _areaSearchActionTimeMultiplier = 1f;
+        [SerializeField, Min(0f)] private float _hidingSpotSearchActionTimeMultiplier = 1.6f;
+
+        [Header("Search Facing")]
+        [SerializeField, Min(0f)] private float _searchRotationSpeed = 120f;
+        [SerializeField, Range(0f, 180f)] private float _areaSearchSweepAngle = 90f;
+
+        [Header("Search Memory")]
+        [SerializeField, Min(0)] private int _recentSearchPointHistoryCapacity = 6;
+        [SerializeField, Min(0f)] private float _recentSearchPointAvoidanceDistance = 2f;
+
+        [Header("State Machine")]
+        [SerializeField, Min(0f)] private float _chaseSpeed = 5.5f;
+        [SerializeField, Min(0f)] private float _patrolWaitTime = 1f;
+        [SerializeField, Min(0f)] private float _searchWaitTime = 3f;
+        [SerializeField, Min(0.02f)] private float _chaseRepathInterval = 0.2f;
+        [SerializeField, Min(0f)] private float _chaseDestinationUpdateDistance = 0.5f;
+        [SerializeField, Min(0f)] private float _chaseOcclusionPredictionDistance = 2f;
+
+        [Header("Patrol Selection")]
+        [SerializeField, Min(0)] private int _patrolRecentPointHistoryCapacity = 2;
+        [SerializeField, Range(0f, 1f)] private float _patrolRecentPointWeightMultiplier = 0.15f;
+        [SerializeField, Range(0f, 1f)] private float _patrolAdjacentZoneSelectionChance = 0.6f;
+        [SerializeField, Min(1)] private int _minimumPatrolPointVisitCountPerZone = 1;
+        [SerializeField, Min(1)] private int _maximumPatrolPointVisitCountPerZone = 3;
+        [SerializeField, Min(0)] private int _patrolRecentZoneHistoryCapacity = 2;
+
+        [Header("Attack")]
+        [SerializeField, Min(0f)] private float _attackRange = 1.5f;
+
+        public float WalkSpeed => _walkSpeed;
+        public float EvidenceApproachSpeed => _evidenceApproachSpeed;
+        public float Acceleration => _acceleration;
+        public float AngularSpeed => _angularSpeed;
+        public float StoppingDistance => _stoppingDistance;
+
+        public float SampleRadius => _sampleRadius;
+        public float ArrivalTolerance => _arrivalTolerance;
+        public float ArrivalVelocityThreshold => _arrivalVelocityThreshold;
+
+        public float StuckVelocityThreshold => _stuckVelocityThreshold;
+        public float StuckTimeLimit => _stuckTimeLimit;
+
+        public float SightRange => _sightRange;
+        public float HorizontalSightAngle => _horizontalSightAngle;
+        public float VerticalSightAngle => _verticalSightAngle;
+        public float VisualConfirmTime => _visualConfirmTime;
+        public float VisualLoseTime => _visualLoseTime;
+        public float MinimumDistanceDetectionMultiplier => _minimumDistanceDetectionMultiplier;
+        public float MinimumPeripheralDetectionMultiplier => _minimumPeripheralDetectionMultiplier;
+        public float VisualSuspicionReactionThreshold => _visualSuspicionReactionThreshold;
+        public float VisualSuspicionRotationSpeed => _visualSuspicionRotationSpeed;
+
+        public float VisualEvidenceDuration => _visualEvidenceDuration;
+        public float WeakNoiseEvidenceDuration => _weakNoiseEvidenceDuration;
+        public float StrongNoiseEvidenceDuration => _strongNoiseEvidenceDuration;
+        public float StrongNoiseThreshold => _strongNoiseThreshold;
+
+        public float MaximumAnger => _maximumAnger;
+        public float AngerChaseBuildUpDelay => _angerChaseBuildUpDelay;
+        public float AngerIncreasePerChaseSecond => _angerIncreasePerChaseSecond;
+        public float AngerIncreaseOnChaseLost => _angerIncreaseOnChaseLost;
+        public float AngerCalmDelay => _angerCalmDelay;
+        public float AngerDecreasePerSecond => _angerDecreasePerSecond;
+        public float MaximumAngerChaseSpeedMultiplier => _maximumAngerChaseSpeedMultiplier;
+        public float MaximumAngerSearchRadiusMultiplier => _maximumAngerSearchRadiusMultiplier;
+        public int MinimumAngerSearchPointCount => _minimumAngerSearchPointCount;
+        public int MaximumAngerSearchPointCount => _maximumAngerSearchPointCount;
+        public float DirectorHintAngerInfluence => _directorHintAngerInfluence;
+
+        public float MinAudioSearchRadius => _minAudioSearchRadius;
+        public float MaxAudioSearchRadius => _maxAudioSearchRadius;
+        public float MinAudioSearchDuration => _minAudioSearchDuration;
+        public float MaxAudioSearchDuration => _maxAudioSearchDuration;
+        public float MinimumAudioFreshnessMultiplier => _minimumAudioFreshnessMultiplier;
+        public float AudioEvidenceReplacementMargin => _audioEvidenceReplacementMargin;
+        public float SameSourceRetargetInterval => _sameSourceRetargetInterval;
+        public float SameSourceRetargetDistance => _sameSourceRetargetDistance;
+
+        public float VisualSearchRadius => _visualSearchRadius;
+        public float LastSeenPredictionDistance => _lastSeenPredictionDistance;
+        public float DirectionalSearchPointRatio => _directionalSearchPointRatio;
+        public float ZoneCoverageSearchPointRatio => _zoneCoverageSearchPointRatio;
+        public float DirectionalSearchAngle => _directionalSearchAngle;
+        public float MinimumSearchPointDistance => _minimumSearchPointDistance;
+        public float HidingSpotEvidenceDistance => _hidingSpotEvidenceDistance;
+        public float VisualHidingSpotInspectionChance => _visualHidingSpotInspectionChance;
+        public float StrongAudioHidingSpotInspectionChance => _strongAudioHidingSpotInspectionChance;
+        public int SearchPointGenerationAttemptCountPerPoint => _searchPointGenerationAttemptCountPerPoint;
+        public float DirectionalSearchActionTimeMultiplier => _directionalSearchActionTimeMultiplier;
+        public float AreaSearchActionTimeMultiplier => _areaSearchActionTimeMultiplier;
+        public float HidingSpotSearchActionTimeMultiplier => _hidingSpotSearchActionTimeMultiplier;
+        public float SearchRotationSpeed => _searchRotationSpeed;
+        public float AreaSearchSweepAngle => _areaSearchSweepAngle;
+        public int RecentSearchPointHistoryCapacity => _recentSearchPointHistoryCapacity;
+        public float RecentSearchPointAvoidanceDistance => _recentSearchPointAvoidanceDistance;
+
+        public float ChaseSpeed => _chaseSpeed;
+        public float PatrolWaitTime => _patrolWaitTime;
+        public float SearchWaitTime => _searchWaitTime;
+        public float ChaseRepathInterval => _chaseRepathInterval;
+
+        public float ChaseDestinationUpdateDistance => _chaseDestinationUpdateDistance;
+        public float ChaseOcclusionPredictionDistance => _chaseOcclusionPredictionDistance;
+        public int PatrolRecentPointHistoryCapacity => _patrolRecentPointHistoryCapacity;
+        public float PatrolRecentPointWeightMultiplier => _patrolRecentPointWeightMultiplier;
+        public float PatrolAdjacentZoneSelectionChance => _patrolAdjacentZoneSelectionChance;
+        public int MinimumPatrolPointVisitCountPerZone => _minimumPatrolPointVisitCountPerZone;
+        public int MaximumPatrolPointVisitCountPerZone => _maximumPatrolPointVisitCountPerZone;
+        public int PatrolRecentZoneHistoryCapacity => _patrolRecentZoneHistoryCapacity;
+        public float AttackRange => _attackRange;
+
+        public float GetGeneratorAngerFloor(int completedGeneratorCount)
+        {
+            if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )
+            {
+                return 0f;
+            }
+
+            int floorIndex = Mathf.Clamp(completedGeneratorCount , 0 , _generatorAngerFloors.Count - 1);
+
+            return _generatorAngerFloors[ floorIndex ];
+        }
+
+        public float GetNoisePriorityWeight(NOISE_TYPE noiseType)
+        {
+            if ( _noisePrioritySettings == null )
+            {
+                return 1f;
+            }
+
+            for ( int settingIndex = 0; settingIndex < _noisePrioritySettings.Count; settingIndex++ )
+            {
+                ChaseAINoisePrioritySetting setting = _noisePrioritySettings[ settingIndex ];
+
+                if ( setting.NoiseType == noiseType )
+                {
+                    return setting.Weight;
+                }
+            }
+
+            return 1f;
+        }
+
+        private void OnValidate()
+        {
+            float minimumEvidenceApproachSpeed = Mathf.Min(_walkSpeed , _chaseSpeed);
+            float maximumEvidenceApproachSpeed = Mathf.Max(_walkSpeed , _chaseSpeed);
+
+            _evidenceApproachSpeed = Mathf.Clamp(
+                _evidenceApproachSpeed ,
+                minimumEvidenceApproachSpeed ,
+                maximumEvidenceApproachSpeed);
+            _minimumDistanceDetectionMultiplier = Mathf.Clamp(_minimumDistanceDetectionMultiplier , 0.1f , 1f);
+            _minimumPeripheralDetectionMultiplier = Mathf.Clamp(_minimumPeripheralDetectionMultiplier , 0.1f , 1f);
+            _visualSuspicionReactionThreshold = Mathf.Clamp01(_visualSuspicionReactionThreshold);
+            _visualSuspicionRotationSpeed = Mathf.Max(0f , _visualSuspicionRotationSpeed);
+            _minimumAudioFreshnessMultiplier = Mathf.Clamp01(_minimumAudioFreshnessMultiplier);
+            _audioEvidenceReplacementMargin = Mathf.Max(0f , _audioEvidenceReplacementMargin);
+            _sameSourceRetargetInterval = Mathf.Max(0f , _sameSourceRetargetInterval);
+            _sameSourceRetargetDistance = Mathf.Max(0f , _sameSourceRetargetDistance);
+            _maximumAnger = Mathf.Max(1f , _maximumAnger);
+            _angerChaseBuildUpDelay = Mathf.Max(0f , _angerChaseBuildUpDelay);
+            _angerIncreasePerChaseSecond = Mathf.Max(0f , _angerIncreasePerChaseSecond);
+            _angerIncreaseOnChaseLost = Mathf.Max(0f , _angerIncreaseOnChaseLost);
+            _angerCalmDelay = Mathf.Max(0f , _angerCalmDelay);
+            _angerDecreasePerSecond = Mathf.Max(0f , _angerDecreasePerSecond);
+            _maximumAngerChaseSpeedMultiplier = Mathf.Max(1f , _maximumAngerChaseSpeedMultiplier);
+            _maximumAngerSearchRadiusMultiplier = Mathf.Max(1f , _maximumAngerSearchRadiusMultiplier);
+            _minimumAngerSearchPointCount = Mathf.Max(1 , _minimumAngerSearchPointCount);
+            _maximumAngerSearchPointCount = Mathf.Max(_minimumAngerSearchPointCount , _maximumAngerSearchPointCount);
+            _lastSeenPredictionDistance = Mathf.Max(0f , _lastSeenPredictionDistance);
+            _directionalSearchPointRatio = Mathf.Clamp01(_directionalSearchPointRatio);
+            _zoneCoverageSearchPointRatio = Mathf.Clamp01(_zoneCoverageSearchPointRatio);
+            _directionalSearchAngle = Mathf.Clamp(_directionalSearchAngle , 0f , 180f);
+            _hidingSpotEvidenceDistance = Mathf.Max(0f , _hidingSpotEvidenceDistance);
+            _visualHidingSpotInspectionChance = Mathf.Clamp01(_visualHidingSpotInspectionChance);
+            _strongAudioHidingSpotInspectionChance = Mathf.Clamp01(_strongAudioHidingSpotInspectionChance);
+            _directionalSearchActionTimeMultiplier = Mathf.Max(0f , _directionalSearchActionTimeMultiplier);
+            _areaSearchActionTimeMultiplier = Mathf.Max(0f , _areaSearchActionTimeMultiplier);
+            _hidingSpotSearchActionTimeMultiplier = Mathf.Max(0f , _hidingSpotSearchActionTimeMultiplier);
+            _searchRotationSpeed = Mathf.Max(0f , _searchRotationSpeed);
+            _areaSearchSweepAngle = Mathf.Clamp(_areaSearchSweepAngle , 0f , 180f);
+            _recentSearchPointHistoryCapacity = Mathf.Max(0 , _recentSearchPointHistoryCapacity);
+            _recentSearchPointAvoidanceDistance = Mathf.Max(0f , _recentSearchPointAvoidanceDistance);
+            _chaseOcclusionPredictionDistance = Mathf.Max(0f , _chaseOcclusionPredictionDistance);
+            _patrolRecentPointHistoryCapacity = Mathf.Max(0 , _patrolRecentPointHistoryCapacity);
+            _patrolRecentPointWeightMultiplier = Mathf.Clamp01(_patrolRecentPointWeightMultiplier);
+            _patrolAdjacentZoneSelectionChance = Mathf.Clamp01(_patrolAdjacentZoneSelectionChance);
+            _minimumPatrolPointVisitCountPerZone = Mathf.Max(1 , _minimumPatrolPointVisitCountPerZone);
+            _maximumPatrolPointVisitCountPerZone = Mathf.Max(
+                _minimumPatrolPointVisitCountPerZone ,
+                _maximumPatrolPointVisitCountPerZone);
+            _patrolRecentZoneHistoryCapacity = Mathf.Max(0 , _patrolRecentZoneHistoryCapacity);
+            _attackRange = Mathf.Max(0f , _attackRange);
+
+            if ( _generatorAngerFloors == null || _generatorAngerFloors.Count == 0 )
+            {
+                _generatorAngerFloors = new List<float> { 0f };
+            }
+
+            float previousAngerFloor = 0f;
+
+            for ( int floorIndex = 0; floorIndex < _generatorAngerFloors.Count; floorIndex++ )
+            {
+                float angerFloor = Mathf.Clamp(_generatorAngerFloors[ floorIndex ] , previousAngerFloor , _maximumAnger);
+
+                _generatorAngerFloors[ floorIndex ] = angerFloor;
+                previousAngerFloor = angerFloor;
+            }
+        }
+    }
+}

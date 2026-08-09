@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc505ca9b9714344b91a2e6731a2b729, type: 3}
+  m_Name: Chase_HARD
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAIConfig
+  _walkSpeed: 2.5
+  _evidenceApproachSpeed: 4
+  _acceleration: 12
+  _angularSpeed: 360
+  _stoppingDistance: 0.2
+  _sampleRadius: 2
+  _arrivalTolerance: 0.1
+  _arrivalVelocityThreshold: 0.05
+  _stuckVelocityThreshold: 0.05
+  _stuckTimeLimit: 2
+  _sightRange: 35
+  _horizontalSightAngle: 145
+  _verticalSightAngle: 60
+  _visualConfirmTime: 0.5
+  _visualLoseTime: 0.5
+  _minimumDistanceDetectionMultiplier: 0.45
+  _minimumPeripheralDetectionMultiplier: 0.55
+  _visualSuspicionReactionThreshold: 0.35
+  _visualSuspicionRotationSpeed: 240
+  _visualEvidenceDuration: 10
+  _weakNoiseEvidenceDuration: 4
+  _strongNoiseEvidenceDuration: 8
+  _strongNoiseThreshold: 0.5
+  _maximumAnger: 100
+  _generatorAngerFloors:
+  - 0
+  - 20
+  - 40
+  - 60
+  _angerChaseBuildUpDelay: 2
+  _angerIncreasePerChaseSecond: 4
+  _angerIncreaseOnChaseLost: 10
+  _angerCalmDelay: 5
+  _angerDecreasePerSecond: 2
+  _maximumAngerChaseSpeedMultiplier: 1.15
+  _maximumAngerSearchRadiusMultiplier: 1.25
+  _minimumAngerSearchPointCount: 2
+  _maximumAngerSearchPointCount: 4
+  _directorHintAngerInfluence: 0.5
+  _minAudioSearchRadius: 2
+  _maxAudioSearchRadius: 8
+  _minAudioSearchDuration: 2
+  _maxAudioSearchDuration: 8
+  _noisePrioritySettings:
+  - _noiseType: 0
+    _weight: 1
+  - _noiseType: 1
+    _weight: 1.05
+  - _noiseType: 2
+    _weight: 1.1
+  - _noiseType: 3
+    _weight: 1.1
+  - _noiseType: 4
+    _weight: 1.2
+  - _noiseType: 5
+    _weight: 1.05
+  - _noiseType: 6
+    _weight: 0.5
+  _minimumAudioFreshnessMultiplier: 0.6
+  _audioEvidenceReplacementMargin: 0.1
+  _sameSourceRetargetInterval: 0.4
+  _sameSourceRetargetDistance: 0.75
+  _visualSearchRadius: 5
+  _lastSeenPredictionDistance: 3
+  _directionalSearchPointRatio: 0.65
+  _zoneCoverageSearchPointRatio: 0.3
+  _directionalSearchAngle: 120
+  _minimumSearchPointDistance: 1.5
+  _hidingSpotEvidenceDistance: 2.5
+  _visualHidingSpotInspectionChance: 0.65
+  _strongAudioHidingSpotInspectionChance: 0.35
+  _searchPointGenerationAttemptCountPerPoint: 10
+  _directionalSearchActionTimeMultiplier: 1
+  _areaSearchActionTimeMultiplier: 1.2
+  _hidingSpotSearchActionTimeMultiplier: 1.6
+  _searchRotationSpeed: 120
+  _areaSearchSweepAngle: 90
+  _recentSearchPointHistoryCapacity: 6
+  _recentSearchPointAvoidanceDistance: 2
+  _chaseSpeed: 7
+  _patrolWaitTime: 0.5
+  _searchWaitTime: 3
+  _chaseRepathInterval: 0.2
+  _chaseDestinationUpdateDistance: 0.5
+  _chaseOcclusionPredictionDistance: 2
+  _patrolRecentPointHistoryCapacity: 2
+  _patrolRecentPointWeightMultiplier: 0.15
+  _patrolAdjacentZoneSelectionChance: 0.6
+  _minimumPatrolPointVisitCountPerZone: 1
+  _maximumPatrolPointVisitCountPerZone: 3
+  _patrolRecentZoneHistoryCapacity: 2
+  _attackRange: 1.5
