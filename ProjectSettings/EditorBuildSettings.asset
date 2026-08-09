@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/01_Main/01_Scene/TitleScene.unity
     guid: 3b31039d08ba7f74bbb1895d2cb53f5d
   - enabled: 1
+    path: Assets/01_Main/01_Scene/LoadingScene.unity
+    guid: c4d8a8c7ac84aa64db2a137ed85354a0
+  - enabled: 1
     path: Assets/01_Main/01_Scene/InGame_Map.unity
     guid: ee60cd8162e72e2419726b05c60282d7
   - enabled: 1
