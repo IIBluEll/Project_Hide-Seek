@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class TutorialDescription : MonoBehaviour, IDescription
+public class TutorialDescription_View : MonoBehaviour, IDescription
 {
     [SerializeField] private GameObject _obj;
 

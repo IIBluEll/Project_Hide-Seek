@@ -22,7 +22,7 @@ public class TutorialMissionController : MonoBehaviour
     [SerializeField] private PlayerController _playerController;
     [SerializeField] private List<TutorialStepData> _tutorialSteps;
     [SerializeField] private MissionIndicator_View _missionIndicator;
-    [SerializeField] private TutorialDescription _tutorialDescription;
+    [SerializeField] private TutorialDescription_View _tutorialDescription;
     [SerializeField, Min(0f)] private float _completedIndicatorDelay = 0.5f;
 
     private int _stepIndex;
