@@ -80,7 +80,6 @@ public class TutorialMissionController : MonoBehaviour
 
         if (_tutorialDescription == null || descriptionData == null)
         {
-            Debug.Log($"{_tutorialDescription} / {descriptionData}");
             BeginNextStep();
             return;
         }
@@ -123,6 +122,9 @@ public class TutorialMissionController : MonoBehaviour
 
     private void OnDescriptionConfirmActioned()
     {
+        if (_tutorialDescription != null)
+            _tutorialDescription.HideDescription();
+
         Cursor.lockState = CursorLockMode.Locked;
         _playerController.State.SetActionState(PLAYER_ACTION_STATE.IDLE);
 
