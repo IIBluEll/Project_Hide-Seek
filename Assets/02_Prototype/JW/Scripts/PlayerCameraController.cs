@@ -10,6 +10,7 @@ public class PlayerCameraController : MonoBehaviour
     [SerializeField] private float _mouseSensitive;
     [SerializeField] private float _minPitch = -50f;
     [SerializeField] private float _maxPitch = 60f;
+    [SerializeField, Min(0f)] private float _rotationSmoothSpeed = 30f;
 
     [Space()]
     [SerializeField] private float _standingCameraHeight = 1.55f;
@@ -22,6 +23,7 @@ public class PlayerCameraController : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float _runShakeIntensity = 0.6f;
 
     private float _pitch;
+    private float _targetPitch;
     public float _currentShakeIntensity;
 
     private Vector3 _stableCameraLocalPosition;
@@ -31,12 +33,16 @@ public class PlayerCameraController : MonoBehaviour
     {
         _stableCameraLocalPosition = _camera.localPosition;
         _cameraHeadLocalPosition = _headBoneTrans.InverseTransformPoint(_camera.position);
+        _targetPitch = _pitch;
     }
 
     private void LateUpdate()
     {
+        float interpolation = CalculateRotationInterpolation(Time.unscaledDeltaTime);
+        _pitch = Mathf.LerpAngle(_pitch, _targetPitch, interpolation);
+
         ShakeCameraTransform();
-        ApplyCameraRotation(_pitch,0,0);
+        ApplyCameraRotation(_pitch, 0f, 0f);
     }
 
     private void ShakeCameraTransform()
@@ -56,12 +62,22 @@ public class PlayerCameraController : MonoBehaviour
 
     public void RotateXAxis(float value)
     {
-        _pitch -= value * _mouseSensitive;
-        _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
+        _targetPitch -= value * _mouseSensitive;
+        _targetPitch = Mathf.Clamp(_targetPitch, _minPitch, _maxPitch);
     }
+
     public void SetRotation(float angle)
     {
         _pitch = Mathf.Clamp(angle, _minPitch, _maxPitch);
+        _targetPitch = _pitch;
+    }
+
+    private float CalculateRotationInterpolation(float deltaTime)
+    {
+        if (_rotationSmoothSpeed <= 0f)
+            return 1f;
+
+        return 1f - Mathf.Exp(-_rotationSmoothSpeed * deltaTime);
     }
 
     public void SetShakeIntensity(POSTURE_STATE_ENUM posture, LOCOMOTION_STATE_ENUM locomotion)
