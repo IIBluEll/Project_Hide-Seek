@@ -164,6 +164,11 @@ namespace HideSeek.Gameplay
             tSilhouette.reflectionProbeUsage = ReflectionProbeUsage.Off;
             tSilhouette.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
 
+            // 오클루전 컬링에서 뺀다. 이 실루엣은 벽에 가려진 동안 보여주는 것이 목적인데,
+            // 런타임에 만든 동적 렌더러라 기본값으로 두면 가려졌다는 이유로 엔진이 먼저 그리지 않는다.
+            // 그러면 셰이더의 ZTest Greater 패스가 실행될 기회 자체가 없다.
+            tSilhouette.allowOcclusionWhenDynamic = false;
+
             ApplyMaterial(tSilhouette , tMesh.subMeshCount);
 
             LIST_SILHOUETTE.Add(tSilhouette);

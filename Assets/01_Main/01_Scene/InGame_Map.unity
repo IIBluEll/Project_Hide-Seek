@@ -17467,6 +17467,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1543695114780030, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 761203849}
+    - targetCorrespondingSourceObject: {fileID: 1543695114780030, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 761203850}
   m_SourcePrefab: {fileID: 100100000, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
 --- !u!4 &284702922 stripped
 Transform:
@@ -43899,6 +43902,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.Generators.GeneratorHighlight
   _sourceRenderers:
   - {fileID: 284702923}
+--- !u!114 &761203850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761203846}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e69a0e70d07044a988f58ad47b8166b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.Gameplay.EscapeDoorHighlight
+  _gameProgressProvider: {fileID: 476356173}
+  _doorHighlight: {fileID: 761203849}
+  _highlightMaterial: {fileID: 2100000, guid: 3e5b8c1a7d2f4906b8c3a15d7e042f9b, type: 2}
 --- !u!1001 &761704448
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -92292,6 +92310,10 @@ PrefabInstance:
       propertyPath: _provider
       value: 
       objectReference: {fileID: 476356173}
+    - target: {fileID: 5271833955987311933, guid: 8f741afefe0a7f142bb16fbdd6537c2e, type: 3}
+      propertyPath: _playerController
+      value: 
+      objectReference: {fileID: 792498763}
     - target: {fileID: 6053746360017270898, guid: 8f741afefe0a7f142bb16fbdd6537c2e, type: 3}
       propertyPath: m_LocalPosition.x
       value: -32.46647
