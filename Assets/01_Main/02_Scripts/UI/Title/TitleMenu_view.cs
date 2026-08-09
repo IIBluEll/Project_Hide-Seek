@@ -39,6 +39,20 @@ namespace HideSeek.UI
             _tutorialBtn.interactable = isInteractable;
         }
 
+        /// <summary>
+        /// 나가기를 지원하지 않는 플랫폼에서는 버튼을 숨긴다.
+        /// 비활성으로 두면 누를 수 없는 이유가 드러나지 않으므로 아예 보이지 않게 한다.
+        /// </summary>
+        public void SetQuitVisible(bool isVisible)
+        {
+            if (_quitBtn == null)
+            {
+                return;
+            }
+
+            _quitBtn.gameObject.SetActive(isVisible);
+        }
+
         private void Awake()
         {
             if (_gameStartBtn != null)
