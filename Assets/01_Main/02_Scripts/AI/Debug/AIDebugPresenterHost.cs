@@ -12,6 +12,15 @@ namespace HideSeek.AI
 
         private void Awake()
         {
+#if !UNITY_EDITOR
+            if ( !Debug.isDebugBuild )
+            {
+                enabled = false;
+
+                return;
+            }
+#endif
+
             MasterAIProvider masterAIProvider = GetComponent<MasterAIProvider>();
             ChaseAIController chaseAIController = masterAIProvider.ChaseAIController;
 

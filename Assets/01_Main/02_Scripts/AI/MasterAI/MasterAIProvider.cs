@@ -282,7 +282,14 @@ namespace HideSeek.AI
 
         private void UpdatePlayerZone()
         {
-            _zoneSelector.TryGetContainingZone(_playerTrans.position , out AIWorldZone containingZone);
+            Vector3 playerPosition = _playerTrans.position;
+
+            if ( _currentPlayerZone != null && _currentPlayerZone.Contains(playerPosition) )
+            {
+                return;
+            }
+
+            _zoneSelector.TryGetContainingZone(playerPosition , out AIWorldZone containingZone);
 
             if ( containingZone == _currentPlayerZone )
             {
@@ -478,6 +485,13 @@ namespace HideSeek.AI
 
         private void UpdateDebugLog(float deltaTime , float distanceToPlayer)
         {
+#if !UNITY_EDITOR
+            if ( !Debug.isDebugBuild )
+            {
+                return;
+            }
+#endif
+
             if ( !_enableDebugLog )
             {
                 return;
