@@ -32583,7 +32583,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b51019c8935c143408f897cc46a84988, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
-  _zoneId: 2
+  _zoneId: 1
   _displayName: Corridors_Forward
   _boundsCollider: {fileID: 547764344}
   _adjacentZones:
