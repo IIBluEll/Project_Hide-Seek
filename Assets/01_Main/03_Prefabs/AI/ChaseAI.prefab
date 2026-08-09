@@ -192,12 +192,7 @@ MonoBehaviour:
   _movement: {fileID: 3796846466856628969}
   _perception: {fileID: 5251228119169150885}
   _gameProgressProvider: {fileID: 0}
-  _patrolPoints:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  _patrolPoints: []
 --- !u!114 &5150360427051003208
 MonoBehaviour:
   m_ObjectHideFlags: 0

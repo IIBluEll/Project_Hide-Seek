@@ -13,7 +13,8 @@ namespace HideSeek.AI
         [SerializeField] private ChaseAIPerception _perception;
         [SerializeField] private GameProgressProvider _gameProgressProvider;
 
-        [Header("Patrol")]
+        [Header("Fallback Patrol")]
+        [Tooltip("Zone에 사용할 수 있는 COVERAGE 지점이 없을 때만 사용하는 예비 순찰 지점입니다. 비워둘 수 있습니다.")]
         [SerializeField] private List<Transform> _patrolPoints = new();
 
         private ChaseAIMemory _memory;
@@ -456,13 +457,6 @@ namespace HideSeek.AI
             if ( _perception == null )
             {
                 Debug.LogError("[ChaseAIController] Perception이 없습니다.", this);
-
-                return false;
-            }
-
-            if ( _patrolPoints.Count == 0 )
-            {
-                Debug.LogError("[ChaseAIController] 순찰 지점이 없습니다.", this);
 
                 return false;
             }
