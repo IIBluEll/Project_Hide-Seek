@@ -18484,6 +18484,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1668811818}
     - target: {fileID: 7095107347706989835, guid: 1d70bfd6551bd7d4b8b13f788dc0839d, type: 3}
+      propertyPath: _completedIndicatorDelay
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7095107347706989835, guid: 1d70bfd6551bd7d4b8b13f788dc0839d, type: 3}
       propertyPath: _tutorialSteps.Array.size
       value: 16
       objectReference: {fileID: 0}
