@@ -6,7 +6,6 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
     private readonly PlayerStateController _state = new PlayerStateController();
 
     [SerializeField] private PlayerInteractionController _interactController;
-
     [SerializeField] private PlayerAnimationController _animationController;
 
     [SerializeField] private CharacterRotationController _rotator;
@@ -22,9 +21,9 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
     [SerializeField] private InteractViewer _interactionViewer;
     [SerializeField] private ThrowUIViewer _throwViewer;
     [SerializeField] private PlayerSprintStaminaViewer _sprintViewer;
+
     public IStateService State => _state;
     public bool IsFullyHidden => _state.IsFullyHidden;
-
     public IInputReader InputReader => _inputReader;
 
     private void Awake()
@@ -36,13 +35,12 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
         _camera.SetCameraHeight(_move.Posture);
         _camera.SetShakeIntensity(_move.Posture, _move.Locomotion);
 
-        _interact.Init(_state, _move, _rotator, _hand);
+        _interact.Init(_state, _move, _rotator, _hand, _camera);
 
         _rotator.Init(this.transform);
 
         _wakeUpBlink.OnFinishedBlinkEvent += OnFinishedWakeup;
     }
-
     private void Bind()
     {
         _inputReader.OnMoveEvent += OnMoveAction;
@@ -74,10 +72,20 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
             _animationController.SetTrigger("Working");
         }
 
-        if(action == PLAYER_ACTION_STATE.IDLE)
+        if(action == PLAYER_ACTION_STATE.TRANSITION)
+        {
+            _move.StopMove();
+        }
+
+        if (action == PLAYER_ACTION_STATE.IDLE)
         {
             _animationController.SetLayerWeight(2, 0, 0.3f);
             _animationController.SetTrigger("EndWorking");
+        }
+
+        if(action == PLAYER_ACTION_STATE.CATCHED)
+        {
+            _move.StopMove();
         }
     }
     private void OnChangePositionState(PLAYER_POSITION_STATE position)
@@ -127,6 +135,7 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
         {
             _camera.SetCameraHeight(posture);
             _camera.SetShakeIntensity(posture, _move.Locomotion);
+            _footNoiseEmitter.UpdateFootSound(_move.Locomotion, posture);
         }
     }
     private void OnLocomotionChangedActioned(LOCOMOTION_STATE_ENUM locomotion, bool value)

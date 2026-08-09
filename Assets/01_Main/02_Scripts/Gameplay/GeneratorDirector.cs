@@ -91,7 +91,7 @@ namespace HideSeek.Gameplay
 
             // 후보는 비활성 상태로 배치되므로 Include로 찾아야 한다.
             GeneratorCandidatePoint[] tArr_candidate = FindObjectsByType<GeneratorCandidatePoint>(FindObjectsInactive.Include , FindObjectsSortMode.None);
-
+            
             List<GeneratorCandidatePoint> tList_available = CollectAvailableCandidates(tArr_candidate);
             int tRequestedCount = _gameProgressProvider != null ? _gameProgressProvider.RequiredGeneratorCount : 0;
 
@@ -114,7 +114,7 @@ namespace HideSeek.Gameplay
             }
 
             Shuffle(tList_available);
-
+            
             return tList_available;
         }
 

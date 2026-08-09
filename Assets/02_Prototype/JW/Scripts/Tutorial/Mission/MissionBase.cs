@@ -1,18 +1,20 @@
 using System;
 using UnityEngine;
 
-public abstract class TutorialMission : MonoBehaviour, IMission
+public abstract class MissionBase : MonoBehaviour, IMission
 {
+    [SerializeField] private MissionIndicatorData _indicatorData;
+
     private bool _isRunning;
     private bool _isCleared;
 
     public event Action OnMissionClear;
 
     public bool IsRunning => _isRunning;
+    public MissionIndicatorData IndicatorData => _indicatorData;
 
     public void BeginMission()
     {
-        Debug.Log("Mission");
         _isRunning = true;
         _isCleared = false;
         OnBeginMission();

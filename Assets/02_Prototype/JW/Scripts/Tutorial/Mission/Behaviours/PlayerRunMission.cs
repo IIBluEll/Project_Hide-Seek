@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerRunMission : TutorialMission
+public class PlayerRunMission : MissionBase
 {
     [SerializeField] private PlayerController _playerController;
     private IInputReader _inputReader;

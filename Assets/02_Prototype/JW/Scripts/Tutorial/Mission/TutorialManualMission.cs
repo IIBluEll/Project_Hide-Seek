@@ -1,4 +1,4 @@
-public sealed class TutorialManualMission : TutorialMission
+public sealed class TutorialManualMission : MissionBase
 {
     public void Complete()
     {

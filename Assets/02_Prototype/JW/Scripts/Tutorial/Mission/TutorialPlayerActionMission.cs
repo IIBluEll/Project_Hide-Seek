@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class TutorialPlayerActionMission : TutorialMission
+public sealed class TutorialPlayerActionMission : MissionBase
 {
     [SerializeField] private PlayerController _playerController;
     [SerializeField] private PLAYER_ACTION_STATE _targetActionState;

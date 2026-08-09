@@ -30,16 +30,6 @@ public class ImpactNoiseEmitter : MonoBehaviour
                gameObject);
 
         bool wasEmitted = NoiseProvider.Emit(noiseData);
-
-        if (!wasEmitted)
-        {
-            return;
-        }
-
-        Debug.Log(
-            $"[NoiseEmitter] {_noiseType} 소음 발생, " +
-            $"반경: {applyRadius:F1}, 강도: {applyIntensity:F2}",
-            this);
     }
 
     public float _radius;

@@ -2,11 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class TutorialController : MonoBehaviour
 {
     [SerializeField] private PlayerController _playerController;
-
     [SerializeField] private TutorialMissionController _missionController;
 
     private void Awake()
@@ -18,7 +18,6 @@ public class TutorialController : MonoBehaviour
         }
 
         _playerController.WakeUpDirect();
-
         _missionController.StartMissionFlow();
     }
 
@@ -30,8 +29,24 @@ public class TutorialController : MonoBehaviour
 
     private void OnAllMissionsCompletedActioned()
     {
-        
+        ScreenFader.Instance.FadeOut(MoveToGameScene, 0.5f);
     }
+
+    private void MoveToGameScene()
+    {
+        SceneManager.LoadScene("InGame_Map", LoadSceneMode.Single);
+    }
+
+    // 1. 
+    // 2. 
+    //
+    //
+    //
+    //
+    //
+    //
+
+
 }
 
 

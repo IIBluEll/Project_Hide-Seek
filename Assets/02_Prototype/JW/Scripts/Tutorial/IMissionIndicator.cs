@@ -25,6 +25,6 @@ public interface ICountMission : IMission
 public interface IDescription
 {
     event Action OnClickConfirm;
-    void ShowDescription(string description, Sprite descriptionSprite);
+    void ShowDescription(DescriptionData data);
 
 }
