@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using HideSeek.Gameplay;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,13 +8,13 @@ namespace HideSeek.Generators
 {
     /// <summary>
     /// 씬의 모든 발전기 표시를 한 번에 켜고 끄는 프로토타입 검증용 컴포넌트.
-    /// 머티리얼 1벌을 등록된 모든 <see cref="GeneratorHighlight"/>가 공유한다.
+    /// 머티리얼 1벌을 등록된 모든 <see cref="HighlightSilhouette"/>가 공유한다.
     ///
     /// 표시는 게임당 사용 횟수가 정해진 소모성 능력이다. 1회 사용하면 정해진 시간 동안만 보이고 스스로 꺼진다.
     /// 켜져 있는 동안의 재입력은 무시한다. 실수로 연타해 남은 횟수를 날리는 사고를 막는다.
     ///
     /// 완료된 발전기는 표시하지 않는다. 찾아갈 이유가 없기 때문이다.
-    /// 그래서 등록 단위가 <see cref="GeneratorHighlight"/>가 아니라 <see cref="Generator"/>다.
+    /// 그래서 등록 단위가 <see cref="HighlightSilhouette"/>가 아니라 <see cref="Generator"/>다.
     /// 실루엣만 모으면 그것이 어느 발전기의 것인지, 그 발전기가 완료되었는지 알 방법이 없다.
     ///
     /// TODO: 사용 횟수와 지속 시간을 GDD에 반영할지는 회의 안건이다. GDD 13.1의 인게임 HUD 항목에 위치 표시가 없어
@@ -190,10 +191,10 @@ namespace HideSeek.Generators
         // 나중에 켜진 발전기도 현재 표시 상태를 그대로 따라간다.
         private void OnGeneratorRegisteredActioned(Generator generator)
         {
-            GeneratorHighlight tHighlight = generator.GetComponentInChildren<GeneratorHighlight>(true);
+            HighlightSilhouette tHighlight = generator.GetComponentInChildren<HighlightSilhouette>(true);
             if (tHighlight == null)
             {
-                Debug.LogWarning($"[{nameof(GeneratorHighlightController)}] '{generator.name}'에 {nameof(GeneratorHighlight)}가 없어 위치 표시 대상에서 제외됩니다." , generator);
+                Debug.LogWarning($"[{nameof(GeneratorHighlightController)}] '{generator.name}'에 {nameof(HighlightSilhouette)}가 없어 위치 표시 대상에서 제외됩니다." , generator);
                 return;
             }
 
@@ -246,9 +247,9 @@ namespace HideSeek.Generators
         private readonly struct GeneratorEntry
         {
             public readonly Generator GENERATOR;
-            public readonly GeneratorHighlight HIGHLIGHT;
+            public readonly HighlightSilhouette HIGHLIGHT;
 
-            public GeneratorEntry(Generator generator , GeneratorHighlight highlight)
+            public GeneratorEntry(Generator generator , HighlightSilhouette highlight)
             {
                 GENERATOR = generator;
                 HIGHLIGHT = highlight;

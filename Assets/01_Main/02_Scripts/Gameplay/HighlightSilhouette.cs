@@ -2,24 +2,26 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace HideSeek.Generators
+namespace HideSeek.Gameplay
 {
     /// <summary>
-    /// 발전기 모델을 벽 너머까지 보이는 단색 실루엣으로 표시한다.
+    /// 붙은 오브젝트의 모델을 벽 너머까지 보이는 단색 실루엣으로 표시한다.
+    /// 표시 대상을 가리지 않는다. 발전기와 탈출 문이 같은 컴포넌트를 쓴다.
     ///
     /// 원본 Renderer의 머티리얼은 건드리지 않는다. 같은 메시를 쓰는 표시 전용 오브젝트를 자식으로 만들어 켜고 끄므로
     /// 원본의 머티리얼 교체나 셰이더 설정과 충돌하지 않는다.
     ///
     /// 언제 표시할지는 이 컴포넌트가 판단하지 않는다. 표시를 관리하는 쪽이
     /// <see cref="SetMaterial"/>과 <see cref="SetVisible"/>을 호출한다. 그 상대가 누구인지는 알지 않는다.
+    /// 발전기는 소모성 능력으로, 탈출 문은 발전기 완료 시점부터 상시로 켜는 식이다.
     ///
-    /// 자기 존재를 알리지 않는다. 관리하는 쪽이 <see cref="Generator"/>를 등록할 때 같은 오브젝트에서 이 컴포넌트를
-    /// 찾아간다. 발전기 1기당 등록 경로가 하나여야 어느 발전기의 실루엣인지 알 수 있기 때문이다.
+    /// 자기 존재를 알리지 않는다. 관리하는 쪽이 대상을 등록할 때 같은 오브젝트에서 이 컴포넌트를 찾아간다.
+    /// 대상 1개당 등록 경로가 하나여야 누구의 실루엣인지 알 수 있기 때문이다.
     ///
-    /// 머티리얼도 인스펙터에 두지 않는다. 모든 발전기가 같은 색을 쓰므로 등록하는 쪽이 하나를 넣어준다.
+    /// 머티리얼도 인스펙터에 두지 않는다. 색은 관리하는 쪽이 정할 문제라 등록하는 쪽이 하나를 넣어준다.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class GeneratorHighlight : MonoBehaviour
+    public sealed class HighlightSilhouette : MonoBehaviour
     {
         [Tooltip("비워 두면 이 오브젝트와 자식의 MeshRenderer, SkinnedMeshRenderer를 모두 찾아 쓴다. 일부만 표시하려면 직접 지정한다.")]
         [SerializeField] private Renderer[] _sourceRenderers;
@@ -78,7 +80,7 @@ namespace HideSeek.Generators
             {
                 if (_highlightMaterial == null)
                 {
-                    Debug.LogError($"[{nameof(GeneratorHighlight)}] 머티리얼이 없어 표시할 수 없습니다. 등록하는 쪽이 SetMaterial을 먼저 호출해야 합니다." , this);
+                    Debug.LogError($"[{nameof(HighlightSilhouette)}] 머티리얼이 없어 표시할 수 없습니다. 등록하는 쪽이 SetMaterial을 먼저 호출해야 합니다." , this);
                     return;
                 }
 
@@ -96,7 +98,7 @@ namespace HideSeek.Generators
             }
         }
 
-        // 실루엣은 처음 표시할 때 한 번만 만든다. 표시하지 않는 발전기는 오브젝트를 늘리지 않는다.
+        // 실루엣은 처음 표시할 때 한 번만 만든다. 표시하지 않는 대상은 오브젝트를 늘리지 않는다.
         private void Build()
         {
             _isBuilt = true;
@@ -112,7 +114,7 @@ namespace HideSeek.Generators
 
             if (LIST_SILHOUETTE.Count == 0)
             {
-                Debug.LogError($"[{nameof(GeneratorHighlight)}] 표시할 메시를 찾지 못했습니다. 발전기 모델보다 상위에 두거나 인스펙터에서 Renderer를 지정해야 합니다." , this);
+                Debug.LogError($"[{nameof(HighlightSilhouette)}] 표시할 메시를 찾지 못했습니다. 모델보다 상위에 두거나 인스펙터에서 Renderer를 지정해야 합니다." , this);
             }
         }
 
@@ -161,6 +163,11 @@ namespace HideSeek.Generators
             tSilhouette.lightProbeUsage = LightProbeUsage.Off;
             tSilhouette.reflectionProbeUsage = ReflectionProbeUsage.Off;
             tSilhouette.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+
+            // 오클루전 컬링에서 뺀다. 이 실루엣은 벽에 가려진 동안 보여주는 것이 목적인데,
+            // 런타임에 만든 동적 렌더러라 기본값으로 두면 가려졌다는 이유로 엔진이 먼저 그리지 않는다.
+            // 그러면 셰이더의 ZTest Greater 패스가 실행될 기회 자체가 없다.
+            tSilhouette.allowOcclusionWhenDynamic = false;
 
             ApplyMaterial(tSilhouette , tMesh.subMeshCount);
 
