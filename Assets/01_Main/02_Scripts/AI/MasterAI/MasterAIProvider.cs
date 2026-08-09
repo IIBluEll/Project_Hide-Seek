@@ -108,6 +108,27 @@ namespace HideSeek.AI
             TryStartGameplay();
         }
 
+        [ContextMenu("Stop Gameplay")]
+        public void StopGameplay()
+        {
+            _isGameplayStartRequested = false;
+            _isGameplayStarted = false;
+
+            ClearDirectorHint();
+            _targetZone = null;
+            _currentVent = null;
+            _previousChaseAIState = CHASE_AI_STATE.DORMANT;
+
+            _director?.Reset();
+
+            if ( _chaseAIController != null )
+            {
+                _chaseAIController.gameObject.SetActive(false);
+            }
+
+            Debug.Log("[MasterAIProvider] 게임플레이 종료: Director와 Chase AI를 정지합니다." , this);
+        }
+
         private void Start()
         {
             if ( !ValidateReferences() )

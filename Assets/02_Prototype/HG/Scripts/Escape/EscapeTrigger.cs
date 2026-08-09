@@ -1,3 +1,4 @@
+using HideSeek.AI;
 using HideSeek.Cutscene;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ namespace HideSeek.Gameplay
     public sealed class EscapeTrigger : MonoBehaviour
     {
         [SerializeField] private CutscenePlayer _escapeCutscenePlayer;
+        [SerializeField] private MasterAIProvider _masterAIProvider;
 
         private bool _wasTriggered;
 
@@ -50,6 +52,15 @@ namespace HideSeek.Gameplay
 
             // 플레이어 루트는 활성 상태로 유지하고, 상태 전환으로 조작과 발소리만 정지한다.
             tPlayerController.State.SetActionState(global::PLAYER_ACTION_STATE.TRANSITION);
+
+            if (_masterAIProvider != null)
+            {
+                _masterAIProvider.StopGameplay();
+            }
+            else
+            {
+                Debug.LogError("[EscapeTrigger] MasterAIProvider가 없어 AI를 종료하지 못했습니다." , this);
+            }
 
             Debug.Log("[EscapeTrigger] 탈출을 확정하고 컷신을 재생합니다." , this);
         }
