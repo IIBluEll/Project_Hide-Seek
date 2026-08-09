@@ -1,10 +1,11 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class InteractViewer : MonoBehaviour
 {
     [SerializeField] private GameObject _interactUI;
-    [SerializeField] private Text _text;
+    [SerializeField] private TMP_Text _text;
 
     public void ShowInteractUI(string prompt)
     {

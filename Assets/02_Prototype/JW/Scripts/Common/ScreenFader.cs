@@ -56,7 +56,6 @@ public class ScreenFader : MonoBehaviour
         _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _canvas.sortingOrder = CANVAS_SORTING_LAYER_ORDER;
     }
-
     public void FadeOut(Action endCall = null, float fadeOutTime = 0)
     {
         if (_isTransition)
@@ -67,8 +66,6 @@ public class ScreenFader : MonoBehaviour
         float fadeTime = fadeOutTime <= 0 ? FADE_OUT_TIME : fadeOutTime;
         StartCoroutine(FadeCo(1f, fadeTime, endCall));
     }
-
-
     public void FadeIn(Action endCall = null, float fadeInTime = 0)
     {
         if (_isTransition)
@@ -78,7 +75,10 @@ public class ScreenFader : MonoBehaviour
         float fadeTime = fadeInTime <= 0 ? FADE_IN_TIME : fadeInTime;
         StartCoroutine(FadeCo(0f, fadeTime, endCall));
     }
-
+    public void SetFadeAlpha(float alpha)
+    {
+        _canvasGroup.alpha = alpha;
+    }
     public IEnumerator FadeCo(float targetAlpha, float time, Action endCall = null)
     {
         float current = 0;

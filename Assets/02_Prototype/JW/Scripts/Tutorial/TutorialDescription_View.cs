@@ -27,10 +27,13 @@ public class TutorialDescription_View : MonoBehaviour, IDescription
 
         _obj.SetActive(true);
     }
+    public void HideDescription()
+    {
+        _obj.SetActive(false);
+    }
 
     public void OnClickConfirmButton()
     {
         OnClickConfirm?.Invoke();
-        _obj.SetActive(false);
     }
 }
