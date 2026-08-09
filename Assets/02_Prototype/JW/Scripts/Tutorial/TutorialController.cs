@@ -17,8 +17,8 @@ public class TutorialController : MonoBehaviour
             _missionController.AllMissionsCompleted += OnAllMissionsCompletedActioned;
         }
 
-        _playerController.WakeUpDirect();
-        _missionController.StartMissionFlow();
+        ScreenFader.Instance.SetFadeAlpha(1);
+        ScreenFader.Instance.FadeIn(() => _missionController.StartMissionFlow());
     }
 
     private void OnDestroy()
@@ -36,17 +36,6 @@ public class TutorialController : MonoBehaviour
     {
         SceneManager.LoadScene("InGame_Map", LoadSceneMode.Single);
     }
-
-    // 1. 
-    // 2. 
-    //
-    //
-    //
-    //
-    //
-    //
-
-
 }
 
 

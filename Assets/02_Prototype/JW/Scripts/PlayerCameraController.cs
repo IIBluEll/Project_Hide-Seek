@@ -20,7 +20,9 @@ public class PlayerCameraController : MonoBehaviour
     [SerializeField, Range(0f, 3f)] private float _walkShakeIntensity = 0.35f;
     [SerializeField, Range(0f, 3f)] private float _runShakeIntensity = 0.6f;
 
-    private float _pitch;
+    [SerializeField] private float _pitch;
+    [SerializeField, Min(0f)] private float _rotationSmoothSpeed = 30f;
+    private float _targetPitch;
     public float _currentShakeIntensity;
 
     private Vector3 _stableCameraLocalPosition;
@@ -71,8 +73,8 @@ public class PlayerCameraController : MonoBehaviour
     }
     public void RotateXAxis(float value)
     {
-        _pitch -= value * _pitchSensitive;
-        _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
+        _targetPitch -= value * _pitchSensitive;
+        _targetPitch = Mathf.Clamp(_targetPitch, _minPitch, _maxPitch);
     }
 
     public void SetRotation(float angle)
