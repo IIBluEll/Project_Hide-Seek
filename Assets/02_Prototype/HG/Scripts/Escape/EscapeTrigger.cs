@@ -27,7 +27,7 @@ namespace HideSeek.Gameplay
                 return;
             }
 
-            if (!IsPlayer(other))
+            if (!TryGetPlayer(other , out global::PlayerController tPlayerController))
             {
                 return;
             }
@@ -39,28 +39,27 @@ namespace HideSeek.Gameplay
                 return;
             }
 
+            if (!_escapeCutscenePlayer.TryPlay())
+            {
+                Debug.LogError("[EscapeTrigger] 탈출 컷신을 재생하지 못했습니다." , this);
+
+                return;
+            }
+
             _wasTriggered = true;
 
-            _escapeCutscenePlayer.TryPlay();
+            // 플레이어 루트는 활성 상태로 유지하고, 상태 전환으로 조작과 발소리만 정지한다.
+            tPlayerController.State.SetActionState(global::PLAYER_ACTION_STATE.TRANSITION);
 
             Debug.Log("[EscapeTrigger] 탈출을 확정하고 컷신을 재생합니다." , this);
         }
 
-        // 태그나 레이어 대신 IPlayerVisibilityState로 식별한다.
-        // Chase AI가 쓰는 것과 같은 방식이라 플레이어 오브젝트에 아무 설정도 추가하지 않아도 된다.
-        private static bool IsPlayer(Collider other)
+        // 태그나 레이어 대신 실제 PlayerController를 찾아 컷신용 상태 전환까지 같은 대상에 적용한다.
+        private static bool TryGetPlayer(Collider other , out global::PlayerController playerController)
         {
-            MonoBehaviour[] arr_component = other.GetComponentsInParent<MonoBehaviour>(true);
+            playerController = other.GetComponentInParent<global::PlayerController>(true);
 
-            for (int componentIndex = 0; componentIndex < arr_component.Length; componentIndex++)
-            {
-                if (arr_component[componentIndex] is global::IPlayerVisibilityState)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return playerController != null;
         }
 
 #if UNITY_EDITOR
