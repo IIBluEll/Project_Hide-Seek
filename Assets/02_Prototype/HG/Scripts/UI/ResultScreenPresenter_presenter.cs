@@ -1,3 +1,4 @@
+using HideSeek.Common;
 using HM.CodeBase;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,20 +10,15 @@ namespace HideSeek.UI
     ///
     /// 두 대상 모두 Build Settings에 등록되어 있어야 이동할 수 있다.
     /// 등록되지 않은 대상은 버튼을 눌러도 아무 일이 없으므로 아예 비활성으로 표시한다.
-    /// 타이틀 씬은 아직 만들어지지 않았고, 인게임 씬도 현재 등록되어 있지 않다.
     /// 등록만 되면 코드 수정 없이 동작한다.
     /// </summary>
     public sealed class ResultScreenPresenter_presenter : APresenter
     {
         private readonly ResultScreen_view RESULT_SCREEN_VIEW;
-        private readonly string TITLE_SCENE_NAME;
 
-        public ResultScreenPresenter_presenter(
-            ResultScreen_view resultScreenView ,
-            string titleSceneName)
+        public ResultScreenPresenter_presenter(ResultScreen_view resultScreenView)
         {
             RESULT_SCREEN_VIEW = resultScreenView;
-            TITLE_SCENE_NAME = titleSceneName;
         }
 
         public override void Open()
@@ -52,7 +48,7 @@ namespace HideSeek.UI
             string tActiveSceneName = SceneManager.GetActiveScene().name;
 
             bool tCanRestart = CanLoad(tActiveSceneName);
-            bool tCanGoTitle = CanLoad(TITLE_SCENE_NAME);
+            bool tCanGoTitle = CanLoad(SceneNames.TITLE);
 
             RESULT_SCREEN_VIEW.SetRestartInteractable(tCanRestart);
             RESULT_SCREEN_VIEW.SetTitleInteractable(tCanGoTitle);
@@ -67,8 +63,8 @@ namespace HideSeek.UI
             if (!tCanGoTitle)
             {
                 Debug.LogWarning(
-                    $"[ResultScreenPresenter] 타이틀 씬 '{TITLE_SCENE_NAME}'을 찾을 수 없어 이동할 수 없습니다. " +
-                    "씬을 만들고 Build Settings에 추가한 뒤 이름을 맞추면 동작합니다.");
+                    $"[ResultScreenPresenter] 타이틀 씬 '{SceneNames.TITLE}'을 찾을 수 없어 이동할 수 없습니다. " +
+                    "File > Build Profiles에서 씬을 추가하면 동작합니다.");
             }
         }
 
@@ -87,12 +83,12 @@ namespace HideSeek.UI
 
         private void OnTitleRequestedActioned()
         {
-            if (!CanLoad(TITLE_SCENE_NAME))
+            if (!CanLoad(SceneNames.TITLE))
             {
                 return;
             }
 
-            SceneManager.LoadScene(TITLE_SCENE_NAME);
+            SceneManager.LoadScene(SceneNames.TITLE);
         }
 
         private static bool CanLoad(string sceneName)

@@ -15,9 +15,6 @@ namespace HideSeek.UI
     {
         [SerializeField] private ResultScreen_view _resultScreenView;
 
-        [Tooltip("타이틀 씬 이름. 씬이 만들어지고 Build Settings에 등록되면 그 이름으로 맞춘다.")]
-        [SerializeField] private string _titleSceneName = "Title";
-
         private ResultScreenPresenter_presenter _presenter;
 
         private void Awake()
@@ -29,7 +26,7 @@ namespace HideSeek.UI
                 return;
             }
 
-            _presenter = new ResultScreenPresenter_presenter(_resultScreenView , _titleSceneName);
+            _presenter = new ResultScreenPresenter_presenter(_resultScreenView);
         }
 
         private void OnEnable()
