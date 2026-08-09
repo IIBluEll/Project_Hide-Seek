@@ -4,7 +4,7 @@ public class CharacterRotationController : MonoBehaviour
 {
     private Transform _playerBody;
     [SerializeField] private float _mouseSensitive;
-    [SerializeField, Min(0f)] private float _rotationSmoothSpeed = 30f;
+    [SerializeField, Min(0f)] private float _rotationSmoothSpeed = 60f;
 
     private float _yaw;
     private float _targetYaw;

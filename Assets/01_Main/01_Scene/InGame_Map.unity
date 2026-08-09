@@ -1137,11 +1137,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 526915386082559795, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
       propertyPath: _moveSpeed.RunSpeed
-      value: 5
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 526915386082559795, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
       propertyPath: _moveSpeed.WalkSpeed
-      value: 3
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 526915386082559795, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
+      propertyPath: _staminaSetting.Maximum
+      value: 150
       objectReference: {fileID: 0}
     - target: {fileID: 526915386082559795, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
       propertyPath: _staminaSetting.UseRatePerSecond
@@ -1149,7 +1153,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 526915386082559795, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
       propertyPath: _staminaSetting.RecoveryRatePerSecond
-      value: 5
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 527854517453741580, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
       propertyPath: m_LocalPosition.y
@@ -30821,7 +30825,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.Gameplay.EscapeTrigger
   _escapeCutscenePlayer: {fileID: 203704702}
-  _masterAIProvider: {fileID: 0}
+  _masterAIProvider: {fileID: 1999220210}
 --- !u!65 &520360458
 BoxCollider:
   m_ObjectHideFlags: 0
