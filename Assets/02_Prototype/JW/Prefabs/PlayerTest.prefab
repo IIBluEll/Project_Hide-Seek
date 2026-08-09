@@ -450,7 +450,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RotationController
   _mouseSensitive: 0.03
-  _rotationSmoothSpeed: 60
 --- !u!114 &2465014839732169861
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -473,7 +472,6 @@ MonoBehaviour:
   _walkShakeIntensity: 3
   _runShakeIntensity: 1.6
   _pitch: 0
-  _rotationSmoothSpeed: 60
   _currentShakeIntensity: 1
 --- !u!114 &3460248299561768460
 MonoBehaviour:
