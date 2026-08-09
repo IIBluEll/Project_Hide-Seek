@@ -42,7 +42,7 @@ GameObject:
   - component: {fileID: 5692711727755758307}
   - component: {fileID: 6765862914845196083}
   m_Layer: 0
-  m_Name: Audio_Rush
+  m_Name: Audio_DeathBgm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -72,13 +72,13 @@ AudioSource:
   m_GameObject: {fileID: 998858488756703318}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 5812720547532978006, guid: 7e32191a7ca4fd9499235a3620f0f980, type: 2}
+  OutputAudioMixerGroup: {fileID: -6546280980258379326, guid: 7e32191a7ca4fd9499235a3620f0f980, type: 2}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: e93683c9c0a995d48b3f20927db0ac5a, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -175,7 +175,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4660714860950233930
 Transform:
   m_ObjectHideFlags: 0
@@ -557,6 +557,7 @@ MonoBehaviour:
   _director: {fileID: 3559493024511268473}
   _stageRootObj: {fileID: 1969229630509688065}
   _fadeCanvasGroup: {fileID: 0}
+  _loopBgmSource: {fileID: 6765862914845196083}
 --- !u!114 &4387848430999057684
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -594,8 +595,6 @@ PlayableDirector:
     value: {fileID: 949666666924208620}
   - key: {fileID: 827762207481514340, guid: 22b4cfed4d2f55f4aa401fb6c5f2fcd2, type: 2}
     value: {fileID: 35107276693582157}
-  - key: {fileID: 5446249303405778403, guid: 22b4cfed4d2f55f4aa401fb6c5f2fcd2, type: 2}
-    value: {fileID: 6765862914845196083}
   - key: {fileID: -5570302178483038278, guid: 22b4cfed4d2f55f4aa401fb6c5f2fcd2, type: 2}
     value: {fileID: 3342711084867332489}
   m_ExposedReferences:
