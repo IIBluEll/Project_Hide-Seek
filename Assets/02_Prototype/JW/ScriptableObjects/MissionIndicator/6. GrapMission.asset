@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7f125fc0d9174a14eb780b4208868357, type: 3}
-  m_Name: CrouchMission
+  m_Name: 6. GrapMission
   m_EditorClassIdentifier: Assembly-CSharp::MissionIndicatorData
-  _missionText: "\uC549\uAE30"
+  _missionText: "\uCC45\uC0C1 \uC704 \uBB3C\uAC74\uC744 \uC9D1\uC73C\uC2DC\uC624"
   _iconSprite: {fileID: 0}
   _hasCount: 0
   _targetCount: 1

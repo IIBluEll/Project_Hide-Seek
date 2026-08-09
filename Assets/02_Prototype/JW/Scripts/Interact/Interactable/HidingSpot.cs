@@ -46,15 +46,6 @@ public class HidingSpot : MonoBehaviour, IInteractable
             playerInteractor.SetCameraPositionOverride(_hidePosition);
         }
 
-        if (isExiting)
-            LogExitTeleportPosition("BeforeTeleport", playerInteractor, targetName, targetPosition);
-
-        if (isExiting)
-        {
-            LogExitTeleportPosition("AfterTeleport", playerInteractor, targetName, targetPosition);
-            StartCoroutine(LogExitTeleportPositionNextFrame(playerInteractor, targetName, targetPosition));
-        }
-
         _isInPlayer = !_isInPlayer;
 
         if (_isInPlayer)
@@ -84,34 +75,5 @@ public class HidingSpot : MonoBehaviour, IInteractable
             : POSTURE_STATE_ENUM.STANDING;
 
         playerInteractor.SetPosture(posture);
-    }
-
-    private System.Collections.IEnumerator LogExitTeleportPositionNextFrame(
-        PlayerInteractionController playerInteractor,
-        string targetName,
-        Vector3 targetPosition)
-    {
-        yield return null;
-
-        if (playerInteractor == null)
-            yield break;
-
-        LogExitTeleportPosition("NextFrame", playerInteractor, targetName, targetPosition);
-    }
-
-    private void LogExitTeleportPosition(
-        string phase,
-        PlayerInteractionController playerInteractor,
-        string targetName,
-        Vector3 targetPosition)
-    {
-        Debug.Log(
-            $"[HidingSpot ExitTeleport] {phase} | Spot={name} | Target={targetName} {FormatVector(targetPosition)} | Player={FormatVector(playerInteractor.transform.position)}",
-            this);
-    }
-
-    private static string FormatVector(Vector3 position)
-    {
-        return $"({position.x:F4}, {position.y:F4}, {position.z:F4})";
     }
 }

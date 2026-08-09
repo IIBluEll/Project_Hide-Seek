@@ -79,7 +79,6 @@ public class FootSteepNoiseEmitter : MonoBehaviour
     {
         if (posutre == POSTURE_STATE_ENUM.CROUCH)
         {
-            Debug.Log("Stop");
             _source.Stop();
             return;
         }
@@ -99,7 +98,6 @@ public class FootSteepNoiseEmitter : MonoBehaviour
 
         if (clip != null)
         {
-            Debug.Log($"{clip.name}");
             _source.clip = clip;
             _source.Play();
         }
