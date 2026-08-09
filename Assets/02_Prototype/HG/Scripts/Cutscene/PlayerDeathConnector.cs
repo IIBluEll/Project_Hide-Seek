@@ -1,6 +1,5 @@
 using HideSeek.AI;
 using HideSeek.Cutscene;
-using HideSeek.Sound;
 using UnityEngine;
 
 namespace HideSeek.Integration
@@ -13,18 +12,15 @@ namespace HideSeek.Integration
     ///
     /// 플레이어 조작 정지는 이쪽 책임이 아니다. 플레이어 담당자가
     /// <see cref="MasterAIProvider.PlayerCaught"/>를 직접 구독해 처리한다.
-    /// 결과 화면도 마찬가지로 <see cref="DeathCutsceneStage.Finished"/>를 구독한다.
+    /// 결과 화면도 마찬가지로 <see cref="CutscenePlayer.Finished"/>를 구독한다.
+    /// BGM 전환은 <see cref="CutscenePlayer"/>가 스스로 처리한다.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PlayerDeathConnector : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private MasterAIProvider _masterAIProvider;
-        [SerializeField] private DeathCutsceneStage _deathCutsceneStage;
-
-        [Header("Sound")]
-        [SerializeField] private BgmPlayer _bgmPlayer;
-        [SerializeField , Min(0f)] private float _bgmFadeOutDuration = 0.2f;
+        [SerializeField] private CutscenePlayer _deathCutscenePlayer;
 
         private bool _hasHandledCapture;
 
@@ -57,18 +53,16 @@ namespace HideSeek.Integration
                 return;
             }
 
-            if (_deathCutsceneStage == null)
+            if (_deathCutscenePlayer == null)
             {
-                Debug.LogError("[PlayerDeathConnector] DeathCutsceneStage가 없습니다." , this);
+                Debug.LogError("[PlayerDeathConnector] 사망 컷신이 없습니다." , this);
 
                 return;
             }
 
             _hasHandledCapture = true;
 
-            StopBgm();
-
-            if (!_deathCutsceneStage.TryPlay())
+            if (!_deathCutscenePlayer.TryPlay())
             {
                 Debug.LogError("[PlayerDeathConnector] 사망 컷신을 재생하지 못했습니다." , this);
 
@@ -76,17 +70,6 @@ namespace HideSeek.Integration
             }
 
             Debug.Log("[PlayerDeathConnector] 사망 컷신을 재생합니다." , this);
-        }
-
-        private void StopBgm()
-        {
-            if (_bgmPlayer == null)
-            {
-                return;
-            }
-
-            // 점프스케어 사운드가 BGM에 묻히지 않게 먼저 비운다.
-            _bgmPlayer.Stop(_bgmFadeOutDuration);
         }
     }
 }
