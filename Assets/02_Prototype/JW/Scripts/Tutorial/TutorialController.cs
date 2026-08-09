@@ -1,3 +1,4 @@
+using HideSeek.Common;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using UnityEngine.SceneManagement;
 public class TutorialController : MonoBehaviour
 {
     [SerializeField] private PlayerController _playerController;
-    [SerializeField] private TutorialMissionController _missionController;
+    [SerializeField] private MissionController _missionController;
 
     private void Awake()
     {
@@ -29,12 +30,13 @@ public class TutorialController : MonoBehaviour
 
     private void OnAllMissionsCompletedActioned()
     {
-        ScreenFader.Instance.FadeOut(MoveToGameScene, 0.5f);
+        //        ScreenFader.Instance.FadeOut(MoveToGameScene, 0.5f);
+        MoveToGameScene();
     }
 
     private void MoveToGameScene()
     {
-        SceneManager.LoadScene("InGame_Map", LoadSceneMode.Single);
+        SceneManager.LoadScene(SceneNames.TITLE, LoadSceneMode.Single);
     }
 }
 

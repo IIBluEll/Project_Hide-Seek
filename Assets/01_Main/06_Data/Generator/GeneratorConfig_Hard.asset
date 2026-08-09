@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a1c4f2e9b8d40c1a3f65e2d8c9b0a11, type: 3}
   m_Name: GeneratorConfig_Hard
-  m_EditorClassIdentifier:
-  _repairDuration: 30
+  m_EditorClassIdentifier: 
+  _repairDuration: 1
   _decayGraceDuration: 3
   _decayRatePerSecond: 0.04
   _repairNoiseInterval: 2
