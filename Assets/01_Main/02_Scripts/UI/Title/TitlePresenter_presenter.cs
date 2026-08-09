@@ -16,6 +16,15 @@ namespace HideSeek.UI
     /// </summary>
     public sealed class TitlePresenter_presenter : APresenter
     {
+#if UNITY_WEBGL
+        // 웹 빌드에서는 Application.Quit()이 Unity 런타임만 멈춘다. 브라우저는 스크립트가 열지 않은
+        // 탭을 닫지 못하게 막으므로, 멈춘 화면만 남아 게임이 죽은 것처럼 보인다. 그래서 버튼을 숨긴다.
+        // 빌드 대상이 WebGL이면 에디터에서도 숨겨져, 실제 빌드와 같은 화면을 보게 된다.
+        private const bool CAN_QUIT = false;
+#else
+        private const bool CAN_QUIT = true;
+#endif
+
         private readonly TitleMenu_view TITLE_MENU_VIEW;
         private readonly DifficultySelect_view DIFFICULTY_SELECT_VIEW;
 
@@ -83,6 +92,7 @@ namespace HideSeek.UI
 
             TITLE_MENU_VIEW.SetGameStartInteractable(tCanStartGame);
             TITLE_MENU_VIEW.SetTutorialInteractable(tCanStartTutorial);
+            TITLE_MENU_VIEW.SetQuitVisible(CAN_QUIT);
             DIFFICULTY_SELECT_VIEW.SetDifficultyInteractable(tCanStartGame);
 
             if (!tCanStartGame)
