@@ -1,6 +1,7 @@
 # AI–발전기–플레이어 연동 명세서
 
 작성일: 2026-07-31  
+개정: 2026-08-09 — 포획 이벤트 구독 창구를 `MasterAIProvider`로 변경(3절, 5절)  
 대상 Unity 버전: `6000.3.20f1`
 
 ## 1. 문서 목적
@@ -65,7 +66,8 @@ AI가 외부에 제공하거나 사용하는 연동 지점은 다음과 같다.
 | `NoiseProvider.Emit(NoiseData)` | 외부 → AI | 소음 사실 전달 |
 | `GameProgressProvider.NotifyGeneratorCompleted()` | 외부 → 게임 진행도 | 완료 수 1 증가 |
 | `CompletedGeneratorCountChanged(int)` | 게임 진행도 → Chase AI | 발전기 완료 수에 따른 `Anger` 하한선 갱신 |
-| `ChaseAIController.PlayerCaught` | AI → 외부 | 플레이어 포획 확정, 한 번만 발생 |
+| `ChaseAIController.PlayerCaught` | Chase AI → MasterAI | 플레이어 포획 확정, 한 번만 발생 |
+| `MasterAIProvider.PlayerCaught` | AI → 외부 | 위 이벤트를 그대로 중계. **외부 시스템은 이쪽을 구독한다** |
 
 `PlayerCaught` 이후 AI는 `ATTACK` 상태에 머물며 이동, 소음 조사, Director Hint와 이탈 명령을 처리하지 않는다.
 
@@ -77,7 +79,7 @@ AI가 외부에 제공하거나 사용하는 연동 지점은 다음과 같다.
 2. 플레이어는 `TryCapture()` 같은 자신의 상태 변경 API만 제공한다.
 3. AI는 소음을 해석하고 포획 여부를 판단하지만 플레이어 컴포넌트를 직접 제어하지 않는다.
 4. 별도의 `Integration` 계층이 이벤트를 변환하고 시스템을 연결한다.
-5. `MasterAIProvider`는 AI 활동 주기 담당이며 게임 오버 매니저로 사용하지 않는다.
+5. `MasterAIProvider`가 AI의 단일 외부 창구다. 외부 시스템은 `ChaseAIController`를 직접 참조하지 않고 `MasterAIProvider`의 이벤트를 구독한다. 다만 `MasterAIProvider`가 게임 오버 흐름을 직접 처리하지는 않는다. 포획 사실만 중계하고, 이후 연출과 결과 화면은 구독자가 담당한다.
 6. 발전기 또는 플레이어 코드에서 Chase AI의 FSM 상태를 직접 변경하지 않는다.
 
 ```mermaid
@@ -90,9 +92,11 @@ flowchart LR
     GI --> GP["GameProgressProvider"]
     GP -->|"CompletedGeneratorCountChanged"| CA["ChaseAIAnger"]
 
-    AI["ChaseAIController"] -->|"PlayerCaught"| PC["PlayerCaptureConnector"]
+    AI["ChaseAIController"] -->|"PlayerCaught"| MA["MasterAIProvider"]
+    MA -->|"PlayerCaught"| PC["PlayerCaptureConnector"]
+    MA -->|"PlayerCaught"| DC["PlayerDeathConnector"]
     PC -->|"TryCapture"| P["PlayerController"]
-    P -->|"Captured"| GF["공격 연출 / 암전 / 게임 오버"]
+    DC --> GF["사망 컷신 / 게임 오버"]
 ```
 
 ## 4. 발전기와 AI 연결
@@ -329,25 +333,25 @@ namespace HideSeek.Integration
     public sealed class PlayerCaptureConnector : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private ChaseAIController _chaseAIController;
+        [SerializeField] private MasterAIProvider _masterAIProvider;
         [SerializeField] private PlayerController _playerController;
 
         private void OnEnable()
         {
-            if ( _chaseAIController == null )
+            if ( _masterAIProvider == null )
             {
                 return;
             }
 
-            _chaseAIController.PlayerCaught -= OnPlayerCaughtActioned;
-            _chaseAIController.PlayerCaught += OnPlayerCaughtActioned;
+            _masterAIProvider.PlayerCaught -= OnPlayerCaughtActioned;
+            _masterAIProvider.PlayerCaught += OnPlayerCaughtActioned;
         }
 
         private void OnDisable()
         {
-            if ( _chaseAIController != null )
+            if ( _masterAIProvider != null )
             {
-                _chaseAIController.PlayerCaught -= OnPlayerCaughtActioned;
+                _masterAIProvider.PlayerCaught -= OnPlayerCaughtActioned;
             }
         }
 
@@ -379,16 +383,12 @@ namespace HideSeek.Integration
 
 ```text
 ChaseAIController.PlayerCaught
-→ PlayerCaptureConnector
-→ PlayerController.TryCapture()
-→ 이동·회전·상호작용 정지
-→ PlayerController.Captured
-→ 공격 연출
-→ 화면 암전
-→ 게임 오버 화면
+→ MasterAIProvider.PlayerCaught
+   ├ PlayerCaptureConnector → PlayerController.TryCapture() → 이동·회전·상호작용 정지
+   └ PlayerDeathConnector   → 사망 컷신 재생 → 게임 오버 화면
 ```
 
-공격 연출, 암전과 결과 화면은 Game Flow 또는 Cutscene 담당 시스템이 `PlayerController.Captured`를 구독해 처리한다.
+조작 정지와 사망 연출은 서로를 기다리지 않고 같은 이벤트에서 각자 출발한다. 연출 담당은 플레이어 컴포넌트를 참조하거나 제어하지 않으며, 플레이어 담당은 컷신 시스템을 참조하지 않는다.
 
 AI는 다음을 담당하지 않는다.
 
