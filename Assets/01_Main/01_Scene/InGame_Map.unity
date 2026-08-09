@@ -6074,6 +6074,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Medical_Cart_02 (8)
       objectReference: {fileID: 0}
+    - target: {fileID: 1897078937206944, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4972463905673026, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
       propertyPath: m_RootOrder
       value: 217
@@ -7511,6 +7515,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 717783273}
     m_Modifications:
+    - target: {fileID: 1058912666773384, guid: ad0c90ff1d999f74eb83b1a52c1e2878, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4153561948850794, guid: ad0c90ff1d999f74eb83b1a52c1e2878, type: 3}
       propertyPath: m_RootOrder
       value: 510
@@ -9747,6 +9755,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1301868640}
     m_Modifications:
+    - target: {fileID: 1641824455757700, guid: d89f3bed38f0fcc409c3d32eedc6f5a5, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4883453663035450, guid: d89f3bed38f0fcc409c3d32eedc6f5a5, type: 3}
       propertyPath: m_RootOrder
       value: 35
@@ -10464,6 +10476,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1935443189}
     m_Modifications:
+    - target: {fileID: 1419430644115202, guid: 96ec3966e2e9e004086cf5209750e0b2, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4078385591391532, guid: 96ec3966e2e9e004086cf5209750e0b2, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -18807,6 +18823,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1935443189}
     m_Modifications:
+    - target: {fileID: 1012841150076058, guid: e68836e542ef296488e17adf19becd6b, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4580351388404930, guid: e68836e542ef296488e17adf19becd6b, type: 3}
       propertyPath: m_RootOrder
       value: 343
@@ -20445,6 +20465,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 717783273}
     m_Modifications:
+    - target: {fileID: 1201866701415534, guid: f456640c2423251498bd933b2f430969, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4740773272670142, guid: f456640c2423251498bd933b2f430969, type: 3}
       propertyPath: m_RootOrder
       value: 513
@@ -24007,6 +24031,10 @@ PrefabInstance:
     - target: {fileID: 1006000121980524, guid: da27625dede894b47a5b1f66e6e479fe, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Medical_Cart_01 (3)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1006000121980524, guid: da27625dede894b47a5b1f66e6e479fe, type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4339715871512828, guid: da27625dede894b47a5b1f66e6e479fe, type: 3}
       propertyPath: m_RootOrder
@@ -28760,6 +28788,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_CryoBed_01 (7)
       objectReference: {fileID: 0}
+    - target: {fileID: 1719742860921462, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4185858467476928, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -32551,7 +32583,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b51019c8935c143408f897cc46a84988, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.AIWorldZone
-  _zoneId: 1
+  _zoneId: 2
   _displayName: Corridors_Forward
   _boundsCollider: {fileID: 547764344}
   _adjacentZones:
@@ -43068,6 +43100,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1935443189}
     m_Modifications:
+    - target: {fileID: 1554456195323596, guid: 8fb3f27dac30daa4ebcf8f9c4a220668, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4597596165053490, guid: 8fb3f27dac30daa4ebcf8f9c4a220668, type: 3}
       propertyPath: m_RootOrder
       value: 345
@@ -44425,6 +44461,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_ControllPanel_01 (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 1278828291484514, guid: ff5586b927c5dcd47925e8c6788f8b5e, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4227881491088518, guid: ff5586b927c5dcd47925e8c6788f8b5e, type: 3}
       propertyPath: m_RootOrder
       value: 460
@@ -45663,6 +45703,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 717783273}
     m_Modifications:
+    - target: {fileID: 1301550200216578, guid: dfe81bd52a37b3646be4c1ddf2fcfcd5, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4637364390914544, guid: dfe81bd52a37b3646be4c1ddf2fcfcd5, type: 3}
       propertyPath: m_RootOrder
       value: 514
@@ -50180,6 +50224,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_CryoBed_01 (10)
       objectReference: {fileID: 0}
+    - target: {fileID: 1719742860921462, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4185858467476928, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -50997,6 +51045,10 @@ PrefabInstance:
     - target: {fileID: 1861359820638044, guid: 06d1f6df5e0fa744891b69d61c8db78d, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Table_01 (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1861359820638044, guid: 06d1f6df5e0fa744891b69d61c8db78d, type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4298889638251286, guid: 06d1f6df5e0fa744891b69d61c8db78d, type: 3}
       propertyPath: m_RootOrder
@@ -53493,6 +53545,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_CryoBed_01 (6)
       objectReference: {fileID: 0}
+    - target: {fileID: 1719742860921462, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4185858467476928, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
       propertyPath: m_RootOrder
       value: 0
@@ -54809,6 +54865,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 717783273}
     m_Modifications:
+    - target: {fileID: 1702668941876556, guid: 749d56d0f8a95ef43b423b2da92f480a, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4161629232979388, guid: 749d56d0f8a95ef43b423b2da92f480a, type: 3}
       propertyPath: m_RootOrder
       value: 515
@@ -56000,7 +56060,7 @@ GameObject:
   - component: {fileID: 979599708}
   - component: {fileID: 979599707}
   - component: {fileID: 979599709}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Point light (17)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -61338,6 +61398,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2059919860}
     m_Modifications:
+    - target: {fileID: 1412227332149806, guid: c1dee4b30774e314d8395853c0c5e03f, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4194670218996332, guid: c1dee4b30774e314d8395853c0c5e03f, type: 3}
       propertyPath: m_RootOrder
       value: 185
@@ -65046,6 +65110,10 @@ PrefabInstance:
     - target: {fileID: 1897078937206944, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Medical_Cart_02 (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1897078937206944, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4972463905673026, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
       propertyPath: m_RootOrder
@@ -68863,6 +68931,10 @@ PrefabInstance:
     - target: {fileID: 1006000121980524, guid: da27625dede894b47a5b1f66e6e479fe, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Medical_Cart_01 (8)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1006000121980524, guid: da27625dede894b47a5b1f66e6e479fe, type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4339715871512828, guid: da27625dede894b47a5b1f66e6e479fe, type: 3}
       propertyPath: m_RootOrder
@@ -79517,6 +79589,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Ship_Fighter_03 (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 1721860369327728, guid: bbad770c80b2db742986dcae1946ab2a, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4243327588238360, guid: bbad770c80b2db742986dcae1946ab2a, type: 3}
       propertyPath: m_RootOrder
       value: 21
@@ -80713,6 +80789,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Medical_Cart_02 (6)
       objectReference: {fileID: 0}
+    - target: {fileID: 1897078937206944, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4972463905673026, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
       propertyPath: m_RootOrder
       value: 241
@@ -81265,6 +81345,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1935443189}
     m_Modifications:
+    - target: {fileID: 1122383940670264, guid: 01489deeeb7ca1744877c2e3e590d958, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4147015843481072, guid: 01489deeeb7ca1744877c2e3e590d958, type: 3}
       propertyPath: m_RootOrder
       value: 636
@@ -84321,6 +84405,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Medical_Cart_01 (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 1006000121980524, guid: da27625dede894b47a5b1f66e6e479fe, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4339715871512828, guid: da27625dede894b47a5b1f66e6e479fe, type: 3}
       propertyPath: m_RootOrder
       value: 245
@@ -85138,6 +85226,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_MapTable_01 (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 1412227332149806, guid: c1dee4b30774e314d8395853c0c5e03f, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4194670218996332, guid: c1dee4b30774e314d8395853c0c5e03f, type: 3}
       propertyPath: m_RootOrder
       value: 634
@@ -85633,6 +85725,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Medical_Cart_02 (15)
       objectReference: {fileID: 0}
+    - target: {fileID: 1897078937206944, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4972463905673026, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
       propertyPath: m_RootOrder
       value: 32
@@ -85830,6 +85926,10 @@ PrefabInstance:
     - target: {fileID: 1719742860921462, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
       propertyPath: m_Name
       value: SM_Prop_CryoBed_01 (9)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1719742860921462, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4185858467476928, guid: 61f6772736cda0c4c8396454a192fafb, type: 3}
       propertyPath: m_RootOrder
@@ -86138,6 +86238,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1233412516}
     m_Modifications:
+    - target: {fileID: 1398643495048306, guid: b093daa8843f7ba429d137b77a8f2466, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4902180137491024, guid: b093daa8843f7ba429d137b77a8f2466, type: 3}
       propertyPath: m_RootOrder
       value: 635
@@ -90791,6 +90895,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1990677855}
     m_Modifications:
+    - target: {fileID: 1827960899725640, guid: d6c57eebb8ce01f458076f109cee95b6, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4138325984726020, guid: d6c57eebb8ce01f458076f109cee95b6, type: 3}
       propertyPath: m_RootOrder
       value: 6
@@ -107459,6 +107567,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Medical_Cart_02 (5)
       objectReference: {fileID: 0}
+    - target: {fileID: 1897078937206944, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4972463905673026, guid: b0a7983acd8b48643af2f4da7777baad, type: 3}
       propertyPath: m_RootOrder
       value: 246
@@ -111217,6 +111329,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Medical_Machine_01 (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 1201866701415534, guid: f456640c2423251498bd933b2f430969, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4740773272670142, guid: f456640c2423251498bd933b2f430969, type: 3}
       propertyPath: m_RootOrder
       value: 238
@@ -112119,6 +112235,10 @@ PrefabInstance:
     - target: {fileID: 1512183729368740, guid: 71cc042e82536124e97c26fd10790a95, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Engine_Construction_01 (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1512183729368740, guid: 71cc042e82536124e97c26fd10790a95, type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4665952197380254, guid: 71cc042e82536124e97c26fd10790a95, type: 3}
       propertyPath: m_RootOrder
@@ -114625,6 +114745,10 @@ PrefabInstance:
     - target: {fileID: 1110246720015554, guid: 08bde06c179f5274892999713e6998e9, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Battery_03 (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1110246720015554, guid: 08bde06c179f5274892999713e6998e9, type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4431002318680872, guid: 08bde06c179f5274892999713e6998e9, type: 3}
       propertyPath: m_RootOrder
