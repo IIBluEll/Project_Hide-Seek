@@ -40,7 +40,10 @@ namespace HideSeek.AI
 
         public void Tick(float deltaTime , float currentTime)
         {
-            _refreshTimer -= Math.Max(0f , deltaTime);
+            float safeDeltaTime = Math.Max(0f , deltaTime);
+
+            AI_DEBUG_MODEL.UpdateFrameTime(safeDeltaTime);
+            _refreshTimer -= safeDeltaTime;
 
             if ( _refreshTimer > 0f )
             {

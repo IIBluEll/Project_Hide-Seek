@@ -6,9 +6,13 @@ namespace HideSeek.AI
 {
     public sealed class AIDebugModel_model
     {
+        private const float FRAME_TIME_SMOOTHING = 0.1f;
+
         private readonly MasterAIProvider MASTER_AI_PROVIDER;
         private readonly ChaseAIController CHASE_AI_CONTROLLER;
         private readonly StringBuilder STRING_BUILDER = new(1024);
+
+        private float _smoothedFrameTime;
 
         public AIDebugModel_model(
             MasterAIProvider masterAIProvider ,
@@ -22,12 +26,30 @@ namespace HideSeek.AI
                 : throw new ArgumentNullException(nameof(chaseAIController));
         }
 
+        public void UpdateFrameTime(float unscaledDeltaTime)
+        {
+            if ( unscaledDeltaTime <= 0f )
+            {
+                return;
+            }
+
+            if ( _smoothedFrameTime <= 0f )
+            {
+                _smoothedFrameTime = unscaledDeltaTime;
+
+                return;
+            }
+
+            _smoothedFrameTime += (unscaledDeltaTime - _smoothedFrameTime) * FRAME_TIME_SMOOTHING;
+        }
+
         public string BuildDisplayText(float currentTime)
         {
             ChaseAIDebugSnapshot chaseSnapshot = CHASE_AI_CONTROLLER.GetDebugSnapshot(currentTime);
 
             STRING_BUILDER.Clear();
-            STRING_BUILDER.AppendLine("<b>AI DEBUG</b>  [F3: Toggle]");
+            STRING_BUILDER.AppendLine("<b>AI DEBUG</b>");
+            AppendPerformanceData();
             STRING_BUILDER.AppendLine();
             AppendDirectorData(currentTime);
             AppendChaseData(chaseSnapshot);
@@ -36,6 +58,21 @@ namespace HideSeek.AI
             AppendAngerData(chaseSnapshot);
 
             return STRING_BUILDER.ToString();
+        }
+
+        private void AppendPerformanceData()
+        {
+            if ( _smoothedFrameTime <= 0f )
+            {
+                STRING_BUILDER.AppendLine("FPS=--  Frame=-- ms");
+
+                return;
+            }
+
+            float framesPerSecond = 1f / _smoothedFrameTime;
+            float frameTimeMilliseconds = _smoothedFrameTime * 1000f;
+
+            STRING_BUILDER.AppendLine($"FPS={framesPerSecond:F1}  Frame={frameTimeMilliseconds:F1} ms");
         }
 
         private void AppendDirectorData(float currentTime)
