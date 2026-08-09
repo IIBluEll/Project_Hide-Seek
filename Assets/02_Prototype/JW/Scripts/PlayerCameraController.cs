@@ -89,6 +89,7 @@ public class PlayerCameraController : MonoBehaviour
     public void ClearCameraPositionOverride()
     {
         _cameraPositionOverride = null;
+        _camera.position = _headBoneTrans.position;
         _stableCameraLocalPosition = _camera.localPosition;
     }
 
