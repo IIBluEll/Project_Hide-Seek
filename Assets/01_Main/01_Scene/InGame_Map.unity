@@ -17825,7 +17825,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1543695114780030, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 761203845}
   m_SourcePrefab: {fileID: 100100000, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
 --- !u!4 &284702922 stripped
 Transform:
@@ -124306,6 +124309,36 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3cb39c87e3538594cad5748c515b3baf, type: 3}
+--- !u!1 &761203846 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1543695114780030, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
+  m_PrefabInstance: {fileID: 284702921}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &761203847 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6290464557797280551, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
+  m_PrefabInstance: {fileID: 284702921}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &761203848 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7190464557797280551, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
+  m_PrefabInstance: {fileID: 284702921}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &761203845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761203846}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c2a5e91bd634f0489ae1d3562b8c740, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.Gameplay.EscapeDoorLock
+  _gameProgressProvider: {fileID: 476356173}
+  _door: {fileID: 761203847}
+  _doorSensor: {fileID: 761203848}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
