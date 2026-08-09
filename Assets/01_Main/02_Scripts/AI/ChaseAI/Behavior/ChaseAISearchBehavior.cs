@@ -240,6 +240,8 @@ namespace HideSeek.AI
                 $"HidingSpotPoints={CHASE_AI_SEARCH.HidingSpotPointCount}, " +
                 $"RecentHistory={CHASE_AI_SEARCH.RecentlyVisitedPointCount}, " +
                 $"RecentRejected={CHASE_AI_SEARCH.RecentPointRejectCount}, " +
+                $"GenerationAttempts={CHASE_AI_SEARCH.GenerationAttemptCount}/{CHASE_AI_SEARCH.GenerationAttemptBudget}, " +
+                $"PathCalculations={CHASE_AI_SEARCH.PathCalculationCount}, " +
                 $"WaitPerPoint={_searchWaitDurationPerPoint:F1}");
 
             return true;
