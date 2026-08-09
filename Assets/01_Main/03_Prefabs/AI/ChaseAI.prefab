@@ -232,7 +232,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.AI.ChaseAISound
   _chaseAIController: {fileID: 5318247871616707945}
   _chaseAIAnimator: {fileID: 5150360427051003208}
-  _outputMixerGroup: {fileID: 0}
+  _outputMixerGroup: {fileID: 5812720547532978006, guid: 7e32191a7ca4fd9499235a3620f0f980,
+    type: 2}
   _walkFootstepClips:
   - {fileID: 8300000, guid: 5ba820979802e1c41a748d8fd8902c27, type: 3}
   - {fileID: 8300000, guid: 40f11f028b8bd314f94eb62494af9117, type: 3}
@@ -408,8 +409,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 89bd917f03e377549b0a61dd595e061b, type: 3}
   - {fileID: 8300000, guid: aa5d6347f694b934fa298a991eddb1e6, type: 3}
   - {fileID: 8300000, guid: 3d202ae4790a4e94b9a57c2c3c6d5051, type: 3}
-  _walkFootstepVolume: 0.7
-  _jogFootstepVolume: 0.85
+  _walkFootstepVolume: 0.9
+  _jogFootstepVolume: 1
   _sprintFootstepVolume: 1
   _walkFootstepPitchRange: {x: 0.92, y: 1.02}
   _jogFootstepPitchRange: {x: 0.96, y: 1.06}
@@ -425,8 +426,8 @@ MonoBehaviour:
   _patrolVocalInterval: {x: 8, y: 15}
   _investigationVocalInterval: {x: 5, y: 10}
   _chaseVocalInterval: {x: 3, y: 6}
-  _minimumDistance: 2
-  _maximumDistance: 35
+  _minimumDistance: 5
+  _maximumDistance: 45
 --- !u!1 &720080163599917457
 GameObject:
   m_ObjectHideFlags: 0
