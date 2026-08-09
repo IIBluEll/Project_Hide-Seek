@@ -13,6 +13,9 @@ namespace HideSeek.AI
         [SerializeField] private List<AIWorldZone> _zones = new();
         [SerializeField] private List<AIVentPoint> _vents = new();
 
+        [Header("Gameplay Lifecycle")]
+        [SerializeField] private bool _startGameplayAutomaticallyForDebug;
+
         [Header("Debug")]
         [SerializeField] private bool _enableDebugLog = true;
         [SerializeField, Min(0.1f)] private float _debugLogInterval = 1f;
@@ -30,6 +33,8 @@ namespace HideSeek.AI
 
         private float _debugLogTimer;
         private bool _isInitialized;
+        private bool _isGameplayStartRequested;
+        private bool _isGameplayStarted;
         private bool _hasCurrentHint;
         private bool _isCurrentHintAccepted;
         private bool _wasInitialDormantStateApplied;
@@ -46,6 +51,7 @@ namespace HideSeek.AI
         public AIWorldZone CurrentPlayerZone => _currentPlayerZone;
         public AIWorldZone TargetZone => _targetZone;
         public AIVentPoint CurrentVent => _currentVent;
+        public bool IsGameplayStarted => _isGameplayStarted;
 
         public float GlobalStress => _director != null ? _director.GlobalStress : 0f;
         public float GlobalStressRatio => _director != null ? _director.GlobalStressRatio : 0f;
@@ -65,6 +71,26 @@ namespace HideSeek.AI
             currentHint = _currentHint;
 
             return true;
+        }
+
+        [ContextMenu("Start Gameplay")]
+        public void StartGameplay()
+        {
+            if ( !Application.isPlaying )
+            {
+                Debug.LogWarning("[MasterAIProvider] StartGameplay은 Play Mode에서만 호출할 수 있습니다." , this);
+
+                return;
+            }
+
+            if ( _isGameplayStarted || _isGameplayStartRequested )
+            {
+                return;
+            }
+
+            _isGameplayStartRequested = true;
+
+            TryStartGameplay();
         }
 
         private void Start()
@@ -101,7 +127,17 @@ namespace HideSeek.AI
 
             UpdatePlayerZone();
 
-            Debug.Log("[MasterAIProvider] 초기화 완료: Director=DORMANT" , this);
+            if ( _startGameplayAutomaticallyForDebug )
+            {
+                StartGameplay();
+            }
+
+            TryStartGameplay();
+
+            if ( !_isGameplayStarted )
+            {
+                Debug.Log("[MasterAIProvider] 초기화 완료: Director=DORMANT, StartGameplay() 호출 대기" , this);
+            }
         }
 
         private void Update()
@@ -112,6 +148,12 @@ namespace HideSeek.AI
             }
 
             ApplyInitialDormantState();
+
+            if ( !_isGameplayStarted )
+            {
+                return;
+            }
+
             UpdatePlayerZone();
             UpdateDirectorHint();
 
@@ -121,6 +163,27 @@ namespace HideSeek.AI
             ProcessCommand(command);
             UpdateChaseStateNotification();
             UpdateDebugLog(Time.deltaTime , distanceToPlayer);
+        }
+
+        private void TryStartGameplay()
+        {
+            if ( !_isInitialized || !_isGameplayStartRequested || _isGameplayStarted )
+            {
+                return;
+            }
+
+            _director.Reset();
+            ClearDirectorHint();
+
+            _targetZone = null;
+            _currentVent = null;
+            _previousChaseAIState = _chaseAIController.CurrentState;
+            _debugLogTimer = 0f;
+            _isGameplayStarted = true;
+
+            UpdatePlayerZone();
+
+            Debug.Log("[MasterAIProvider] 게임플레이 시작: Director 타이머와 GlobalStress를 0부터 진행합니다." , this);
         }
 
         private void OnEnable()
