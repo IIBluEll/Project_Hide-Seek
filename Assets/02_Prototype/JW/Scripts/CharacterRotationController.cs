@@ -9,6 +9,11 @@ public class CharacterRotationController : MonoBehaviour
     private float _yaw;
     private float _targetYaw;
 
+    private void Awake()
+    {
+        _mouseSensitive = PlayerPrefs.GetFloat(HashKey.YAW_SENSITIVE, ConstValue.YAW_SENSITIVE_DEFAULT);
+    }
+
     private void Update()
     {
         if (_playerBody == null)

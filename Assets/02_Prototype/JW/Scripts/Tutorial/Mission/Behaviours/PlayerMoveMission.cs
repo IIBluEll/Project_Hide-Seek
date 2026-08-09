@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerMoveMission : TutorialMission
+public class PlayerMoveMission : MissionBase
 {
     [SerializeField] private PlayerController _playerController;
     private IInputReader _inputReader;
@@ -15,8 +15,6 @@ public class PlayerMoveMission : TutorialMission
     }
     private void CheckComplete(Vector2 look)
     {
-        Debug.Log(IsRunning);
-
         if (!IsRunning)
             return;
 

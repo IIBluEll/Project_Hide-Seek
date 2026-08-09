@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7f125fc0d9174a14eb780b4208868357, type: 3}
-  m_Name: GeneratorMission
+  m_Name: 7. ThrowMission
   m_EditorClassIdentifier: Assembly-CSharp::MissionIndicatorData
-  _missionText: "\uC774\uB3D9\uD558\uC2ED\uC2DC"
-  _iconSprite: {fileID: 0}
+  _missionText: "\uC870\uC900\uD558\uC5EC \uBB3C\uAC74\uC744 \uB358\uC9C0\uC2DC\uC624"
+  _iconSprite: {fileID: 21300000, guid: 3cd63ae4d367ff94f969ea1649c715a2, type: 3}
   _hasCount: 0
   _targetCount: 1

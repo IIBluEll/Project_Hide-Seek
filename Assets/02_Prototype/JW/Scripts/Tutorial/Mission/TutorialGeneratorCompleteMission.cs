@@ -1,7 +1,7 @@
 using HideSeek.Generators;
 using UnityEngine;
 
-public sealed class TutorialGeneratorCompleteMission : TutorialMission
+public sealed class TutorialGeneratorCompleteMission : MissionBase
 {
     [SerializeField] private Generator _generator;
 
