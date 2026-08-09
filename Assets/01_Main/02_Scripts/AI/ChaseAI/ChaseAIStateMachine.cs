@@ -17,6 +17,8 @@ namespace HideSeek.AI
 
     public sealed class ChaseAIStateMachine
     {
+        private const int MAXIMUM_CONSECUTIVE_PATROL_FAILURE_LOG_COUNT = 3;
+
         private readonly ChaseAIConfig _config;
         private readonly ChaseAIMovement _movement;
 
@@ -29,6 +31,7 @@ namespace HideSeek.AI
 
         private float _stateTimer;
         private bool _isWaiting;
+        private int _consecutivePatrolFailureCount;
 
         private Vector3 _retreatPosition;
         private bool _isRetreatPending;
@@ -93,7 +96,8 @@ namespace HideSeek.AI
             ChaseAISearch search ,
             ChaseAIAnger chaseAIAnger ,
             IReadOnlyList<Transform> patrolPoints ,
-            IReadOnlyList<AIWorldZone> zones)
+            IReadOnlyList<AIWorldZone> zones ,
+            Func<AIHidingSpot , bool> hidingSpotOccupancyEvaluator)
         {
             _config = config;
             _movement = movement;
@@ -102,7 +106,12 @@ namespace HideSeek.AI
             EVIDENCE_SELECTOR = new ChaseAIEvidenceSelector(config , memory , INVESTIGATION_CONTEXT);
             CHASE_AI_ANGER = chaseAIAnger;
             CHASE_BEHAVIOR = new ChaseAIChaseBehavior(config , movement , chaseAIAnger , memory);
-            SEARCH_BEHAVIOR = new ChaseAISearchBehavior(config , movement , search , chaseAIAnger);
+            SEARCH_BEHAVIOR = new ChaseAISearchBehavior(
+                config ,
+                movement ,
+                search ,
+                chaseAIAnger ,
+                hidingSpotOccupancyEvaluator);
             PATROL_ROUTE = new ChaseAIPatrolRoute(config , patrolPoints);
             PATROL_ROUTE.ConfigureZones(zones);
         }
@@ -430,16 +439,14 @@ namespace HideSeek.AI
                     break;
 
                 case CHASE_AI_MOVE_STATUS.ARRIVED:
-                    AdvancePatrolPoint(true);
+                    _consecutivePatrolFailureCount = 0;
+                    PATROL_ROUTE.AdvanceAfterArrival(_movement.Position);
                     StartWaiting(_config.PatrolWaitTime);
                     break;
 
                 case CHASE_AI_MOVE_STATUS.PATH_FAILED:
                 case CHASE_AI_MOVE_STATUS.STUCK:
-                    Debug.LogWarning($"[ChaseAIStateMachine] 순찰 이동 실패: {moveStatus}");
-
-                    AdvancePatrolPoint(false);
-                    StartWaiting(_config.PatrolWaitTime);
+                    HandlePatrolFailure($"Patrol movement failed: {moveStatus}");
                     break;
             }
         }
@@ -650,6 +657,7 @@ namespace HideSeek.AI
             EVIDENCE_SELECTOR.ClearAllEvidence();
 
             _movement.SetSpeed(_config.WalkSpeed);
+            _consecutivePatrolFailureCount = 0;
             PATROL_ROUTE.Refresh(_movement.Position);
 
             if ( PATROL_ROUTE.IsUsingZoneRoute )
@@ -859,21 +867,16 @@ namespace HideSeek.AI
                     out Vector3 patrolPosition ,
                     out string context) )
             {
-                Debug.LogError("[ChaseAIStateMachine] 사용할 수 있는 순찰 지점이 없습니다.");
-                AdvancePatrolPoint();
-                StartWaiting(_config.PatrolWaitTime);
+                HandlePatrolFailure("No usable patrol point");
 
                 return;
             }
 
-            bool wasAccepted = RequestDestination(
-                patrolPosition ,
-                context);
+            CHASE_AI_MOVE_REQUEST_RESULT result = _movement.TrySetDestination(patrolPosition);
 
-            if ( !wasAccepted )
+            if ( result != CHASE_AI_MOVE_REQUEST_RESULT.ACCEPTED )
             {
-                AdvancePatrolPoint();
-                StartWaiting(_config.PatrolWaitTime);
+                HandlePatrolFailure($"{context} destination request failed: {result}");
             }
         }
 
@@ -891,9 +894,28 @@ namespace HideSeek.AI
             return false;
         }
 
-        private void AdvancePatrolPoint(bool didReachPoint = false)
+        private void HandlePatrolFailure(string reason)
         {
-            PATROL_ROUTE.Advance(_movement.Position , didReachPoint);
+            _consecutivePatrolFailureCount++;
+
+            bool wasRecovered = PATROL_ROUTE.RecoverFromFailure(_movement.Position);
+
+            if ( _consecutivePatrolFailureCount <= MAXIMUM_CONSECUTIVE_PATROL_FAILURE_LOG_COUNT )
+            {
+                Debug.LogWarning(
+                    $"[ChaseAIStateMachine] {reason}, " +
+                    $"Recovery={(wasRecovered ? "READY" : "FAILED")}, " +
+                    $"ConsecutiveFailures={_consecutivePatrolFailureCount}");
+            }
+            else if ( _consecutivePatrolFailureCount ==
+                      MAXIMUM_CONSECUTIVE_PATROL_FAILURE_LOG_COUNT + 1 )
+            {
+                Debug.LogWarning(
+                    "[ChaseAIStateMachine] Repeated patrol failure logs are now suppressed " +
+                    "until a patrol point is reached.");
+            }
+
+            StartWaiting(_config.PatrolWaitTime);
         }
 
         private void StartWaiting(float duration)

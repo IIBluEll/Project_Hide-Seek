@@ -1,5 +1,4 @@
 using System;
-using HideSeek.Gameplay;
 using UnityEngine;
 
 namespace HideSeek.AI
@@ -67,7 +66,7 @@ namespace HideSeek.AI
         [Header("Hearing")]
         [SerializeField] private Transform _hearingTransform;
 
-        private IPlayerVisibilityState _targetVisibilityState;
+        private global::IPlayerVisibilityState _targetVisibilityState;
         public event Action<ChaseAIAudioObservation> NoiseDetected;
 
         private float _detectionRatio;
@@ -121,6 +120,12 @@ namespace HideSeek.AI
             _targetTransform = targetTransform;
             _targetVisibilityState = FindTargetVisibilityState(targetTransform);
             ResetPerception();
+        }
+
+        public bool IsTargetInsideHidingSpot(AIHidingSpot hidingSpot)
+        {
+            return hidingSpot != null &&
+                hidingSpot.ContainsPlayer(_targetTransform , _targetVisibilityState);
         }
 
         public ChaseAIVisualObservation UpdatePerception(float deltaTime)
@@ -333,7 +338,8 @@ namespace HideSeek.AI
             return Mathf.Clamp01(distanceMultiplier * peripheralMultiplier);
         }
 
-        private static IPlayerVisibilityState FindTargetVisibilityState(Transform targetTransform)
+        private static global::IPlayerVisibilityState FindTargetVisibilityState(
+            Transform targetTransform)
         {
             if ( targetTransform == null )
             {
@@ -345,7 +351,8 @@ namespace HideSeek.AI
 
             for ( int componentIndex = 0; componentIndex < targetComponents.Length; componentIndex++ )
             {
-                if ( targetComponents[ componentIndex ] is IPlayerVisibilityState visibilityState )
+                if ( targetComponents[ componentIndex ] is
+                     global::IPlayerVisibilityState visibilityState )
                 {
                     return visibilityState;
                 }
