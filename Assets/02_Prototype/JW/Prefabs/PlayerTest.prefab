@@ -340,7 +340,7 @@ GameObject:
   - component: {fileID: 7485482272247468102}
   m_Layer: 0
   m_Name: PlayerTest
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -449,6 +449,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 422564f4449ae484b9886c7f888ee5d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RotationController
+  _mouseSensitive: 0.025
+  _rotationSmoothSpeed: 30
 --- !u!114 &2465014839732169861
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -465,11 +467,13 @@ MonoBehaviour:
   _camera: {fileID: 2330449259875553450}
   _headBoneTrans: {fileID: 2894895915176152427}
   _standingCameraHeight: 1.55
-  _crouchCameraHeight: 1.05
+  _crouchCameraHeight: 0
   _proneCameraHeight: 0.2
-  _crouchWalkShakeIntensity: 0.15
-  _walkShakeIntensity: 1
-  _runShakeIntensity: 1.75
+  _crouchWalkShakeIntensity: 1
+  _walkShakeIntensity: 3
+  _runShakeIntensity: 1.6
+  _pitch: 0
+  _rotationSmoothSpeed: 0
   _currentShakeIntensity: 1
 --- !u!114 &3460248299561768460
 MonoBehaviour:
@@ -504,6 +508,7 @@ MonoBehaviour:
   _itemGrapPivot: {fileID: 2434990049675629045}
   _throwDirectionTrans: {fileID: 2330449259875553450}
   _throwMaxPower: 12
+  _minimumPower: 1
   _chargeSpeed: 8
 --- !u!114 &8242277658954955946
 MonoBehaviour:
@@ -584,7 +589,7 @@ Animator:
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: c8c20564eb982f84a96a0d4d8e357cc5, type: 3}
   m_Controller: {fileID: 9100000, guid: 82f0f3f3bad080b47ab13a66fdf2a631, type: 2}
-  m_CullingMode: 1
+  m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
@@ -614,7 +619,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 1.6
-  m_Radius: 0.2
+  m_Radius: 0.3
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
@@ -2733,7 +2738,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.1
   far clip plane: 1000
   field of view: 60
   orthographic: 0
