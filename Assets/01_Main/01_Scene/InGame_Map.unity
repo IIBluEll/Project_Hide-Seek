@@ -1108,22 +1108,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
---- !u!114 &12889138 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7398945044862009020, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
-  m_PrefabInstance: {fileID: 12889137}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 88343b22ec7263340b8338a262097f11, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerController
---- !u!20 &12889139 stripped
-Camera:
-  m_CorrespondingSourceObject: {fileID: 5480595380869798714, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
-  m_PrefabInstance: {fileID: 12889137}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &16957839
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -43681,6 +43665,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 763061234}
+  - component: {fileID: 763061235}
   - component: {fileID: 763061233}
   m_Layer: 0
   m_Name: Cutscene
@@ -43720,6 +43705,22 @@ Transform:
   - {fileID: 815899070}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &763061235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 763061232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db143ee589502134798f6b771499db1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.Integration.PlayerDeathConnector
+  _masterAIProvider: {fileID: 1999220210}
+  _deathCutsceneStage: {fileID: 1692836976}
+  _bgmPlayer: {fileID: 1618074642}
+  _bgmFadeOutDuration: 0.2
 --- !u!1001 &764003317
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -119966,22 +119967,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4387848430999057684, guid: 3cb39c87e3538594cad5748c515b3baf, type: 3}
-      propertyPath: _bgmPlayer
-      value: 
-      objectReference: {fileID: 1618074642}
-    - target: {fileID: 4387848430999057684, guid: 3cb39c87e3538594cad5748c515b3baf, type: 3}
-      propertyPath: _playerCamera
-      value: 
-      objectReference: {fileID: 12889139}
-    - target: {fileID: 4387848430999057684, guid: 3cb39c87e3538594cad5748c515b3baf, type: 3}
-      propertyPath: _playerController
-      value: 
-      objectReference: {fileID: 12889138}
-    - target: {fileID: 4387848430999057684, guid: 3cb39c87e3538594cad5748c515b3baf, type: 3}
-      propertyPath: _chaseAIController
-      value: 
-      objectReference: {fileID: 2099272656}
     - target: {fileID: 7915499824659610287, guid: 3cb39c87e3538594cad5748c515b3baf, type: 3}
       propertyPath: m_Name
       value: DeathCutsceneStage
