@@ -21,8 +21,6 @@ public class PlayerCameraController : MonoBehaviour
     [SerializeField, Range(0f, 3f)] private float _runShakeIntensity = 0.6f;
 
     [SerializeField] private float _pitch;
-    [SerializeField, Min(0f)] private float _rotationSmoothSpeed = 60f;
-    private float _targetPitch;
     public float _currentShakeIntensity;
 
     private Vector3 _stableCameraLocalPosition;
@@ -34,13 +32,9 @@ public class PlayerCameraController : MonoBehaviour
         _stableCameraLocalPosition = _camera.localPosition;
         _cameraHeadLocalPosition = _headBoneTrans.InverseTransformPoint(_camera.position);
         _pitchSensitive = PlayerPrefs.GetFloat(HashKey.PITCH_SENSITIVE, ConstValue.PITCH_SENSITIVE_DEFAULT);
-        _targetPitch = _pitch;
     }
     private void LateUpdate()
     {
-        float interpolation = CalculateRotationInterpolation(Time.unscaledDeltaTime);
-        _pitch = Mathf.LerpAngle(_pitch, _targetPitch, interpolation);
-
         ApplyCameraPositionOverride();
         ShakeCameraTransform();
         ApplyCameraRotation(_pitch, 0f, 0f);
@@ -73,22 +67,13 @@ public class PlayerCameraController : MonoBehaviour
     }
     public void RotateXAxis(float value)
     {
-        _targetPitch -= value * _pitchSensitive;
-        _targetPitch = Mathf.Clamp(_targetPitch, _minPitch, _maxPitch);
+        _pitch -= value * _pitchSensitive;
+        _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
     }
 
     public void SetRotation(float angle)
     {
         _pitch = Mathf.Clamp(angle, _minPitch, _maxPitch);
-        _targetPitch = _pitch;
-    }
-
-    private float CalculateRotationInterpolation(float deltaTime)
-    {
-        if (_rotationSmoothSpeed <= 0f)
-            return 1f;
-
-        return 1f - Mathf.Exp(-_rotationSmoothSpeed * deltaTime);
     }
 
     public void SetCameraPositionOverride(Transform cameraPositionOverride)

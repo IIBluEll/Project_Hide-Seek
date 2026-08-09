@@ -2,8 +2,11 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour, IPlayerVisibilityState
 {
+    private const float MAXIMUM_LOOK_DELTA = 240f;
+
     private InteractPresenter _interactPresenter = new InteractPresenter();
     private readonly PlayerStateController _state = new PlayerStateController();
+    private Vector2 _lookDelta;
 
     [SerializeField] private PlayerInteractionController _interactController;
     [SerializeField] private PlayerAnimationController _animationController;
@@ -63,6 +66,20 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
         _move.OnPostureChanged += OnPostureChangedActioned;
         _move.OnLocomotionChanged += OnLocomotionChangedActioned;
     }
+
+    private void Update()
+    {
+        Vector2 lookDelta = _lookDelta;
+        _lookDelta = Vector2.zero;
+
+        if (!_state.CanRotate)
+            return;
+
+        lookDelta = Vector2.ClampMagnitude(lookDelta, MAXIMUM_LOOK_DELTA);
+        _camera.RotateXAxis(lookDelta.y);
+        _rotator.Rotate(lookDelta);
+    }
+
     private void OnChangeActionState(PLAYER_ACTION_STATE action)
     {
         if (action == PLAYER_ACTION_STATE.REPAIRING_GENERATOR)
@@ -101,11 +118,9 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
     }
     private void OnLookAction(Vector2 value)
     {
-        if (!_state.CanRotate)
-            return;
-
-        _camera.RotateXAxis(value.y);
-        _rotator.Rotate(value);
+        // Pointer.delta는 한 입력 업데이트 안에서 누적된 값이 여러 번 전달될 수 있다.
+        // 더하지 않고 마지막 값만 보관한 뒤 Update에서 한 번만 소비한다.
+        _lookDelta = value;
     }
     private void OnSprintAction(bool value)
     {
@@ -197,6 +212,7 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
     }
     private void OnDisable()
     {
+        _lookDelta = Vector2.zero;
         Unbind();
     }
 }
