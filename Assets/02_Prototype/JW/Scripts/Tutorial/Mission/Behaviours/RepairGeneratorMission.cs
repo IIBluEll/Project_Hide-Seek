@@ -11,6 +11,11 @@ public class RepairGeneratorMission : MissionBase
         _provider.CompletedGeneratorCountChanged += CompleteGeneratorRepair;
     }
 
+    private void Start()
+    {
+        
+    }
+
     private void CompleteGeneratorRepair(int count)
     {
         if (IsRunning && _count == count)

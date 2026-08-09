@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 public class TutorialController : MonoBehaviour
 {
     [SerializeField] private PlayerController _playerController;
-    [SerializeField] private TutorialMissionController _missionController;
+    [SerializeField] private MissionController _missionController;
 
     private void Awake()
     {
