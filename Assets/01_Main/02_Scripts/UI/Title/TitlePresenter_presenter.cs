@@ -78,7 +78,7 @@ namespace HideSeek.UI
 
         private void RefreshInteractable()
         {
-            bool tCanStartGame = CanLoad(SceneNames.IN_GAME);
+            bool tCanStartGame = CanLoad(SceneNames.LOADING);
             bool tCanStartTutorial = CanLoad(SceneNames.TUTORIAL);
 
             TITLE_MENU_VIEW.SetGameStartInteractable(tCanStartGame);
@@ -88,7 +88,7 @@ namespace HideSeek.UI
             if (!tCanStartGame)
             {
                 Debug.LogWarning(
-                    $"[TitlePresenter] 인게임 씬 '{SceneNames.IN_GAME}'을 찾을 수 없어 게임을 시작할 수 없습니다. " +
+                    $"[TitlePresenter] 로딩 씬 '{SceneNames.LOADING}'을 찾을 수 없어 게임을 시작할 수 없습니다. " +
                     "File > Build Profiles에서 씬을 추가하면 동작합니다.");
             }
 
@@ -112,14 +112,15 @@ namespace HideSeek.UI
 
         private void OnDifficultySelectedActioned(GAME_DIFFICULTY difficulty)
         {
-            if (!CanLoad(SceneNames.IN_GAME))
+            if (!CanLoad(SceneNames.LOADING))
             {
                 return;
             }
 
+            // 난이도를 먼저 넣는다. 인게임 씬을 여는 쪽은 로딩 씬이고, 그때는 이미 값이 있어야 한다.
             DifficultyProvider.Select(difficulty);
 
-            SceneManager.LoadScene(SceneNames.IN_GAME);
+            SceneManager.LoadScene(SceneNames.LOADING);
         }
 
         private void OnTutorialRequestedActioned()
