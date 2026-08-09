@@ -18,11 +18,12 @@ public class PlayerHandController : MonoBehaviour
     [SerializeField] private Transform _throwDirectionTrans;
 
     [SerializeField] private float _throwMaxPower;
+    [SerializeField, Min(0)] private float _minimumPower;
+
     [SerializeField] private float _chargeSpeed;
 
     private GrappableItem _grapItem;
     private float _currentPower;
-    private float _recoveryTime;
     private HAND_STATE_ENUM _state = HAND_STATE_ENUM.EMPTY;
     private HAND_STATE_ENUM _recoveryState;
 
@@ -55,7 +56,7 @@ public class PlayerHandController : MonoBehaviour
         if (_state == HAND_STATE_ENUM.AIMING)
         {
             _currentPower += Time.deltaTime * _chargeSpeed;
-            _currentPower = Mathf.Clamp(_currentPower, 0, _throwMaxPower);
+            _currentPower = Mathf.Clamp(_currentPower, _minimumPower, _throwMaxPower);
             OnThrowPowerChanged?.Invoke(NormalizedPower);
         }
     }
@@ -79,8 +80,7 @@ public class PlayerHandController : MonoBehaviour
 
         _state = HAND_STATE_ENUM.AIMING;
 
-        _recoveryTime = 1;
-        _currentPower = 0f;
+        _currentPower = _minimumPower;
 
         OnAimStateChanged?.Invoke(true);
     }
@@ -90,7 +90,7 @@ public class PlayerHandController : MonoBehaviour
             return;
 
         _state = HAND_STATE_ENUM.HOLDING;
-        _currentPower = 0f;
+        _currentPower = _minimumPower;
 
         OnAimStateChanged?.Invoke(false);
     }
@@ -99,10 +99,10 @@ public class PlayerHandController : MonoBehaviour
         Vector3 throwDirection = _throwDirectionTrans.forward;
 
         _grapItem.transform.SetParent(null, true);
-        _grapItem.Throw(_throwDirectionTrans.forward, _currentPower);
+        _grapItem.Throw(_throwDirectionTrans.forward + Vector3.up, _currentPower);
 
         _grapItem = null;
-        _currentPower = 0f;
+        _currentPower = _minimumPower;
         _state = HAND_STATE_ENUM.EMPTY;
 
         OnThrowPowerChanged?.Invoke(0f);

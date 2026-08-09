@@ -7,14 +7,11 @@ public class DecoyMission : MissionBase
 
     protected override void OnBeginMission()
     {
-        Debug.Log("!!");
         _handController.OnStateChangeEvent -= CheckMissionState;
         _handController.OnStateChangeEvent += CheckMissionState;
     }
     private void CheckMissionState(HAND_STATE_ENUM state)
     {
-        Debug.Log($"{IsRunning} / {state}");
-
         if(IsRunning && state == _completeState)
         {
             CompleteMission();
