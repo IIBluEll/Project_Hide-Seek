@@ -30789,6 +30789,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HideSeek.Gameplay.EscapeTrigger
   _escapeCutscenePlayer: {fileID: 203704702}
+  _masterAIProvider: {fileID: 0}
 --- !u!65 &520360458
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -60141,7 +60142,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4972210008177081981, guid: 063f24805256b2f4eafe0a3828d49393, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6470538151510204542, guid: 063f24805256b2f4eafe0a3828d49393, type: 3}
       propertyPath: m_Enabled
@@ -117958,7 +117959,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 208252215744462466, guid: 404feaa9ce1df2d4eb94ebca9229c96b, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 568897119677272039, guid: 404feaa9ce1df2d4eb94ebca9229c96b, type: 3}
       propertyPath: m_LocalPosition.x

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HideSeek.AI;
+using HideSeek.Common;
 using HideSeek.Generators;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace HideSeek.Gameplay
     /// 켜고 끄는 대상은 <see cref="GeneratorCandidatePoint"/>가 붙은 발전기뿐이다. 마커를 뗀 인스턴스는
     /// 배치 그대로 두되 Config는 똑같이 받는다. 그 수는 <see cref="ReportUnmanagedGenerators"/>로 알린다.
     ///
-    /// TODO: 난이도 선택이 생기면 Config를 인스펙터 고정값이 아니라 그쪽에서 받는다. GDD 12
+    /// 현재 선택된 난이도는 <see cref="DifficultyProvider"/>에서 읽고, 대응하는 Config를 모든 발전기에 배포한다. GDD 12
     /// </summary>
     [DisallowMultipleComponent, DefaultExecutionOrder(-1)]
     public sealed class GeneratorDirector : MonoBehaviour
@@ -30,16 +31,20 @@ namespace HideSeek.Gameplay
         [Tooltip("활성화할 발전기 수를 여기서 받는다. 비워두면 Awake에서 씬을 검색한다.")]
         [SerializeField] private GameProgressProvider _gameProgressProvider;
 
-        [Tooltip("활성 여부와 무관하게 등록된 모든 발전기가 이 설정을 공유한다.")]
-        [SerializeField] private GeneratorConfig _generatorConfig;
+        [Header("난이도별 발전기 설정")]
+        [SerializeField] private GeneratorConfig _easyGeneratorConfig;
+        [SerializeField] private GeneratorConfig _normalGeneratorConfig;
+        [SerializeField] private GeneratorConfig _hardGeneratorConfig;
 
         [Tooltip("끄면 Zone 중복을 신경 쓰지 않고 무작위로만 고른다. 디버그용이다.")]
         [SerializeField] private bool _isZoneSpreadEnabled = true;
 
         private readonly GeneratorRegistry REGISTRY = new();
         private readonly List<GeneratorCandidatePoint> LIST_SELECTED = new();
+        private GeneratorConfig _generatorConfig;
 
         public IReadOnlyList<GeneratorCandidatePoint> SelectedCandidates => LIST_SELECTED;
+        public GAME_DIFFICULTY SelectedDifficulty { get; private set; } = DifficultyProvider.DEFAULT_DIFFICULTY;
 
 #if UNITY_EDITOR
         // 컴포넌트를 붙이는 순간 채워 둔다. 인스펙터에서 눈으로 확인할 수 있고,
@@ -52,6 +57,8 @@ namespace HideSeek.Gameplay
 
         private void Awake()
         {
+            ApplySelectedDifficulty();
+
             // 프리팹을 씬에 끌어다 놓으면 Reset이 돌지 않으므로 여기서 한 번 더 받쳐준다.
             if (_gameProgressProvider == null)
             {
@@ -65,6 +72,36 @@ namespace HideSeek.Gameplay
             if (_generatorConfig == null)
             {
                 Debug.LogError($"[{nameof(GeneratorDirector)}] GeneratorConfig가 비어 있어 발전기가 동작하지 않습니다." , this);
+            }
+        }
+
+        private void ApplySelectedDifficulty()
+        {
+            SelectedDifficulty = DifficultyProvider.Current;
+            _generatorConfig = ResolveDifficultyConfig(SelectedDifficulty);
+
+            if (_generatorConfig == null)
+            {
+                return;
+            }
+
+            Debug.Log(
+                $"[{nameof(GeneratorDirector)}] 난이도 Config 적용: {SelectedDifficulty}, Generator={_generatorConfig.name}" ,
+                this);
+        }
+
+        private GeneratorConfig ResolveDifficultyConfig(GAME_DIFFICULTY difficulty)
+        {
+            switch ( difficulty )
+            {
+                case GAME_DIFFICULTY.EASY:
+                    return _easyGeneratorConfig;
+
+                case GAME_DIFFICULTY.HARD:
+                    return _hardGeneratorConfig;
+
+                default:
+                    return _normalGeneratorConfig;
             }
         }
 
