@@ -1,3 +1,4 @@
+using HideSeek.Common;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,12 +30,13 @@ public class TutorialController : MonoBehaviour
 
     private void OnAllMissionsCompletedActioned()
     {
-        ScreenFader.Instance.FadeOut(MoveToGameScene, 0.5f);
+        //        ScreenFader.Instance.FadeOut(MoveToGameScene, 0.5f);
+        MoveToGameScene();
     }
 
     private void MoveToGameScene()
     {
-        SceneManager.LoadScene("Title", LoadSceneMode.Single);
+        SceneManager.LoadScene(SceneNames.TITLE, LoadSceneMode.Single);
     }
 }
 

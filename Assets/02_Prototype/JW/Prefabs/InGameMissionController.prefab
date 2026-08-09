@@ -44,9 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd732a98752752b4e917f977bc3d9cad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RepairGeneratorMission
-  _indicatorData: {fileID: 11400000, guid: 4578c88a89195724a812a3d3b7cf9072, type: 2}
+  _indicatorData: {fileID: 11400000, guid: fa6efc1e09f9ce945b683c626d85e5eb, type: 2}
   _provider: {fileID: 0}
-  _count: 0
 --- !u!1 &4364001846654307701
 GameObject:
   m_ObjectHideFlags: 0
@@ -56,6 +55,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6053746360017270898}
+  - component: {fileID: 5271833955987311933}
   - component: {fileID: 4173746296633787209}
   m_Layer: 0
   m_Name: InGameMissionController
@@ -81,6 +81,19 @@ Transform:
   - {fileID: 4956375489972337213}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5271833955987311933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4364001846654307701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37c9a3fd292cb8b47b1da4eb77cb2d2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InGameMissionController
+  _missionController: {fileID: 4173746296633787209}
 --- !u!114 &4173746296633787209
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -98,6 +111,9 @@ MonoBehaviour:
   - StepType: 1
     Description: {fileID: 0}
     Mission: {fileID: 5015924147711050755}
+  - StepType: 1
+    Description: {fileID: 0}
+    Mission: {fileID: 6599163542345896051}
   _missionIndicator: {fileID: 1380194636968241147}
   _tutorialDescription: {fileID: 0}
   _completedIndicatorDelay: 0.5
@@ -111,6 +127,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7939096687413225605}
   - component: {fileID: 6599163542345896051}
+  - component: {fileID: 859497359968670159}
   m_Layer: 0
   m_Name: ToExitBehaviour
   m_TagString: Untagged
@@ -127,7 +144,7 @@ Transform:
   m_GameObject: {fileID: 5596429689594227770}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -1.97}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -145,8 +162,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2b2d72b72f2c914f9bc13af69eab2ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DestinationMission
-  _indicatorData: {fileID: 0}
+  _indicatorData: {fileID: 11400000, guid: 4578c88a89195724a812a3d3b7cf9072, type: 2}
   _barrior: {fileID: 0}
+--- !u!65 &859497359968670159
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5596429689594227770}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3, y: 3, z: 3}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6501035803718131653
 GameObject:
   m_ObjectHideFlags: 0

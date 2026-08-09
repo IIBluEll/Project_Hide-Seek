@@ -49,6 +49,7 @@ public class MissionController : MonoBehaviour
         }
 
         TutorialStepData stepData = _tutorialSteps[_stepIndex];
+
         if (stepData == null)
         {
             BeginNextStep();

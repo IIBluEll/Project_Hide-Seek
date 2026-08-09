@@ -130,6 +130,10 @@ MonoBehaviour:
   _rb: {fileID: 3673394311278757187}
   _collider: {fileID: 8913256475305734719}
   _impactNoiseEmitter: {fileID: 5431322117873366661}
+  _impactLayerMask:
+    serializedVersion: 2
+    m_Bits: -1
+  _minimumImpactAmount: 0.1
 --- !u!54 &3673394311278757187
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -170,6 +174,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ImpactNoiseEmitter
   _source: {fileID: 0}
+  _impactClip: {fileID: 8300000, guid: 862e32085adc29949a12fee9d1ff11a0, type: 3}
+  _minimumImpactToPlay: 0.5
+  _maximumImpactForVolume: 8
+  _minimumVolume: 0.1
+  _maximumVolume: 1
+  _soundCooldown: 0.03
   _noiseType: 2
   _radiusMutiple: 1
   _intensityMultiple: 1
