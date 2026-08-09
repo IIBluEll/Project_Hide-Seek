@@ -517,7 +517,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2199225501909623637}
   - component: {fileID: 521518167108372872}
-  - component: {fileID: 4387848430999057684}
   - component: {fileID: 3559493024511268473}
   m_Layer: 0
   m_Name: DeathCutsceneStage
@@ -558,24 +557,6 @@ MonoBehaviour:
   _stageRootObj: {fileID: 1969229630509688065}
   _fadeCanvasGroup: {fileID: 0}
   _loopBgmSource: {fileID: 6765862914845196083}
---- !u!114 &4387848430999057684
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7915499824659610287}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db143ee589502134798f6b771499db1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HideSeek.Integration.PlayerDeathConnector
-  _chaseAIController: {fileID: 0}
-  _deathCutsceneStage: {fileID: 521518167108372872}
-  _playerCamera: {fileID: 0}
-  _playerController: {fileID: 0}
-  _bgmPlayer: {fileID: 0}
-  _bgmFadeOutDuration: 0.2
 --- !u!320 &3559493024511268473
 PlayableDirector:
   m_ObjectHideFlags: 0

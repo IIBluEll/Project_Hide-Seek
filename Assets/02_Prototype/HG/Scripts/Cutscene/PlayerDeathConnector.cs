@@ -6,22 +6,21 @@ using UnityEngine;
 namespace HideSeek.Integration
 {
     /// <summary>
-    /// AI의 포획 확정과 사망 컷신을 잇는다. AI와 플레이어, 컷신은 서로를 직접 참조하지 않는다.
-    /// 결과 화면은 이 컴포넌트가 아니라 <see cref="DeathCutsceneStage.Finished"/>를 구독한다.
+    /// AI의 포획 확정과 사망 컷신을 잇는다.
+    ///
+    /// 외부 시스템은 <see cref="ChaseAIController"/>를 직접 잡지 않고
+    /// <see cref="MasterAIProvider"/>를 단일 창구로 사용한다. 연동 명세서 3절
+    ///
+    /// 플레이어 조작 정지는 이쪽 책임이 아니다. 플레이어 담당자가
+    /// <see cref="MasterAIProvider.PlayerCaught"/>를 직접 구독해 처리한다.
+    /// 결과 화면도 마찬가지로 <see cref="DeathCutsceneStage.Finished"/>를 구독한다.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PlayerDeathConnector : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private ChaseAIController _chaseAIController;
+        [SerializeField] private MasterAIProvider _masterAIProvider;
         [SerializeField] private DeathCutsceneStage _deathCutsceneStage;
-
-        [Tooltip("컷신 중 꺼 둘 플레이어 카메라.")]
-        [SerializeField] private Camera _playerCamera;
-
-        [Header("Player")]
-        [Tooltip("포획 시 조작을 멈추기 위해 비활성화한다. 진우님의 TryCapture()가 들어오면 그 호출로 교체한다.")]
-        [SerializeField] private PlayerController _playerController;
 
         [Header("Sound")]
         [SerializeField] private BgmPlayer _bgmPlayer;
@@ -31,22 +30,22 @@ namespace HideSeek.Integration
 
         private void OnEnable()
         {
-            if (_chaseAIController == null)
+            if (_masterAIProvider == null)
             {
-                Debug.LogError("[PlayerDeathConnector] ChaseAIController가 없습니다." , this);
+                Debug.LogError("[PlayerDeathConnector] MasterAIProvider가 없습니다." , this);
 
                 return;
             }
 
-            _chaseAIController.PlayerCaught -= OnPlayerCaughtActioned;
-            _chaseAIController.PlayerCaught += OnPlayerCaughtActioned;
+            _masterAIProvider.PlayerCaught -= OnPlayerCaughtActioned;
+            _masterAIProvider.PlayerCaught += OnPlayerCaughtActioned;
         }
 
         private void OnDisable()
         {
-            if (_chaseAIController != null)
+            if (_masterAIProvider != null)
             {
-                _chaseAIController.PlayerCaught -= OnPlayerCaughtActioned;
+                _masterAIProvider.PlayerCaught -= OnPlayerCaughtActioned;
             }
         }
 
@@ -67,10 +66,9 @@ namespace HideSeek.Integration
 
             _hasHandledCapture = true;
 
-            LockPlayer();
             StopBgm();
 
-            if (!_deathCutsceneStage.TryPlay(_playerCamera))
+            if (!_deathCutsceneStage.TryPlay())
             {
                 Debug.LogError("[PlayerDeathConnector] 사망 컷신을 재생하지 못했습니다." , this);
 
@@ -78,22 +76,6 @@ namespace HideSeek.Integration
             }
 
             Debug.Log("[PlayerDeathConnector] 사망 컷신을 재생합니다." , this);
-        }
-
-        private void LockPlayer()
-        {
-            if (_playerController == null)
-            {
-                Debug.LogWarning("[PlayerDeathConnector] PlayerController가 없어 조작을 멈추지 못했습니다." , this);
-
-                return;
-            }
-
-            // 임시 처리다. PlayerController.OnDisable이 입력 구독을 해제하므로 조작 입력은 끊기지만,
-            // MoveController에 남아 있던 이동 입력까지 정리되지는 않는다.
-            // 화면이 스테이지로 덮이는 동안에는 보이지 않으므로 마감 전까지는 이대로 둔다.
-            // 진우님의 TryCapture()가 들어오면 이 줄을 그 호출로 교체한다. 연동 명세서 5.1
-            _playerController.enabled = false;
         }
 
         private void StopBgm()

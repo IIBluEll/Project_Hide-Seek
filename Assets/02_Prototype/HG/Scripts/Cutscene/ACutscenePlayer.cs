@@ -7,7 +7,10 @@ namespace HideSeek.Cutscene
 {
     /// <summary>
     /// Timeline 컷신의 공통 재생 절차다. 사망 컷신과 탈출 컷신이 공유한다.
-    /// 연출의 타이밍과 배치는 전부 Timeline 에셋이 담당하고, 이 클래스는 재생과 인계만 처리한다.
+    /// 연출의 타이밍과 배치는 전부 Timeline 에셋이 담당하고, 이 클래스는 재생과 완료 통보만 처리한다.
+    ///
+    /// 플레이어 컴포넌트는 건드리지 않는다. 화면은 컷신 카메라의 Priority가 더 높고
+    /// 배경을 불투명하게 지우는 것으로 덮는다. 조작 정지는 진우님 쪽에서 처리한다.
     /// </summary>
     [DisallowMultipleComponent]
     public abstract class ACutscenePlayer : MonoBehaviour
@@ -20,14 +23,9 @@ namespace HideSeek.Cutscene
         public bool IsPlaying => _isPlaying;
 
         private bool _isPlaying;
-        private Camera _suspendedPlayerCamera;
         private Coroutine _playRoutine;
 
-        /// <param name="playerCamera">
-        /// 재생 중 꺼 둘 플레이어 카메라. AudioListener가 같은 오브젝트에 있으므로
-        /// GameObject가 아니라 Camera 컴포넌트만 끈다. GameObject를 끄면 소리가 전부 사라진다.
-        /// </param>
-        public bool TryPlay(Camera playerCamera)
+        public bool TryPlay()
         {
             if (_isPlaying)
             {
@@ -40,12 +38,6 @@ namespace HideSeek.Cutscene
             }
 
             _isPlaying = true;
-            _suspendedPlayerCamera = playerCamera;
-
-            if (_suspendedPlayerCamera != null)
-            {
-                _suspendedPlayerCamera.enabled = false;
-            }
 
             OnCutsceneBegin();
 
@@ -64,7 +56,7 @@ namespace HideSeek.Cutscene
         }
 
         /// <summary>
-        /// 재생을 중단하고 카메라를 되돌린다. 재시작이 씬 재로드라면 호출할 필요가 없다.
+        /// 재생을 중단한다. 재시작이 씬 재로드라면 호출할 필요가 없다.
         /// </summary>
         public virtual void Stop()
         {
@@ -80,8 +72,6 @@ namespace HideSeek.Cutscene
             }
 
             _isPlaying = false;
-
-            RestorePlayerCamera();
         }
 
         protected virtual void OnCutsceneBegin()
@@ -109,17 +99,6 @@ namespace HideSeek.Cutscene
             }
 
             return true;
-        }
-
-        protected void RestorePlayerCamera()
-        {
-            if (_suspendedPlayerCamera == null)
-            {
-                return;
-            }
-
-            _suspendedPlayerCamera.enabled = true;
-            _suspendedPlayerCamera = null;
         }
 
         // extrapolationMode가 Hold라 재생이 끝나도 stopped가 오지 않으므로 길이로 완료를 잡는다.
