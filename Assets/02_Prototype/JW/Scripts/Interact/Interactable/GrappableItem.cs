@@ -6,10 +6,12 @@ public class GrappableItem : MonoBehaviour, IInteractable
     [SerializeField] private Rigidbody _rb;
     [SerializeField] private Collider _collider;
     [SerializeField] private ImpactNoiseEmitter _impactNoiseEmitter;
+    [SerializeField] private LayerMask _impactLayerMask = ~0;
+    [SerializeField, Min(0f)] private float _minimumImpactAmount = 0.1f;
 
     private bool _isThrow = false;
 
-    public string InteractionPrompt => "¡›±‚";
+    public string InteractionPrompt => "Ï§çÍ∏∞";
 
     public bool CanInteract(PlayerInteractionController playerInteractor)
     {
@@ -21,6 +23,7 @@ public class GrappableItem : MonoBehaviour, IInteractable
     }
     public void Grapped()
     {
+        _isThrow = false;
         _rb.linearVelocity = Vector3.zero;
         _rb.angularVelocity = Vector3.zero;
         _rb.isKinematic = true;
@@ -51,9 +54,22 @@ public class GrappableItem : MonoBehaviour, IInteractable
         if (!_isThrow)
             return;
 
-        var impactAmount = collision.relativeVelocity.magnitude;
-        _impactNoiseEmitter.OccursSound(this.transform.position, impactAmount);
+        if (!IsImpactLayer(collision.gameObject.layer))
+            return;
 
-        _isThrow = false;
+        float impactAmount = collision.relativeVelocity.magnitude;
+        if (impactAmount < _minimumImpactAmount)
+            return;
+
+        Vector3 impactPosition = collision.contactCount > 0
+            ? collision.GetContact(0).point
+            : transform.position;
+
+        _impactNoiseEmitter?.OccursSound(impactPosition, impactAmount);
+    }
+
+    private bool IsImpactLayer(int layer)
+    {
+        return (_impactLayerMask.value & (1 << layer)) != 0;
     }
 }
