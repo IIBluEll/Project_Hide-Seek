@@ -164,7 +164,8 @@ namespace HideSeek.AI
                 _search ,
                 _anger ,
                 _patrolPoints ,
-                _configuredZones);
+                _configuredZones ,
+                _perception.IsTargetInsideHidingSpot);
 
             _stateMachine.StateChanged -= OnStateChangedActioned;
             _stateMachine.StateChanged += OnStateChangedActioned;
@@ -265,6 +266,29 @@ namespace HideSeek.AI
 
             _search.ConfigureZones(_configuredZones);
             _stateMachine?.ConfigurePatrolZones(_configuredZones);
+        }
+
+        public bool ConfigureTarget(Transform targetTrans)
+        {
+            if ( _perception == null || targetTrans == null )
+            {
+                Debug.LogError("[ChaseAIController] 플레이어 타깃을 연결할 수 없습니다." , this);
+
+                return false;
+            }
+
+            _perception.SetTarget(targetTrans);
+
+            if ( !_perception.HasTargetVisibilityState )
+            {
+                Debug.LogError(
+                    "[ChaseAIController] 플레이어에서 IPlayerVisibilityState를 찾을 수 없습니다." ,
+                    this);
+
+                return false;
+            }
+
+            return true;
         }
 
         private void OnDisable()
