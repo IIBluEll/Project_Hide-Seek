@@ -6,12 +6,14 @@ public class DestinationMission : MissionBase
 
     private void Awake()
     {
-        _barrior.SetActive(true);
+        if(_barrior != null)
+            _barrior.SetActive(true);
     }
 
     protected override void OnBeginMission()
     {
-        _barrior.SetActive(false);
+        if (_barrior != null)
+            _barrior.SetActive(false);
     }
 
     private void OnTriggerStay(Collider other)
