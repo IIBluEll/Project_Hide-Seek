@@ -283,6 +283,6 @@ MonoBehaviour:
   _detectionSize: {x: 7.5, y: 4, z: 4}
   _actorMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 402653184
   _scanInterval: 0.1
   _closeDelay: 1.5
