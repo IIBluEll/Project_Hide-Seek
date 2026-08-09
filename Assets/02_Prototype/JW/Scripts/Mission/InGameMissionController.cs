@@ -14,7 +14,6 @@ public class InGameMissionController : MonoBehaviour
 
     private void OnClear()
     {
-        Debug.Log($"JW GameClear");
-        _playerController.gameObject.SetActive(false);
+        _playerController.State.SetActionState(PLAYER_ACTION_STATE.TRANSITION);
     }
 }
