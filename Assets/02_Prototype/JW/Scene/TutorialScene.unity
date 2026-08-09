@@ -6387,7 +6387,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7190464557797280551, guid: ceddc97abfdd06647918f15b13cfac6c, type: 3}
       propertyPath: _actorMask.m_Bits
-      value: 0
+      value: 268435456
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -10442,6 +10442,10 @@ PrefabInstance:
     - target: {fileID: 365262906416921298, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
       propertyPath: m_Name
       value: PlayerTest
+      objectReference: {fileID: 0}
+    - target: {fileID: 365262906416921298, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
+      propertyPath: m_Layer
+      value: 28
       objectReference: {fileID: 0}
     - target: {fileID: 4279375969574381794, guid: 1f3d2ce182fd5674a8981499266fdbf4, type: 3}
       propertyPath: m_LocalPosition.x

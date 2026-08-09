@@ -34,7 +34,7 @@ public class TutorialController : MonoBehaviour
 
     private void MoveToGameScene()
     {
-        SceneManager.LoadScene("InGame_Map", LoadSceneMode.Single);
+        SceneManager.LoadScene("Title", LoadSceneMode.Single);
     }
 }
 
