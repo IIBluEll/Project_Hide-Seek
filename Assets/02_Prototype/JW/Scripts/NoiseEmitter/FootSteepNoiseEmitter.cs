@@ -56,7 +56,7 @@ public class FootSteepNoiseEmitter : MonoBehaviour
                this.transform.position,
                radius,
                intensity,
-               NOISE_TYPE.FOOTSTEP,
+               type,
                Time.time,
                gameObject);
     }

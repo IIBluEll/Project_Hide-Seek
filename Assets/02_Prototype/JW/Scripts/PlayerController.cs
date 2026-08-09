@@ -179,6 +179,12 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
         _inputReader.OnAttackEvent -= OnAttackAction;
         _inputReader.OnCancelAimEvent -= OnCancelAimAction;
 
+        _state.OnChangedPositionStateEvent -= OnChangePositionState;
+        _state.OnChangedActionStateEvent -= OnChangeActionState;
+
+        _move.OnChangedStamina -= _sprintViewer.UpdateSprintStamina;
+        _move.OnMoveEvent -= _animationController.SetMoveAnima;
+
         _move.OnPostureChanged -= OnPostureChangedActioned;
         _move.OnLocomotionChanged -= OnLocomotionChangedActioned;
 
