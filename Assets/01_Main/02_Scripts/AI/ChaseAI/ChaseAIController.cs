@@ -208,6 +208,37 @@ namespace HideSeek.AI
             ReportRetreatFailure();
         }
 
+        public bool ConfigureConfig(ChaseAIConfig chaseAIConfig)
+        {
+            if ( chaseAIConfig == null )
+            {
+                Debug.LogError("[ChaseAIController] 적용할 ChaseAIConfig가 없습니다." , this);
+
+                return false;
+            }
+
+            if ( _isInitialized )
+            {
+                Debug.LogWarning("[ChaseAIController] 초기화 이후에는 ChaseAIConfig를 변경할 수 없습니다." , this);
+
+                return false;
+            }
+
+            if ( _movement == null || _perception == null )
+            {
+                Debug.LogError("[ChaseAIController] Config를 전달할 Movement 또는 Perception 참조가 없습니다." , this);
+
+                return false;
+            }
+
+            _config = chaseAIConfig;
+
+            bool wasMovementConfigured = _movement.ConfigureConfig(chaseAIConfig);
+            bool wasPerceptionConfigured = _perception.ConfigureConfig(chaseAIConfig);
+
+            return wasMovementConfigured && wasPerceptionConfigured;
+        }
+
         public bool RequestActivation(Vector3 activationPosition)
         {
             if ( !_isInitialized || _stateMachine == null )
