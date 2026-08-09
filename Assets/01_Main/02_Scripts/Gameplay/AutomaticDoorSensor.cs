@@ -22,7 +22,7 @@ namespace HideSeek.Gameplay
 
         private float _scanTimer;
         private float _emptyTimer;
-        private bool _hasOccupant;
+        [SerializeField] private bool _hasOccupant;
         private bool _wasOpenRequested;
 
         public bool HasOccupant => _hasOccupant;
