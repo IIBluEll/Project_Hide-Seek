@@ -14,8 +14,6 @@ public enum HAND_STATE_ENUM
 
 public class PlayerHandController : MonoBehaviour
 {
-    [SerializeField] private Animator _animator;
-
     [SerializeField] private Transform _itemGrapPivot;
     [SerializeField] private Transform _throwDirectionTrans;
 
@@ -33,37 +31,26 @@ public class PlayerHandController : MonoBehaviour
     public event Action<bool> OnAimStateChanged;
     public event Action<float> OnThrowPowerChanged;
 
+    public event Action<HAND_STATE_ENUM> OnStateChangeEvent;
+
     private void Update()
     {
         if(_state == HAND_STATE_ENUM.GRAPPING)
         {
-            if (_animator.GetCurrentAnimatorStateInfo(1).normalizedTime > 0.7f)
-            {
-                Grap();
-                _recoveryState = HAND_STATE_ENUM.HOLDING;
-                _state = HAND_STATE_ENUM.RECOVERY;
-            }
+            Grap();
+            _recoveryState = HAND_STATE_ENUM.HOLDING;
+            _state = HAND_STATE_ENUM.RECOVERY;
+            
         }
         if (_state == HAND_STATE_ENUM.RECOVERY)
         {
-            _recoveryTime -= Time.deltaTime * 2;
-            _animator.SetLayerWeight(1, _recoveryTime);
-
-            if (_recoveryTime <= 0)
-            {
-                _state = _recoveryState;
-                _recoveryTime = 1;
-            }
+            _state = _recoveryState;
         }
         if (_state == HAND_STATE_ENUM.THROW)
         {
-            if (_animator.GetCurrentAnimatorStateInfo(1).normalizedTime > 0.6f)
-            {
-                ThrowItem();
-
-                _recoveryState = HAND_STATE_ENUM.EMPTY;
-                _state = HAND_STATE_ENUM.RECOVERY;
-            }
+            ThrowItem();
+            _recoveryState = HAND_STATE_ENUM.EMPTY;
+            _state = HAND_STATE_ENUM.RECOVERY;
         }
         if (_state == HAND_STATE_ENUM.AIMING)
         {
@@ -81,7 +68,7 @@ public class PlayerHandController : MonoBehaviour
             if (_state == HAND_STATE_ENUM.AIMING)
             {
                 _state = HAND_STATE_ENUM.THROW;
-                _animator.SetTrigger("Throw");
+                OnStateChangeEvent?.Invoke(_state);
             }
         }
     }
@@ -92,9 +79,6 @@ public class PlayerHandController : MonoBehaviour
 
         _state = HAND_STATE_ENUM.AIMING;
 
-        _animator.SetLayerWeight(1, 1);
-        _animator.SetTrigger("Aim");
-        
         _recoveryTime = 1;
         _currentPower = 0f;
 
@@ -107,9 +91,6 @@ public class PlayerHandController : MonoBehaviour
 
         _state = HAND_STATE_ENUM.HOLDING;
         _currentPower = 0f;
-
-        _animator.SetTrigger("AimCancel");
-        _animator.SetLayerWeight(1, 0);
 
         OnAimStateChanged?.Invoke(false);
     }
@@ -141,9 +122,7 @@ public class PlayerHandController : MonoBehaviour
         _grapItem = grapItem;
 
         _state = HAND_STATE_ENUM.GRAPPING;
-
-        _animator.SetLayerWeight(1, 1);
-        _animator.SetTrigger("Grap");
+        OnStateChangeEvent?.Invoke(_state);
     }
     private void Grap()
     {

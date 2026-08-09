@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7f125fc0d9174a14eb780b4208868357, type: 3}
-  m_Name: LookAroundMission
+  m_Name: 8. MoveToGeneratorMission
   m_EditorClassIdentifier: Assembly-CSharp::MissionIndicatorData
-  _missionText: "\uB9C8\uC6B0\uC2A4\uB85C \uD68C\uC804\uD558\uC2DC\uC624"
-  _iconSprite: {fileID: 21300000, guid: be2cf450d244a8946a8610ecd30ce4b4, type: 3}
+  _missionText: "\uBC1C\uC804\uAE30 \uC55E\uC73C\uB85C \uAC00\uC138\uC694"
+  _iconSprite: {fileID: 0}
   _hasCount: 0
   _targetCount: 1

@@ -4,6 +4,6 @@ using UnityEngine;
 public class DescriptionData : ScriptableObject
 {
     public string Name;
-    public string Description;
+    [TextArea] public string Description;
     public Sprite Sprite;
 }

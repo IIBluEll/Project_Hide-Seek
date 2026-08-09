@@ -6,7 +6,6 @@ using UnityEngine;
 public class TutorialController : MonoBehaviour
 {
     [SerializeField] private PlayerController _playerController;
-
     [SerializeField] private TutorialMissionController _missionController;
 
     private void Awake()
@@ -30,7 +29,7 @@ public class TutorialController : MonoBehaviour
 
     private void OnAllMissionsCompletedActioned()
     {
-        
+        Debug.Log("Tutorial End");
     }
 }
 
