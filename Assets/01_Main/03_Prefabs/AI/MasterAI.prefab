@@ -62,6 +62,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  _startGameplayAutomaticallyForDebug: 0
   _enableDebugLog: 1
   _debugLogInterval: 2
 --- !u!114 &6470538151510204542

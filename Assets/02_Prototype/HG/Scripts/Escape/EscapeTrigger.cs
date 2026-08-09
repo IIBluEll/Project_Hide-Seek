@@ -9,8 +9,8 @@ namespace HideSeek.Gameplay
     /// 문 자체가 아니라 문 안쪽에 두어야 한다. 문에 붙이면 열어만 두고
     /// 들어가지 않거나 문 앞에서 서성일 때 오작동한다.
     ///
-    /// 발전기 완료 여부는 검사하지 않는다. 문 활성화가 이미 그 조건을 만족한 뒤에만
-    /// 이루어지고(담당: 현민), 검사를 넣으면 컷신만 따로 확인할 수 없다.
+    /// 발전기 완료 여부는 검사하지 않는다. <see cref="EscapeDoorLock"/>이 문을 잠가 두므로
+    /// 조건을 만족하기 전에는 여기까지 올 수 없고, 검사를 넣으면 컷신만 따로 확인할 수 없다.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Collider))]
