@@ -139,8 +139,8 @@ public class PlayerInteractionController : MonoBehaviour
     }
     public void ExitHide()
     {
-        _moveController.CharacterControllerEnabled(true);
         _stat.ExitHiding();
+        _moveController.CharacterControllerEnabled(true);
     }
 
     public void SetPosition(Vector3 position)
@@ -183,9 +183,9 @@ public class PlayerInteractionController : MonoBehaviour
 
         _stat.SetActionState(state);
     }
-    public void BeginGeneratorRepair()
+    public void SetActionState(PLAYER_ACTION_STATE actionState)
     {
-        _stat.SetActionState(PLAYER_ACTION_STATE.REPAIRING_GENERATOR);
+        _stat.SetActionState(actionState);
     }
 
     public void EndGeneratorRepair()

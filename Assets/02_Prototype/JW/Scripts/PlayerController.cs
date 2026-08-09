@@ -41,7 +41,6 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
 
         _wakeUpBlink.OnFinishedBlinkEvent += OnFinishedWakeup;
     }
-
     private void Bind()
     {
         _inputReader.OnMoveEvent += OnMoveAction;
@@ -73,10 +72,20 @@ public class PlayerController : MonoBehaviour, IPlayerVisibilityState
             _animationController.SetTrigger("Working");
         }
 
-        if(action == PLAYER_ACTION_STATE.IDLE)
+        if(action == PLAYER_ACTION_STATE.TRANSITION)
+        {
+            _move.StopMove();
+        }
+
+        if (action == PLAYER_ACTION_STATE.IDLE)
         {
             _animationController.SetLayerWeight(2, 0, 0.3f);
             _animationController.SetTrigger("EndWorking");
+        }
+
+        if(action == PLAYER_ACTION_STATE.CATCHED)
+        {
+            _move.StopMove();
         }
     }
     private void OnChangePositionState(PLAYER_POSITION_STATE position)

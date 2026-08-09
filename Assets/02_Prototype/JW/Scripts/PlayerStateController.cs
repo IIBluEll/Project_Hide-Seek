@@ -44,7 +44,7 @@ public class PlayerStateController : IStateService, IPlayerVisibilityState
     _positionState == PLAYER_POSITION_STATE.NORMAL &&
     (_actionState == PLAYER_ACTION_STATE.IDLE || _actionState == PLAYER_ACTION_STATE.AIMING);
     public bool CanRotate =>
-        _actionState != PLAYER_ACTION_STATE.REPAIRING_GENERATOR && _actionState != PLAYER_ACTION_STATE.TRANSITION;
+        _actionState == PLAYER_ACTION_STATE.IDLE || _actionState == PLAYER_ACTION_STATE.AIMING;
     public bool CanCrouch =>
         _positionState == PLAYER_POSITION_STATE.NORMAL &&
         _actionState != PLAYER_ACTION_STATE.REPAIRING_GENERATOR;

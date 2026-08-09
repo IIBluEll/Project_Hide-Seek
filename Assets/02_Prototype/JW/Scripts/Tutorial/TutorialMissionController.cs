@@ -86,7 +86,7 @@ public class TutorialMissionController : MonoBehaviour
         }
 
         Cursor.lockState = CursorLockMode.None;
-        _playerController.State.SetActionState(PLAYER_ACTION_STATE.CATCHED);
+        _playerController.State.SetActionState(PLAYER_ACTION_STATE.TRANSITION);
 
         _tutorialDescription.OnClickConfirm -= OnDescriptionConfirmActioned;
         _tutorialDescription.OnClickConfirm += OnDescriptionConfirmActioned;
