@@ -10,6 +10,10 @@ namespace HideSeek.Common
     {
         public const string TITLE = "TitleScene";
         public const string TUTORIAL = "TutorialScene";
+
+        // 게임 시작과 재시작은 인게임 씬으로 바로 가지 않고 이 씬을 거친다. GDD 4.1
+        public const string LOADING = "LoadingScene";
+
         public const string IN_GAME = "InGame_Map";
     }
 }

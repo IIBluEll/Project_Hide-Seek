@@ -115,6 +115,21 @@ namespace HideSeek.AI
             NoiseProvider.NoiseEmitted -= OnNoiseEmitted;
         }
 
+        public bool ConfigureConfig(ChaseAIConfig chaseAIConfig)
+        {
+            if ( chaseAIConfig == null )
+            {
+                Debug.LogError("[ChaseAIPerception] 적용할 ChaseAIConfig가 없습니다." , this);
+
+                return false;
+            }
+
+            _config = chaseAIConfig;
+            ResetPerception();
+
+            return true;
+        }
+
         public void SetTarget(Transform targetTransform)
         {
             _targetTransform = targetTransform;
@@ -132,12 +147,15 @@ namespace HideSeek.AI
         {
             bool hasLineOfSight = TryGetVisiblePosition(
                 out Vector3 visiblePosition ,
-                out float detectionSpeedMultiplier);
+                out float detectionSpeedMultiplier ,
+                out bool wasVisibilityRaycastPerformed);
 
             UpdateDetectionRatio(hasLineOfSight , detectionSpeedMultiplier , deltaTime);
 
             CHASE_AI_VISUAL_STATE visualState = GetVisualState(hasLineOfSight);
-            bool canAttackTarget = CanAttackTarget();
+            bool canAttackTarget = CanAttackTarget(
+                hasLineOfSight ,
+                wasVisibilityRaycastPerformed);
 
             CurrentObservation = new ChaseAIVisualObservation(
                 hasLineOfSight ,
@@ -163,7 +181,9 @@ namespace HideSeek.AI
                 false);
         }
 
-        private bool CanAttackTarget()
+        private bool CanAttackTarget(
+            bool hasLineOfSight ,
+            bool wasVisibilityRaycastPerformed)
         {
             if ( _config == null ||
                 _eyeTransform == null ||
@@ -195,6 +215,11 @@ namespace HideSeek.AI
                 return true;
             }
 
+            if ( wasVisibilityRaycastPerformed )
+            {
+                return hasLineOfSight;
+            }
+
             bool isBlocked = Physics.Raycast(
                 _eyeTransform.position ,
                 attackRayDirection / attackRayDistance ,
@@ -207,10 +232,12 @@ namespace HideSeek.AI
 
         private bool TryGetVisiblePosition(
             out Vector3 visiblePosition ,
-            out float detectionSpeedMultiplier)
+            out float detectionSpeedMultiplier ,
+            out bool wasVisibilityRaycastPerformed)
         {
             visiblePosition = Vector3.zero;
             detectionSpeedMultiplier = 0f;
+            wasVisibilityRaycastPerformed = false;
 
             if ( _config == null || _eyeTransform == null || _targetTransform == null )
             {
@@ -271,6 +298,8 @@ namespace HideSeek.AI
             {
                 return false;
             }
+
+            wasVisibilityRaycastPerformed = true;
 
             bool isBlocked = Physics.Raycast(
                 _eyeTransform.position,
@@ -432,6 +461,7 @@ namespace HideSeek.AI
 
             bool hasLineOfSight = TryGetVisiblePosition(
                 out Vector3 visiblePosition ,
+                out _ ,
                 out _);
 
             Gizmos.color = hasLineOfSight ? Color.green : Color.red;

@@ -18,6 +18,7 @@ namespace HideSeek.AI
     public sealed class ChaseAISearch
     {
         private const int MIN_GENERATION_ATTEMPT_COUNT_PER_POINT = 1;
+        private const float RECENT_AWARE_RANDOM_ATTEMPT_RATIO = 0.5f;
 
         private readonly List<Vector3> SEARCH_POINTS = new();
         private readonly List<CHASE_AI_SEARCH_POINT_SOURCE> SEARCH_POINT_SOURCES = new();
@@ -43,6 +44,9 @@ namespace HideSeek.AI
         public int HidingSpotPointCount => _hidingSpotPointCount;
         public int RecentlyVisitedPointCount => RECENTLY_VISITED_POINTS.Count;
         public int RecentPointRejectCount { get; private set; }
+        public int GenerationAttemptBudget { get; private set; }
+        public int GenerationAttemptCount { get; private set; }
+        public int PathCalculationCount { get; private set; }
         public bool HasCurrentPoint => _currentPointIndex >= 0 && _currentPointIndex < SEARCH_POINTS.Count;
         public bool IsZoneRestricted => _isZoneRestricted;
         public string ActiveSearchZoneName => _activeSearchZone != null ? _activeSearchZone.DisplayName : "NONE";
@@ -108,7 +112,8 @@ namespace HideSeek.AI
             }
 
             int validAttemptCountPerPoint = Mathf.Max(MIN_GENERATION_ATTEMPT_COUNT_PER_POINT , generationAttemptCountPerPoint);
-            int maximumAttemptCount = targetPointCount * validAttemptCountPerPoint;
+            GenerationAttemptBudget = targetPointCount * validAttemptCountPerPoint;
+            int remainingGenerationAttemptCount = GenerationAttemptBudget;
             Vector3 pathStartPosition = startHit.position;
 
             Vector3 normalizedPreferredDirection = preferredDirection;
@@ -129,10 +134,14 @@ namespace HideSeek.AI
                 normalizedPreferredDirection != Vector3.zero);
 
             float validPredictionDistance = Mathf.Clamp(predictionDistance , 0f , validSearchRadius);
+            int maximumDirectionalAttemptCount = directionalPointCount * validAttemptCountPerPoint;
+            int directionalAttemptCount = 0;
 
             if ( directionalPointCount > 0 && validPredictionDistance > 0f )
             {
                 Vector3 predictedPosition = centerPosition + normalizedPreferredDirection * validPredictionDistance;
+
+                directionalAttemptCount++;
 
                 TryAddSearchPoint(
                     predictedPosition ,
@@ -143,6 +152,7 @@ namespace HideSeek.AI
                     areaMask ,
                     CHASE_AI_SEARCH_POINT_SOURCE.PREDICTED_DIRECTION ,
                     ref pathStartPosition ,
+                    ref remainingGenerationAttemptCount ,
                     null ,
                     false);
             }
@@ -150,9 +160,9 @@ namespace HideSeek.AI
             float validDirectionalSearchAngle = Mathf.Clamp(directionalSearchAngle , 0f , 180f);
             float minimumDirectionalDistance = Mathf.Min(validMinimumPointDistance , validSearchRadius);
 
-            for ( int attemptIndex = 0; attemptIndex < maximumAttemptCount; attemptIndex++ )
+            for ( ; directionalAttemptCount < maximumDirectionalAttemptCount; directionalAttemptCount++ )
             {
-                if ( SEARCH_POINTS.Count >= directionalPointCount )
+                if ( SEARCH_POINTS.Count >= directionalPointCount || remainingGenerationAttemptCount <= 0 )
                 {
                     break;
                 }
@@ -170,7 +180,8 @@ namespace HideSeek.AI
                     validSampleRadius ,
                     areaMask ,
                     CHASE_AI_SEARCH_POINT_SOURCE.DIRECTIONAL ,
-                    ref pathStartPosition);
+                    ref pathStartPosition ,
+                    ref remainingGenerationAttemptCount);
             }
 
             HidingSpotInspectionChance = Mathf.Clamp01(hidingSpotInspectionChance);
@@ -219,7 +230,9 @@ namespace HideSeek.AI
                 validMinimumPointDistance ,
                 validSampleRadius ,
                 areaMask ,
-                ref pathStartPosition);
+                validAttemptCountPerPoint ,
+                ref pathStartPosition ,
+                ref remainingGenerationAttemptCount);
 
             if ( didInspectionRollPass && SEARCH_POINTS.Count < targetPointCount )
             {
@@ -229,12 +242,17 @@ namespace HideSeek.AI
                     validMinimumPointDistance ,
                     validSampleRadius ,
                     areaMask ,
-                    ref pathStartPosition);
+                    validAttemptCountPerPoint ,
+                    ref pathStartPosition ,
+                    ref remainingGenerationAttemptCount);
             }
 
-            for ( int attemptIndex = 0; attemptIndex < maximumAttemptCount; attemptIndex++ )
+            int recentAwareAttemptCount = Mathf.CeilToInt(
+                remainingGenerationAttemptCount * RECENT_AWARE_RANDOM_ATTEMPT_RATIO);
+
+            for ( int attemptIndex = 0; attemptIndex < recentAwareAttemptCount; attemptIndex++ )
             {
-                if ( SEARCH_POINTS.Count >= targetPointCount )
+                if ( SEARCH_POINTS.Count >= targetPointCount || remainingGenerationAttemptCount <= 0 )
                 {
                     break;
                 }
@@ -255,10 +273,11 @@ namespace HideSeek.AI
                     validSampleRadius ,
                     areaMask ,
                     CHASE_AI_SEARCH_POINT_SOURCE.RANDOM ,
-                    ref pathStartPosition);
+                    ref pathStartPosition ,
+                    ref remainingGenerationAttemptCount);
             }
 
-            for ( int attemptIndex = 0; attemptIndex < maximumAttemptCount; attemptIndex++ )
+            while ( remainingGenerationAttemptCount > 0 )
             {
                 if ( SEARCH_POINTS.Count >= targetPointCount )
                 {
@@ -281,6 +300,7 @@ namespace HideSeek.AI
                     areaMask ,
                     CHASE_AI_SEARCH_POINT_SOURCE.RANDOM ,
                     ref pathStartPosition ,
+                    ref remainingGenerationAttemptCount ,
                     null ,
                     false);
             }
@@ -366,6 +386,9 @@ namespace HideSeek.AI
             HidingSpotInspectionRoll = -1f;
             WasHidingSpotSelected = false;
             RecentPointRejectCount = 0;
+            GenerationAttemptBudget = 0;
+            GenerationAttemptCount = 0;
+            PathCalculationCount = 0;
         }
 
         public void ResetHistory()
@@ -444,11 +467,22 @@ namespace HideSeek.AI
             float minimumPointDistance ,
             float sampleRadius ,
             int areaMask ,
-            ref Vector3 pathStartPosition)
+            int generationAttemptCountPerPoint ,
+            ref Vector3 pathStartPosition ,
+            ref int remainingGenerationAttemptCount)
         {
-            for ( int candidateIndex = 0; candidateIndex < HIDING_SPOT_CANDIDATES.Count; candidateIndex++ )
+            int maximumAttemptCount = Mathf.Max(
+                MIN_GENERATION_ATTEMPT_COUNT_PER_POINT ,
+                generationAttemptCountPerPoint);
+
+            for ( int candidateIndex = 0;
+                  candidateIndex < HIDING_SPOT_CANDIDATES.Count &&
+                  maximumAttemptCount > 0 &&
+                  remainingGenerationAttemptCount > 0;
+                  candidateIndex++ )
             {
                 AISearchPoint hidingSpotCandidate = HIDING_SPOT_CANDIDATES[ candidateIndex ];
+                maximumAttemptCount--;
 
                 bool wasAdded = TryAddSearchPoint(
                     hidingSpotCandidate.Position ,
@@ -459,6 +493,7 @@ namespace HideSeek.AI
                     areaMask ,
                     CHASE_AI_SEARCH_POINT_SOURCE.HIDING_SPOT ,
                     ref pathStartPosition ,
+                    ref remainingGenerationAttemptCount ,
                     hidingSpotCandidate.HidingSpot ,
                     false);
 
@@ -489,7 +524,9 @@ namespace HideSeek.AI
             float minimumPointDistance ,
             float sampleRadius ,
             int areaMask ,
-            ref Vector3 pathStartPosition)
+            int generationAttemptCountPerPoint ,
+            ref Vector3 pathStartPosition ,
+            ref int remainingGenerationAttemptCount)
         {
             if ( requestedPointCount <= 0 || _activeSearchZone == null )
             {
@@ -500,8 +537,14 @@ namespace HideSeek.AI
             _activeSearchZone.CollectSearchPoints(AI_SEARCH_POINT_TYPE.COVERAGE , ZONE_COVERAGE_CANDIDATES);
 
             int addedPointCount = 0;
+            int maximumAttemptCount = requestedPointCount * Mathf.Max(
+                MIN_GENERATION_ATTEMPT_COUNT_PER_POINT ,
+                generationAttemptCountPerPoint);
 
-            while ( addedPointCount < requestedPointCount && ZONE_COVERAGE_CANDIDATES.Count > 0 )
+            while ( addedPointCount < requestedPointCount &&
+                    ZONE_COVERAGE_CANDIDATES.Count > 0 &&
+                    maximumAttemptCount > 0 &&
+                    remainingGenerationAttemptCount > 0 )
             {
                 int candidateIndex = UnityEngine.Random.Range(0 , ZONE_COVERAGE_CANDIDATES.Count);
                 AISearchPoint candidatePoint = ZONE_COVERAGE_CANDIDATES[ candidateIndex ];
@@ -513,6 +556,8 @@ namespace HideSeek.AI
                     continue;
                 }
 
+                maximumAttemptCount--;
+
                 bool wasAdded = TryAddSearchPoint(
                     candidatePoint.Position ,
                     centerPosition ,
@@ -521,7 +566,8 @@ namespace HideSeek.AI
                     sampleRadius ,
                     areaMask ,
                     CHASE_AI_SEARCH_POINT_SOURCE.ZONE_COVERAGE ,
-                    ref pathStartPosition);
+                    ref pathStartPosition ,
+                    ref remainingGenerationAttemptCount);
 
                 if ( wasAdded )
                 {
@@ -539,9 +585,18 @@ namespace HideSeek.AI
             int areaMask ,
             CHASE_AI_SEARCH_POINT_SOURCE searchPointSource ,
             ref Vector3 pathStartPosition ,
+            ref int remainingGenerationAttemptCount ,
             AIHidingSpot hidingSpot = null ,
             bool shouldAvoidRecentlyVisitedPoints = true)
         {
+            if ( remainingGenerationAttemptCount <= 0 )
+            {
+                return false;
+            }
+
+            remainingGenerationAttemptCount--;
+            GenerationAttemptCount++;
+
             bool hasNavMeshPosition = NavMesh.SamplePosition(
                 candidatePosition ,
                 out NavMeshHit candidateHit ,
@@ -576,6 +631,8 @@ namespace HideSeek.AI
 
                 return false;
             }
+
+            PathCalculationCount++;
 
             if ( !HasCompletePath(pathStartPosition , sampledPosition , areaMask) )
             {
