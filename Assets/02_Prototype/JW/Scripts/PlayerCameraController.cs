@@ -21,7 +21,7 @@ public class PlayerCameraController : MonoBehaviour
     [SerializeField, Range(0f, 3f)] private float _runShakeIntensity = 0.6f;
 
     [SerializeField] private float _pitch;
-    [SerializeField, Min(0f)] private float _rotationSmoothSpeed = 30f;
+    [SerializeField, Min(0f)] private float _rotationSmoothSpeed = 60f;
     private float _targetPitch;
     public float _currentShakeIntensity;
 
