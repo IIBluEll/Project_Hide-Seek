@@ -11,7 +11,9 @@ GameObject:
   - component: {fileID: 4920349071074144}
   - component: {fileID: 33480080355823194}
   - component: {fileID: 23232398280843638}
-  - component: {fileID: 64651433345914390}
+  - component: {fileID: 2471442939345072101}
+  - component: {fileID: 8866106281839667117}
+  - component: {fileID: 5599711933934742081}
   m_Layer: 7
   m_Name: SM_Bld_Bridge_Walls_01
   m_TagString: Untagged
@@ -92,8 +94,8 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &64651433345914390
-MeshCollider:
+--- !u!65 &2471442939345072101
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -110,10 +112,51 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 43939824165710212, guid: 994609fc91555e34e9eaaccac55a1073, type: 2}
+  serializedVersion: 3
+  m_Size: {x: 1.4330645, y: 4.9277687, z: 15.495807}
+  m_Center: {x: 0.79914236, y: 1.4559407, z: 7.487643}
+--- !u!65 &8866106281839667117
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1899809167210008}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 18.031347, y: 4.9277687, z: 1.6046448}
+  m_Center: {x: -7.499999, y: 1.4559407, z: 14.433224}
+--- !u!65 &5599711933934742081
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1899809167210008}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.4252033, y: 4.9277687, z: 15.495807}
+  m_Center: {x: -15.803073, y: 1.4559407, z: 7.487643}
 --- !u!1 &1928388072527048
 GameObject:
   m_ObjectHideFlags: 0
