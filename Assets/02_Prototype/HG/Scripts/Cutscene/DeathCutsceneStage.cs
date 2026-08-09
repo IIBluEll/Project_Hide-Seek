@@ -19,6 +19,9 @@ namespace HideSeek.Cutscene
                  "암전 없이 마지막 프레임에서 바로 결과 화면으로 넘길 때는 비워 둔다.")]
         [SerializeField] private CanvasGroup _fadeCanvasGroup;
 
+        [Tooltip("컷신 시작과 함께 반복 재생할 BGM. 게임 오버 화면까지 이어지도록 Timeline 트랙이 아니라 여기서 재생한다.")]
+        [SerializeField] private AudioSource _loopBgmSource;
+
         private void Awake()
         {
             if (_stageRootObj != null)
@@ -40,6 +43,8 @@ namespace HideSeek.Cutscene
             {
                 _fadeCanvasGroup.alpha = 0f;
             }
+
+            PlayLoopBgm();
         }
 
         protected override void OnCutsceneEnd()
@@ -53,9 +58,30 @@ namespace HideSeek.Cutscene
             _fadeCanvasGroup.alpha = 1f;
         }
 
+        // Timeline 트랙에 얹으면 재생이 끝나는 순간 소리가 끊긴다.
+        // 게임 오버 화면까지 루프가 이어져야 하므로 Director와 무관하게 재생한다.
+        private void PlayLoopBgm()
+        {
+            if (_loopBgmSource == null)
+            {
+                Debug.LogWarning("[DeathCutsceneStage] 반복 재생할 BGM이 없습니다." , this);
+
+                return;
+            }
+
+            // 인스펙터에서 Loop 체크를 빠뜨려도 한 번만 울리고 끝나지 않게 한다.
+            _loopBgmSource.loop = true;
+            _loopBgmSource.Play();
+        }
+
         public override void Stop()
         {
             base.Stop();
+
+            if (_loopBgmSource != null)
+            {
+                _loopBgmSource.Stop();
+            }
 
             if (_stageRootObj != null)
             {
