@@ -7,6 +7,7 @@ namespace HideSeek.UI
 {
     /// <summary>
     /// 결과 화면의 재시작과 타이틀 이동을 처리한다.
+    /// 재시작은 현재 씬을 다시 여는 것이 아니라 로딩 씬으로 보낸다.
     ///
     /// 두 대상 모두 Build Settings에 등록되어 있어야 이동할 수 있다.
     /// 등록되지 않은 대상은 버튼을 눌러도 아무 일이 없으므로 아예 비활성으로 표시한다.
@@ -45,9 +46,7 @@ namespace HideSeek.UI
 
         private void RefreshInteractable()
         {
-            string tActiveSceneName = SceneManager.GetActiveScene().name;
-
-            bool tCanRestart = CanLoad(tActiveSceneName);
+            bool tCanRestart = CanLoad(SceneNames.LOADING);
             bool tCanGoTitle = CanLoad(SceneNames.TITLE);
 
             RESULT_SCREEN_VIEW.SetRestartInteractable(tCanRestart);
@@ -56,7 +55,7 @@ namespace HideSeek.UI
             if (!tCanRestart)
             {
                 Debug.LogWarning(
-                    $"[ResultScreenPresenter] 현재 씬 '{tActiveSceneName}'이 Build Settings에 없어 재시작할 수 없습니다. " +
+                    $"[ResultScreenPresenter] 로딩 씬 '{SceneNames.LOADING}'을 찾을 수 없어 재시작할 수 없습니다. " +
                     "File > Build Profiles에서 씬을 추가하면 동작합니다.");
             }
 
@@ -70,15 +69,14 @@ namespace HideSeek.UI
 
         private void OnRestartRequestedActioned()
         {
-            Scene tActiveScene = SceneManager.GetActiveScene();
-
-            if (!CanLoad(tActiveScene.name))
+            if (!CanLoad(SceneNames.LOADING))
             {
                 return;
             }
 
+            // 현재 씬을 다시 여는 대신 로딩 씬을 거친다. 난이도는 그대로 유지된다.
             // 컷신이 Time.timeScale과 무관하게 동작하므로 여기서 되돌릴 상태는 없다.
-            SceneManager.LoadScene(tActiveScene.name);
+            SceneManager.LoadScene(SceneNames.LOADING);
         }
 
         private void OnTitleRequestedActioned()
