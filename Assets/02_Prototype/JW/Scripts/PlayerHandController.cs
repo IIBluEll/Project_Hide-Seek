@@ -99,8 +99,9 @@ public class PlayerHandController : MonoBehaviour
         Vector3 throwDirection = _throwDirectionTrans.forward;
 
         _grapItem.transform.SetParent(null, true);
-        _grapItem.Throw(_throwDirectionTrans.forward + Vector3.up, _currentPower);
+        _grapItem.Throw(_throwDirectionTrans.forward + (Vector3.up*0.5f), _currentPower);
 
+        _grapItem.Release();
         _grapItem = null;
         _currentPower = _minimumPower;
         _state = HAND_STATE_ENUM.EMPTY;
