@@ -5441,17 +5441,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4995380617274390, guid: 5083e3debd9f4b84fa38c513bd3bd09a, type: 3}
   m_PrefabInstance: {fileID: 68259585}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &68569169 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8646593542222521618, guid: d9944e785f362f54a8debc51e8a09a40, type: 3}
-  m_PrefabInstance: {fileID: 1295822878}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1001 &69433566
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -72646,10 +72635,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player_Action_UI_Canvas
       objectReference: {fileID: 0}
-    - target: {fileID: 7586838939535734986, guid: d9944e785f362f54a8debc51e8a09a40, type: 3}
-      propertyPath: _text
-      value: 
-      objectReference: {fileID: 68569169}
     - target: {fileID: 7632565718145242822, guid: d9944e785f362f54a8debc51e8a09a40, type: 3}
       propertyPath: m_Pivot.x
       value: 0
