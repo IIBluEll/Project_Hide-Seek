@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: 4. CrouchMission
   m_EditorClassIdentifier: Assembly-CSharp::MissionIndicatorData
   _missionText: "\uC549\uAE30"
-  _iconSprite: {fileID: 0}
+  _iconSprite: {fileID: 21300000, guid: 1ec2a06c71b27fc47a8777e22764f91a, type: 3}
   _hasCount: 0
   _targetCount: 1
