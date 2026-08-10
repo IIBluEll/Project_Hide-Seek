@@ -23,7 +23,14 @@ public class TutorialDescription_View : MonoBehaviour, IDescription
     {
         _nameText.text = data.Name;
         _descriptionText.text = data.Description;
-        _descriptionImage.sprite = data.Sprite;
+
+        if (data.Sprite != null)
+        {
+            _descriptionImage.gameObject.SetActive(true);
+            _descriptionImage.sprite = data.Sprite;
+        }
+        else
+            _descriptionImage.gameObject.SetActive(false);
 
         _obj.SetActive(true);
     }
