@@ -1,4 +1,4 @@
-# PROJECT ISOLATION
+# ISOLATION PROTOCOL
 
 > 소음과 시야를 관리하며 폐쇄 시설을 탈출하는 1인칭 잠입 생존 공포 게임
 
