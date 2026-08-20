@@ -48,9 +48,6 @@ public class PlayerAnimationController : MonoBehaviour
             case POSTURE_STATE_ENUM.CROUCH:
                 SetBool(IS_CROUCH_HASH, value);
                 break;
-            case POSTURE_STATE_ENUM.PRONE:
-                SetBool(IS_PRONE_HASH, value);
-                break;
         }
     }
 
