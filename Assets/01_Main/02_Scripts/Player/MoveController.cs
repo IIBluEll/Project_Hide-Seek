@@ -23,8 +23,6 @@ public struct PostureHeight
                 return StandingHeight;
             case POSTURE_STATE_ENUM.CROUCH:
                 return CrouchHeight;
-            case POSTURE_STATE_ENUM.PRONE:
-                return ProneHeight;
             default:
                 throw new InvalidOperationException("Enum Type Error");
         }
@@ -43,7 +41,6 @@ public enum POSTURE_STATE_ENUM
 {
     STANDING,
     CROUCH,
-    PRONE
 }
 public enum LOCOMOTION_STATE_ENUM
 {

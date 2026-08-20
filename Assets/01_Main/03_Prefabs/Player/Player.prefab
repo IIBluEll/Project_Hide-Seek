@@ -338,7 +338,7 @@ GameObject:
   - component: {fileID: 2687568104229482316}
   - component: {fileID: 5683370255170297377}
   - component: {fileID: 7485482272247468102}
-  m_Layer: 0
+  m_Layer: 28
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -464,15 +464,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCameraController
   _cameraParent: {fileID: 719797448115294576}
   _camera: {fileID: 2330449259875553450}
-  _headBoneTrans: {fileID: 2894895915176152427}
   _standingCameraHeight: 1.55
-  _crouchCameraHeight: 0
-  _proneCameraHeight: 0.2
-  _crouchWalkShakeIntensity: 1
-  _walkShakeIntensity: 3
-  _runShakeIntensity: 1.6
+  _crouchCameraHeight: 0.7
+  _crouchWalkShakeIntensity: 0.1
+  _walkShakeIntensity: 0.25
+  _runShakeIntensity: 0.45
+  _crouchWalkShakeFrequency: 4.5
+  _walkShakeFrequency: 6
+  _runShakeFrequency: 8
+  _shakeVerticalAmplitude: 0.018
+  _shakeHorizontalAmplitude: 0.003
+  _shakeSmoothSpeed: 8
   _pitch: 0
-  _currentShakeIntensity: 1
+  _currentShakeIntensity: 0
 --- !u!114 &3460248299561768460
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -487,7 +491,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteractionController
   _defactData:
     CameraTrans: {fileID: 2330449259875553450}
-    RayDistance: 5
+    RayDistance: 3
     InteractionRaycastLayerMask:
       serializedVersion: 2
       m_Bits: 64
@@ -586,7 +590,7 @@ Animator:
   m_GameObject: {fileID: 365262906416921298}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: c8c20564eb982f84a96a0d4d8e357cc5, type: 3}
-  m_Controller: {fileID: 9100000, guid: 82f0f3f3bad080b47ab13a66fdf2a631, type: 2}
+  m_Controller: {fileID: 9100000, guid: 434b48d4737380642b6d06440e244f7a, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
